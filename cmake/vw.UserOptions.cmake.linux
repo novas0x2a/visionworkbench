@@ -1,0 +1,18 @@
+######################################################
+## 
+## Default VisionWorkbench options file for Linux 
+##
+######################################################
+
+# IRG_PREFIX determines whether to look for external
+# packages in the /irg NFS mount from sudoko, or from
+# locally install libs (typically sync'ed from dale)
+######################################################
+#set( IRG_PREFIX /irg )
+set( IRG_PREFIX /usr/local/irg )
+
+# Build type options:
+#   Debug Release RelWithDebInfo MinSizeRel
+######################################################
+set( VW_BUILD_TYPE RelWithDebInfo )
+

@@ -1,0 +1,46 @@
+######################################################
+## 
+## Default VisionWorkbench options file for Windows 
+##
+######################################################
+
+
+# Tell the find scripts exactly where to find the
+# dependencies on Windows
+######################################################
+#set( IRG_PREFIX     "c:/irg" )
+#set( VW_DEPS_ROOT   "${IRG_PREFIX}/packages/${ARCHITECTURE}"   )
+set( VW_DEPS_ROOT        "C:/devel"   )
+
+# Boost setup
+########################
+set( Boost_USE_STATIC_LIBS FALSE )
+set( Boost_USE_MULTITHREAD TRUE )
+
+#add_definitions( -DBOOST_LIB_DIAGNOSTIC )
+
+#- needed for use of boost::bind
+add_definitions( -DBOOST_MEM_FN_ENABLE_CDECL )
+
+# Dependency locations
+########################
+set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost_1_35_0 )
+set( PROJ4_ROOT_DIR       ${VW_DEPS_ROOT}/proj4 )
+set( GDAL_ROOT_DIR        ${VW_DEPS_ROOT}/gdal151-vc8 )
+set( OPENEXR_ROOT_DIR     ${VW_DEPS_ROOT}/openexr-1.4.0-vs2005 )
+set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/CLAPACK-3.1.1-VisualStudio )
+set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty ) 
+
+# Allowed build types
+########################
+set( CMAKE_CONFIGURATION_TYPES RelWithDebInfo 
+     CACHE STRING 
+     "Only allow release w/ debug info for now (to keep things simple)"
+     FORCE )
+
+# Build type options:
+#   Debug Release RelWithDebInfo MinSizeRel
+######################################################
+set( VW_BUILD_TYPE RelWithDebInfo )
+
+
