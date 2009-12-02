@@ -31,12 +31,12 @@ set( OPENEXR_ROOT_DIR     ${VW_DEPS_ROOT}/openexr-1.4.0-vs2005 )
 set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/CLAPACK-3.1.1-VisualStudio )
 set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty ) 
 
-# Allowed build types
-########################
-set( CMAKE_CONFIGURATION_TYPES RelWithDebInfo 
-     CACHE STRING 
-     "Only allow release w/ debug info for now (to keep things simple)"
-     FORCE )
+## Allowed build types
+#########################
+#set( CMAKE_CONFIGURATION_TYPES RelWithDebInfo 
+#     CACHE STRING 
+#     "Only allow release w/ debug info for now (to keep things simple)"
+#     FORCE )
 
 # Build type options:
 #   Debug Release RelWithDebInfo MinSizeRel

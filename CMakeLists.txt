@@ -1,36 +1,12 @@
 project(vw)
 cmake_minimum_required(VERSION 2.6)
 
-## if the cmakeoptions file doesn't exist, copy 
-## copy a default one to the out-of-source root
-##################################################
-set( VW_CMAKEOPTIONS "${PROJECT_NAME}.UserOptions.cmake" )
-set( VW_CMAKEOPTIONS_PATH "${PROJECT_BINARY_DIR}/${VW_CMAKEOPTIONS}" )
-if( NOT EXISTS "${VW_CMAKEOPTIONS_PATH}" )
-  message( STATUS "\n"
-                  "##################################################\n"
-                  "## \n"
-                  "## Copying default \"${VW_CMAKEOPTIONS}\" \n"
-                  "##   file to out-of-source root: \n" 
-                  "## ${PROJECT_BINARY_DIR}\n" 
-                  "## \n"
-                  "##################################################")
-  string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_LOWER )
-  exec_program("${CMAKE_COMMAND}" ARGS -E copy
-    "${PROJECT_SOURCE_DIR}/cmake/${VW_CMAKEOPTIONS}.${SYSTEM_NAME_LOWER}"
-    "${VW_CMAKEOPTIONS_PATH}"
-  )
-  message( STATUS "NOTE: A default options file has been copied into the out-of-source root.")
-  message( STATUS "      Make changes if necessary, delete CMakeCache.txt, and rerun cmake.")
-endif( NOT EXISTS "${VW_CMAKEOPTIONS_PATH}" )
-
-
-## add the irg cmake modules to the head
-## of our cmake module search path and 
-## pull in some irg utilities
+## add the irg_cmake modules to the head
+## of our cmake module search path 
 ##################################################
 set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
 
+include( UserOptions )
 include( SetArchitecture )
 include( SetupWarnLevel )
 include( SetupRPATH )
@@ -38,10 +14,6 @@ include( SetupInstall )
 include( AddBuildSwitch )
 string( TOUPPER ${PROJECT_NAME} PROJECT_UPPER )
 build_switch_init( ${PROJECT_UPPER} )
-
-## Load in user options
-##################################################
-include( ${VW_CMAKEOPTIONS_PATH} )
 
 ## we have to play some tricks to get install
 ## path to "stick" in Windows.
@@ -54,7 +26,6 @@ set( CMAKE_INSTALL_PREFIX ${VW_INSTALL_PREFIX} CACHE INTERNAL "" )
 ## Call RPATH macro after CMAKE_INSTALL_PREFIX has been set
 ##################################################
 setup_rpath()
-
 
 # If user specified VW_BUILD_TYPE in options file
 # force that value into the cache
@@ -72,7 +43,6 @@ if( WIN32 )
   # boost wants to pull these components in as well on win32
   set( VW_BOOST_COMPONENTS ${VW_BOOST_COMPONENTS} system date_time )
 endif( WIN32 ) 
-
 # boost is a required dep; bail if it's not found
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )
 message(STATUS "VW will be built using Boost version ${Boost_VERSION}")
@@ -91,7 +61,6 @@ endif(WIN32)
 find_package( OpenEXR )
 find_package( GDAL )
 find_package( Proj4 )
-
 find_package( OpenGL )
 
 
