@@ -5,8 +5,8 @@ set( HEADERS
   CameraBBox.h
   Datum.h
   FileIO.h
-  GeoReference.h
   GeoReferenceBase.h
+  GeoReference.h
   GeoReferenceResourcePDS.h
   GeoTransform.h
   OrthoImageView.h

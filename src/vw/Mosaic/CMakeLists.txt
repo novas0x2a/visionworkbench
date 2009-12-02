@@ -3,6 +3,7 @@ set( LIB_NAME  ${MODULE_PREFIX}${MODULE_NAME} )
 
 set( HEADERS 
   CelestiaQuadTreeConfig.h
+  GigapanQuadTreeConfig.h
   GMapQuadTreeConfig.h
   ImageComposite.h
   KMLQuadTreeConfig.h
@@ -11,8 +12,10 @@ set( HEADERS
   ToastQuadTreeConfig.h
   UniviewQuadTreeConfig.h
 )
+
 set( SOURCES
   CelestiaQuadTreeConfig.cc
+  GigapanQuadTreeConfig.cc
   GMapQuadTreeConfig.cc
   KMLQuadTreeConfig.cc
   QuadTreeGenerator.cc

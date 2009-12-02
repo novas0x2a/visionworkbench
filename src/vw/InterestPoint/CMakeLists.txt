@@ -32,5 +32,5 @@ add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
 
 # for windows, *.lib goes in lib, *.dll goes in bin 
 #-----------------------------------------------------------
-install_targets( /lib RUNTIME_DIRECTORY /bin ${LIB_NAME} )
+install_library( ${LIB_NAME} )
 install_files  ( /include/${MODULE_PREFIX}/${MODULE_NAME} FILES ${HEADERS} )

@@ -3,11 +3,11 @@ set( LIB_NAME  ${MODULE_PREFIX}${MODULE_NAME} )
 
 if( LAPACK_FOUND )
   set( LAPACK_HEADERS 
-    LinearAlgebra.h 
-    LevenbergMarquardt.h 
     Geometry.h  
-    PoseEstimation.h 
     LapackExports.h
+    LevenbergMarquardt.h 
+    LinearAlgebra.h 
+    PoseEstimation.h 
   )
 endif( LAPACK_FOUND )
 
@@ -27,8 +27,8 @@ set( HEADERS
   ParticleSwarmOptimization.h
   Quaternion.h               
   RANSAC.h               
-  Statistics.h               
   SparseSkylineMatrix.h        
+  Statistics.h               
   Vector.h                   
 )                       
                         

@@ -9,19 +9,19 @@ if( LAPACK_FOUND )
     LinearPushbroomModel.h
     LinescanModel.h 
     OrbitingPushbroomModel.h 
-    PinholeModel.h 
     PinholeModelCalibrate.h 
+    PinholeModel.h 
   )
   
   set( BA_HEADERS
     BundleAdjust.h 
-    BundleAdjustModelBase.h
-    BundleAdjustReport.h 
     BundleAdjustmentBase.h
     BundleAdjustmentRef.h 
     BundleAdjustmentRobustRef.h
     BundleAdjustmentRobustSparse.h
     BundleAdjustmentSparse.h 
+    BundleAdjustModelBase.h
+    BundleAdjustReport.h 
   )
   
   set( BA_SOURCES
@@ -39,18 +39,18 @@ set( HEADERS
   CameraModel.h 
   CameraTransform.h 
   ControlNetwork.h
-  Exif.h 
   ExifData.h 
+  Exif.h 
 )
 
 set( SOURCES 
   ${BA_SOURCES}
-  PinholeModel.cc 
   CAHVModel.cc 
   CAHVORModel.cc
-	Exif.cc 
-  ExifData.cc 
   ControlNetwork.cc
+  Exif.cc 
+  ExifData.cc 
+  PinholeModel.cc 
 )
 
 link_libraries( ${Boost_IOSTREAMS_LIBRARY} )
