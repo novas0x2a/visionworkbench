@@ -15,14 +15,12 @@ set( HEADERS
   Localize.h
   Matcher.h
   MatrixIO.h
-  SURF.h
   VectorIO.h
   WeightedHistogram.h
 )
 
 set( SOURCES 
   InterestData.cc
-  SURF.cc
 )
 
 link_libraries( ${LAPACK_LIBRARIES} )

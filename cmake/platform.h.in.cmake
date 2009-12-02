@@ -28,6 +28,9 @@
     return log(x)/log(2.0); 
   }
   
+  inline int random() {
+    return rand();
+  }
   inline void srandom( unsigned int seed ) {
     srand(seed);
   }
