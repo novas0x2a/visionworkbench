@@ -28,7 +28,7 @@ namespace ip {
 
   /// Harris Corner interest operator
   class HarrisInterestOperator {
-#ifndef WIN32 // FIXME: this is illegal w/ MSVC and gcc -pedantic     
+#ifndef WIN32 // FIXME: this is illegal w/ MSVC and gcc -pedantic
     static const float DEFAULT_INTEREST_THRESHOLD = 0.03;
 #else
 #  ifndef DEFAULT_INTEREST_THRESHOLD
@@ -109,9 +109,9 @@ namespace ip {
   /// Log interest functor
   class LogInterestOperator {
     
-#ifndef WIN32 // FIXME: this is illegal w/ MSVC and gcc -pedantic     
+#ifndef WIN32 // FIXME: this is illegal w/ MSVC and gcc -pedantic
     static const float DEFAULT_INTEREST_THRESHOLD = 0.03;
-#endif 
+#endif
     double m_threshold;
     
   public:
