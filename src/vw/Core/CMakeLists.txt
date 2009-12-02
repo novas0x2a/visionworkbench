@@ -33,7 +33,10 @@ set( SOURCES
   Thread.cc
 )
 
-link_libraries( ${Boost_THREAD_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} )
+link_libraries( 
+  ${Boost_THREAD_LIBRARY} 
+  ${Boost_PROGRAM_OPTIONS_LIBRARY} 
+)
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}

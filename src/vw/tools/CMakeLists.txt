@@ -7,10 +7,12 @@ link_libraries(
   vwFileIO
   vwImage
   vwMath 
-  #${Boost_DATE_TIME_LIBRARY}
 )
 if( WIN32 )
-  link_libraries( wsock32 ) # needed for htonl
+  link_libraries( 
+    wsock32                    # needed for htonl
+    ${Boost_DATE_TIME_LIBRARY} # win32 boost wants to pull this in
+  )
 endif( WIN32 )
 
 ## Camera tools
