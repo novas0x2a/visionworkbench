@@ -17,6 +17,12 @@ set( SOURCES
   KML.cc 
 )
 
+link_libraries( 
+  ${Boost_FILESYSTEM_LIBRARY}
+  vwCore 
+  vwImage
+)
+
 set( IO_IMPLS 
   PNG
   JPEG

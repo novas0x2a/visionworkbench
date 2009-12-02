@@ -7,11 +7,7 @@ link_libraries(
   vwFileIO
   vwImage
   vwMath 
-  ${Boost_DATE_TIME_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  ${Boost_THREAD_LIBRARY}
+  #${Boost_DATE_TIME_LIBRARY}
 )
 if( WIN32 )
   link_libraries( wsock32 ) # needed for htonl

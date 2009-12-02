@@ -38,10 +38,10 @@ endif(VW_BUILD_TYPE)
 
 ## find the packages we depend on 
 ##################################################
-set( VW_BOOST_COMPONENTS filesystem program_options thread iostreams)
+set( VW_BOOST_COMPONENTS system filesystem program_options thread iostreams)
 if( WIN32 )
   # boost wants to pull these components in as well on win32
-  set( VW_BOOST_COMPONENTS ${VW_BOOST_COMPONENTS} system date_time )
+  set( VW_BOOST_COMPONENTS ${VW_BOOST_COMPONENTS} date_time )
 endif( WIN32 ) 
 # boost is a required dep; bail if it's not found
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )

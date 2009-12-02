@@ -19,6 +19,8 @@ set( SOURCES
   FrameTreeNode.cpp
 )
 
+link_libraries( vwCore )
+
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}
   ${SOURCES}

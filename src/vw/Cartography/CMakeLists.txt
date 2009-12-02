@@ -5,13 +5,15 @@ set( HEADERS
   CameraBBox.h
   Datum.h
   FileIO.h
-  GeoReferenceBase.h
   GeoReference.h
+  GeoReferenceBase.h
   GeoReferenceResourcePDS.h
   GeoTransform.h
   OrthoImageView.h
   PointImageManipulation.h
   Projection.h
+  SimplePointImageManipulation.h
+  ToastTransform.h
 )
 
 set( SOURCES 
@@ -20,6 +22,7 @@ set( SOURCES
   GeoReference.cc
   GeoReferenceResourcePDS.cc
   GeoTransform.cc
+  ToastTransform.cc
 )
 
 if( VW_HAVE_PKG_GDAL )
@@ -31,7 +34,7 @@ endif( VW_HAVE_PKG_GDAL )
 
 include_directories( ${PROJ4_INCLUDE_DIR} )
 
-link_libraries( ${PROJ4_LIBRARIES} )
+link_libraries( ${PROJ4_LIBRARIES} vwCore vwFileIO )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}

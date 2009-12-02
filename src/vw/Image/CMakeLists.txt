@@ -43,6 +43,11 @@ set( SOURCES
   PixelTypeInfo.cc
 )
 
+link_libraries( 
+  ${Boost_SYSTEM_LIBRARY}
+  vwCore 
+)
+
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}
   ${SOURCES}

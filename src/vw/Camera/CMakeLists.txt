@@ -12,6 +12,9 @@ if( LAPACK_FOUND )
     PinholeModelCalibrate.h 
     PinholeModel.h 
   )
+  set( LSM_SOURCES
+    PinholeModel.cc 
+  )
   
   set( BA_HEADERS
     BundleAdjust.h 
@@ -23,7 +26,6 @@ if( LAPACK_FOUND )
     BundleAdjustModelBase.h
     BundleAdjustReport.h 
   )
-  
   set( BA_SOURCES
     BundleAdjustReport.cc
   )
@@ -45,15 +47,15 @@ set( HEADERS
 
 set( SOURCES 
   ${BA_SOURCES}
+  ${LSM_SOURCES}
   CAHVModel.cc 
   CAHVORModel.cc
   ControlNetwork.cc
   Exif.cc 
   ExifData.cc 
-  PinholeModel.cc 
 )
 
-link_libraries( ${Boost_IOSTREAMS_LIBRARY} )
+link_libraries( ${Boost_IOSTREAMS_LIBRARY} vwCore )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}

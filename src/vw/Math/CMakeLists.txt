@@ -36,6 +36,8 @@ set( SOURCES
   MinimumSpanningTree.cc
 )
 
+link_libraries( vwCore )
+
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}
   ${SOURCES}
