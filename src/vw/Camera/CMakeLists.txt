@@ -14,6 +14,7 @@ if( LAPACK_FOUND )
   )
   set( LSM_SOURCES
     PinholeModel.cc 
+    LensDistortion.cc 
   )
   
   set( BA_HEADERS
@@ -29,6 +30,10 @@ if( LAPACK_FOUND )
   set( BA_SOURCES
     BundleAdjustReport.cc
   )
+  
+  add_definitions( ${LAPACK_DEFINITIONS} )
+  link_libraries(  ${LAPACK_LIBRARIES} )
+  
 endif( LAPACK_FOUND )
 
 #-----------------------------

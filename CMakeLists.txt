@@ -55,7 +55,7 @@ else(WIN32)
   find_package( ZLIB )
   find_package( PNG )
   find_package( TIFF )
-  #find_package( LAPACK ) useless, we need to write our own
+  find_package( LAPACK ) 
 endif(WIN32)
 
 find_package( OpenEXR )

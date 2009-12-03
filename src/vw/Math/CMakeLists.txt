@@ -9,6 +9,8 @@ if( LAPACK_FOUND )
     LinearAlgebra.h 
     PoseEstimation.h 
   )
+  add_definitions( ${LAPACK_DEFINITIONS} )
+  link_libraries(  ${LAPACK_LIBRARIES} )
 endif( LAPACK_FOUND )
 
 

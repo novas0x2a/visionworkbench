@@ -49,7 +49,7 @@ set( Image_DEFAULT         TRUE  )
 set( InterestPoint_DEFAULT ${LAPACK_FOUND} )
 set( Math_DEFAULT          TRUE  )
 set( Mosaic_DEFAULT        TRUE  )
-set( Stereo_DEFAULT        ${LAPACK_FOUND} )
+set( Stereo_DEFAULT        ${LAPACK_FOUND} ) 
 
 
 ## Create options (with roversw naming convention)
