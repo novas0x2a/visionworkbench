@@ -33,12 +33,12 @@ endif( VW_HAVE_PKG_CAMERA AND VW_HAVE_PKG_LAPACK )
 ########################################
 if( VW_HAVE_PKG_CARTOGRAPHY ) 
 
-  set( PROGS "" ) 
+  set( PROGS colormap slopemap ) 
   include_directories( ${PROJ4_INCLUDE_DIR} )
   
   if( VW_HAVE_PKG_GDAL )
   
-    set( PROGS ${PROGS} georef )
+    set( PROGS ${PROGS} georef hillshade)
     include_directories( ${GDAL_INCLUDE_DIR} )
   endif( VW_HAVE_PKG_GDAL )
   
@@ -57,7 +57,7 @@ endif( VW_HAVE_PKG_CARTOGRAPHY )
 ########################################
 if( VW_HAVE_PKG_INTERESTPOINT AND VW_HAVE_PKG_LAPACK )
 
-  set( PROGS ipfind learnpca )
+  set( PROGS ipalign ipmatch ipfind learnpca )
   #set( PROGS ipalign ipmatch ipfind learnpca )
   foreach( PROG ${PROGS} )
     add_executable( ${PROG} ${PROG}.cc )
@@ -84,7 +84,7 @@ endif( VW_HAVE_PKG_MOSAIC )
 ########################################
 if( VW_HAVE_PKG_MOSAIC AND VW_HAVE_PKG_CARTOGRAPHY AND VW_HAVE_PKG_GDAL )
 
-  set( PROGS image2qtree )
+  set( PROGS image2qtree image2toast )
   
   if( VW_HAVE_PKG_LAPACK )
     set( PROGS ${PROGS} geoblend )
