@@ -8,6 +8,7 @@
   #define _USE_MATH_DEFINES
   #include <windows.h>
   #include <math.h>
+  #include <stdlib.h>
 
   inline long lround(double val) {
     return (long)(val > 0 ? floor(val+0.5) : ceil(val-0.5));

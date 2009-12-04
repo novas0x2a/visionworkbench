@@ -32,8 +32,11 @@ endif( VW_HAVE_PKG_CAMERA AND VW_HAVE_PKG_LAPACK )
 ## Cartography tools
 ########################################
 if( VW_HAVE_PKG_CARTOGRAPHY ) 
-
-  set( PROGS colormap slopemap ) 
+  
+  # XXX FIXME : slopemap has ambiguous 'algorithm' symbol (clashes with boost::algorithm)
+  #set( PROGS colormap slopemap ) 
+  set( PROGS colormap ) 
+  
   include_directories( ${PROJ4_INCLUDE_DIR} )
   
   if( VW_HAVE_PKG_GDAL )
