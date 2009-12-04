@@ -19,6 +19,14 @@ set( SOURCES
   StereoModel.cc 
 )
 
+add_definitions( ${LAPACK_DEFINITIONS} )
+
+link_libraries(
+  ${LAPACK_LIBRARIES}
+  vwCore 
+  vwFileIO
+)
+
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}
   ${SOURCES}

@@ -4,6 +4,11 @@
 ##
 ######################################################
 
+# By default, install to $source_root/$platform_string
+# To override, set VW_INSTALL_PREFIX
+######################################################
+# set( VW_INSTALL_PREFIX /usr/local/irg/releases/VisionWorkbench-roversw )
+
 # IRG_PREFIX determines where to look for external 
 # dependencies. 
 ######################################################

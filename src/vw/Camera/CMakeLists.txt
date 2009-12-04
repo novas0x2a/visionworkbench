@@ -60,7 +60,11 @@ set( SOURCES
   ExifData.cc 
 )
 
-link_libraries( ${Boost_IOSTREAMS_LIBRARY} vwCore )
+link_libraries( 
+  ${Boost_IOSTREAMS_LIBRARY} 
+  vwCore 
+  vwFileIO 
+)
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}
