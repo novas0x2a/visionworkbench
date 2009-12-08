@@ -60,9 +60,10 @@ endif(WIN32)
 
 find_package( OpenEXR )
 find_package( GDAL )
-find_package( Proj4 )
 find_package( OpenGL )
-
+find_package( Proj4 )
+find_package( Protobuf )
+find_package( Qt4 )
 
 ## Add the in-source and out-of-source 
 ## include paths by default 
@@ -88,9 +89,6 @@ if( WIN32 )
   # macros are created and added to codebase
   set( VW_DEFAULT_LIB_TYPE STATIC )
   
-  # Disable retarded win32 'min' and 'max' macros
-  add_definitions( -DNOMINMAX )
-    
   # not sure why LIBCMT is being pulled in... this
   # cures the symptom, not the cause. Warrants 
   # further investigation
