@@ -1,10 +1,19 @@
 project(vw)
 cmake_minimum_required(VERSION 2.6)
 
+## if ../cmake/Modules exists, then use that and 
+## set default install dir to ../${ARCHITECTURE}
+## (used when pulled in as part of roversw)
+##################################################
+set(ROOTDIR ${PROJECT_SOURCE_DIR} ) 
+if( EXISTS ${PROJECT_SOURCE_DIR}/../cmake/Modules )
+  set(ROOTDIR ${PROJECT_SOURCE_DIR}/.. )
+endif( EXISTS ${PROJECT_SOURCE_DIR}/../cmake/Modules )
+
 ## add the irg_cmake modules to the head
 ## of our cmake module search path 
 ##################################################
-set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
+set( CMAKE_MODULE_PATH ${ROOTDIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
 
 include( UserOptions )
 include( SetArchitecture )
@@ -19,7 +28,7 @@ build_switch_init( ${PROJECT_UPPER} )
 ## path to "stick" in Windows.
 ##################################################
 if( NOT VW_INSTALL_PREFIX )
-  set( VW_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/${ARCHITECTURE}" CACHE PATH "VisionWorkbench install path")
+  set( VW_INSTALL_PREFIX "${ROOTDIR}/${ARCHITECTURE}" CACHE PATH "VisionWorkbench install path")
 endif( NOT VW_INSTALL_PREFIX )
 set( CMAKE_INSTALL_PREFIX ${VW_INSTALL_PREFIX} CACHE INTERNAL "" )
 

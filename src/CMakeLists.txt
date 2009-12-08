@@ -1,8 +1,7 @@
-## These are some hard coded strings I found in the autoconf
-## files... check if they're really necessary or not
-## and/or if we can easily pick the information up elsewhere
+## These are set in configure.ac in AC_INIT, parse that
+## file and grab them from there
 ##################################################
-set( VW_VERSION           "2.0_beta4_pre"                    )
+set( VW_VERSION           "2.0_beta5_pre"                    )
 set( VW_PACKAGE           "VisionWorkbench"                  )
 set( VW_PACKAGE_BUGREPORT "vision-workbench@lists.nasa.gov"  )
 set( VW_PACKAGE_NAME      "NASA ${VW_PACKAGE}"               )
