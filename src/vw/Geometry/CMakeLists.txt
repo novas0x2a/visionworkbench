@@ -16,7 +16,8 @@ set( HEADERS
                         
 set( SOURCES
   #SpatialTree.cc
-  FrameTreeNode.cpp
+  FrameTreeNode.cc
+  FrameStore.cc
 )
 
 link_libraries( vwCore )
