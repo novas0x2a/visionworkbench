@@ -23,6 +23,7 @@
 #ifndef __VW_CAMERA_EXIF_H__
 #define __VW_CAMERA_EXIF_H__
 
+#include <vw/Camera/CameraExport.h>
 #include <vw/Core/Exception.h>
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Camera/ExifData.h>
@@ -146,9 +147,9 @@ namespace camera {
   static const uint16 EXIF_SubjectDistanceRange        = 0xA40c;
 
   // Module Specific Exceptions
-  VW_DEFINE_EXCEPTION(ExifErr, vw::Exception);
+  VW_DEFINE_EXCEPTION(ExifErr, vw::Exception, VW_CAMERA_DECL);
 
-  class ExifView {
+  class VW_CAMERA_DECL ExifView {
     ExifData m_data;
     
   public:

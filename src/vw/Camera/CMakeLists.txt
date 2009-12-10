@@ -1,5 +1,4 @@
-set( MODULE_NAME Camera )
-set( LIB_NAME ${MODULE_PREFIX}${MODULE_NAME} )
+vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 #-----------------------------
 if( LAPACK_FOUND )
@@ -38,6 +37,7 @@ endif( LAPACK_FOUND )
 
 #-----------------------------
 set( HEADERS
+  ${EXPORT_H}
   ${BA_HEADERS}
   ${LSM_HEADERS} 
   BayerFilter.h

@@ -71,7 +71,7 @@ namespace stereo {
     }
 
     // disparity map down-sampling by two
-    ImageView<PixelMask<Vector2f> >
+    VW_STEREO_DECL ImageView<PixelMask<Vector2f> >
     subsample_disp_map_by_two(ImageView<PixelMask<Vector2f> > const& input_disp) const {
 
       // determine the new size of the image
@@ -118,7 +118,7 @@ namespace stereo {
     }
 
     // disparity map up-sampling by two
-    ImageView<PixelMask<Vector2f> >
+    VW_STEREO_DECL ImageView<PixelMask<Vector2f> >
     upsample_disp_map_by_two(ImageView<PixelMask<Vector2f> > const& input_disp,
                              int up_width, int up_height) const {
 

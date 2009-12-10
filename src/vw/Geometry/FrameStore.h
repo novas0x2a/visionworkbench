@@ -2,6 +2,8 @@
 #ifndef vw_geometry_FrameStore_h
 #define vw_geometry_FrameStore_h
 
+#include "GeometryExport.h"
+
 #include "FrameTreeNode.h"
 
 #include "vw/Core/Thread.h"
@@ -15,7 +17,7 @@ namespace geometry
   class FrameStore;
 
   //! Handle to a frame tree node stored in a frame-store.
-  class FrameHandle
+  class VW_GEOMETRY_DECL FrameHandle
   {
     FrameTreeNode * node;
   public:
@@ -41,7 +43,7 @@ namespace geometry
    * accidential use of FrameTreeNode nodes from the FrameStore
    * outside the class interface.
    */
-  class FrameStore {
+  class VW_GEOMETRY_DECL FrameStore {
 
   public:
     //! @{ Public data types.

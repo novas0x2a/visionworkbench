@@ -20,6 +20,7 @@
 
 #include <vector>
 
+#include <vw/Core/CoreExport.h>
 #include <vw/Core/Thread.h>
 
 namespace vw {
@@ -35,7 +36,7 @@ namespace vw {
   /// static vw_settings() function below, which returns a singleton
   /// instance of the system settings class.  You should _not_ need to
   /// create a settings object yourself!!!!
-  class Settings {
+  class VW_CORE_DECL Settings {
 
     // Vision Workbench Global Settings
     int m_default_num_threads;
@@ -124,7 +125,7 @@ namespace vw {
   ///
   ///     vw_settings().set_system_cache_size(2048)
   ///
-  Settings& vw_settings();
+  VW_CORE_DECL Settings& vw_settings();
 
 } // namespace vw
 

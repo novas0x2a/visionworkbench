@@ -18,7 +18,7 @@
 
 namespace vw {
 
-  class DiskImageResourceOpenEXR : public DiskImageResource {
+  class VW_FILEIO_DECL DiskImageResourceOpenEXR : public DiskImageResource {
   public:
 
     DiskImageResourceOpenEXR( std::string const& filename )

@@ -75,6 +75,7 @@
 
 //-- VW Configuration
 //------------------------------------------------
+#cmakedefine VW_HAS_DECLSPEC 1
 #cmakedefine VW_ENABLE_EXCEPTIONS 1
 #cmakedefine VW_ENABLE_BOUNDS_CHECK 1
 #cmakedefine VW_ENABLE_CONFIG_FILE 1

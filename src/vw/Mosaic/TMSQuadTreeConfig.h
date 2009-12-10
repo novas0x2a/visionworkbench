@@ -20,7 +20,7 @@ namespace mosaic {
 
   // This class is overkill, but is exists by analogy to others 
   // like it for consistency.
-  class TMSQuadTreeConfig {
+  class VW_MOSAIC_DECL TMSQuadTreeConfig {
   public:
     void configure( QuadTreeGenerator& qtree ) const;
 

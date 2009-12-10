@@ -93,6 +93,8 @@
 #ifndef __VW_CORE_EXCEPTION_H__
 #define __VW_CORE_EXCEPTION_H__
 
+#include <vw/Core/CoreExport.h>
+
 #include <string>
 #include <sstream>
 #include <ostream>
@@ -115,7 +117,7 @@
 namespace vw {
 
   /// The core exception class.  
-  struct Exception VW_IF_EXCEPTIONS( : public std::exception )
+  struct VW_CORE_DECL Exception VW_IF_EXCEPTIONS( : public std::exception )
   {
 
     /// The default constructor generates exceptions with empty error
@@ -199,8 +201,8 @@ namespace vw {
 
   /// Macro for quickly creating a hierarchy of exceptions, all of
   /// which share the same functionality.
-  #define VW_DEFINE_EXCEPTION(exception_type,base)                                          \
-  struct exception_type : public base {                                                     \
+  #define VW_DEFINE_EXCEPTION(exception_type,base,EXPORT_DECL)                              \
+  struct EXPORT_DECL exception_type : public base {                                         \
     exception_type() VW_IF_EXCEPTIONS(throw()) : base() {}                                  \
     exception_type(std::string const& s) VW_IF_EXCEPTIONS(throw()) : base(s) {}             \
     exception_type( exception_type const& e ) VW_IF_EXCEPTIONS(throw()) : base( e ) {}      \
@@ -224,39 +226,39 @@ namespace vw {
   }
 
   /// Invalid function argument exception
-  VW_DEFINE_EXCEPTION(ArgumentErr, Exception);
+  VW_DEFINE_EXCEPTION(ArgumentErr, Exception, VW_CORE_DECL);
 
   /// Incorrect program logic exception
-  VW_DEFINE_EXCEPTION(LogicErr, Exception);
+  VW_DEFINE_EXCEPTION(LogicErr, Exception, VW_CORE_DECL);
 
   /// Invalid program input exception
-  VW_DEFINE_EXCEPTION(InputErr, Exception);
+  VW_DEFINE_EXCEPTION(InputErr, Exception, VW_CORE_DECL);
 
   /// IO failure exception
-  VW_DEFINE_EXCEPTION(IOErr, Exception);
+  VW_DEFINE_EXCEPTION(IOErr, Exception, VW_CORE_DECL);
 
   /// Arithmetic failure exception
-  VW_DEFINE_EXCEPTION(MathErr, Exception);
+  VW_DEFINE_EXCEPTION(MathErr, Exception, VW_CORE_DECL);
 
   /// Unexpected null pointer exception
-  VW_DEFINE_EXCEPTION(NullPtrErr, Exception);
+  VW_DEFINE_EXCEPTION(NullPtrErr, Exception, VW_CORE_DECL);
 
   /// Invalid type exception
-  VW_DEFINE_EXCEPTION(TypeErr, Exception);
+  VW_DEFINE_EXCEPTION(TypeErr, Exception, VW_CORE_DECL);
 
   /// Not found exception
-  VW_DEFINE_EXCEPTION(NotFoundErr, Exception);
+  VW_DEFINE_EXCEPTION(NotFoundErr, Exception, VW_CORE_DECL);
 
   /// Unimplemented functionality exception
-  VW_DEFINE_EXCEPTION(NoImplErr, Exception);
+  VW_DEFINE_EXCEPTION(NoImplErr, Exception, VW_CORE_DECL);
 
   /// Operation aborted partway through (e.g. with ProgressCallback returning Abort)
-  VW_DEFINE_EXCEPTION(Aborted, Exception);
+  VW_DEFINE_EXCEPTION(Aborted, Exception, VW_CORE_DECL);
 
 
   /// The abstract exception handler base class, which users  
   /// can subclass to install an alternative exception handler.
-  class ExceptionHandler {
+  class VW_CORE_DECL ExceptionHandler {
   public:
     virtual void handle( Exception const& e ) const = 0;
     virtual ~ExceptionHandler() {}
@@ -269,12 +271,12 @@ namespace vw {
   /// at build time, in which case the default behavior is to 
   /// print the error message at the ErrorMessage level and 
   /// to call abort().
-  void set_exception_handler( ExceptionHandler const* eh );
+  VW_CORE_DECL void set_exception_handler( ExceptionHandler const* eh );
 
   /// Throws an exception via the Vision Workbench error 
   /// handling mechanism, which may not actually involvle 
   /// throwing an exception in the usual C++ sense.
-  void vw_throw( Exception const& e ) NORETURN;
+  VW_CORE_DECL void vw_throw( Exception const& e ) NORETURN;
 
 } // namespace vw
 

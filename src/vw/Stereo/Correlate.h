@@ -8,6 +8,7 @@
 #ifndef __VW_STEREO_CORRELATE_H__
 #define __VW_STEREO_CORRELATE_H__
 
+#include <vw/Stereo/StereoExport.h>
 #include <vw/Image/ImageView.h>
 #include <vw/Image/ImageViewBase.h>
 #include <vw/Stereo/DisparityMap.h>
@@ -33,7 +34,7 @@ namespace stereo {
   template <> struct CorrelatorAccumulatorType<vw::float32> { typedef vw::float32 type; };
   template <> struct CorrelatorAccumulatorType<vw::float64> { typedef vw::float64 type; };
 
-VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception);
+VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
 
   // Sign of the Laplacian of the Gaussian pre-processing
   //
@@ -275,9 +276,85 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception);
 
   /// This routine cross checks L2R and R2L, placing the final version
   /// of the disparity map in L2R.
-  void cross_corr_consistency_check(ImageView<PixelMask<Vector2f> > &L2R,
+  VW_STEREO_DECL void cross_corr_consistency_check(ImageView<PixelMask<Vector2f> > &L2R,
                                     ImageView<PixelMask<Vector2f> > const& R2L,
                                     double cross_corr_threshold, bool verbose = false);
+
+#ifdef VW_HAS_DECLSPEC
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d(
+                                               ImageView<PixelMask<Vector2f> > &disparity_map,
+                                               ImageView<uint8> const& left_image,
+                                               ImageView<uint8> const& right_image,
+                                               int kern_width, int kern_height,
+                                               bool do_horizontal_subpixel,
+                                               bool do_vertical_subpixel,
+                                               bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d(
+                                               ImageView<PixelMask<Vector2f> > &disparity_map,
+                                               ImageView<float> const& left_image,
+                                               ImageView<float> const& right_image,
+                                               int kern_width, int kern_height,
+                                               bool do_horizontal_subpixel,
+                                               bool do_vertical_subpixel,
+                                               bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_bayesian(
+                                                        ImageView<PixelMask<Vector2f> > &disparity_map,
+                                                        ImageView<uint8> const& left_image,
+                                                        ImageView<uint8> const& right_image,
+                                                        int kern_width, int kern_height,
+                                                        bool do_horizontal_subpixel,
+                                                        bool do_vertical_subpixel,
+                                                        bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_bayesian(
+                                                        ImageView<PixelMask<Vector2f> > &disparity_map,
+                                                        ImageView<float> const& left_image,
+                                                        ImageView<float> const& right_image,
+                                                        int kern_width, int kern_height,
+                                                        bool do_horizontal_subpixel,
+                                                        bool do_vertical_subpixel,
+                                                        bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_EM(
+                                                  ImageView<PixelMask<Vector2f> > &disparity_map,
+                                                  ImageView<uint8> const& left_image,
+                                                  ImageView<uint8> const& right_image,
+                                                  int kern_width, int kern_height,
+                                                  BBox2i region_of_interest,
+                                                  bool do_horizontal_subpixel,
+                                                  bool do_vertical_subpixel,
+                                                  bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_EM(
+                                                  ImageView<PixelMask<Vector2f> > &disparity_map,
+                                                  ImageView<float> const& left_image,
+                                                  ImageView<float> const& right_image,
+                                                  int kern_width, int kern_height,
+                                                  BBox2i region_of_interest,
+                                                  bool do_horizontal_subpixel,
+                                                  bool do_vertical_subpixel,
+                                                  bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_parabola(
+                                              ImageView<PixelMask<Vector2f> > &disparity_map,
+                                              ImageView<uint8> const& left_image,
+                                              ImageView<uint8> const& right_image,
+                                              int kern_width, int kern_height,
+                                              bool do_horizontal_subpixel,
+                                              bool do_vertical_subpixel,
+                                              bool verbose);
+
+  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_parabola(
+                                              ImageView<PixelMask<Vector2f> > &disparity_map,
+                                              ImageView<float> const& left_image,
+                                              ImageView<float> const& right_image,
+                                              int kern_width, int kern_height,
+                                              bool do_horizontal_subpixel,
+                                              bool do_vertical_subpixel,
+                                              bool verbose);
+#endif// VW_HAS_DECLSPEC
 
 }} // namespace vw::stereo
 

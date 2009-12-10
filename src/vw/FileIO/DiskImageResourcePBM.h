@@ -24,7 +24,7 @@
 
 namespace vw {
 
-  class DiskImageResourcePBM : public DiskImageResource { 
+  class VW_FILEIO_DECL DiskImageResourcePBM : public DiskImageResource { 
   public:
     
     // Standard DiskImageResource interface:

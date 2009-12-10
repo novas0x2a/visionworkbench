@@ -21,7 +21,7 @@ namespace mosaic {
 
   struct KMLQuadTreeConfigData;
 
-  class KMLQuadTreeConfig {
+  class VW_MOSAIC_DECL KMLQuadTreeConfig {
   public:
     KMLQuadTreeConfig();
 

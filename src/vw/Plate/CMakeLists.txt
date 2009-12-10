@@ -1,9 +1,9 @@
-set( MODULE_NAME Plate )
-set( LIB_NAME    ${MODULE_PREFIX}${MODULE_NAME} )
+vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 PROTOBUF_GENERATE_CPP( PROTO_SOURCES PROTO_HEADERS ProtoBuffers.proto )
 
 set( HEADERS 
+  ${EXPORT_H}
   ${PROTO_HEADERS}
   Amqp.h
   Blob.h 

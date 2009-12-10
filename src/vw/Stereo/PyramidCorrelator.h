@@ -17,7 +17,7 @@
 
 namespace vw {
 namespace stereo {
-  class PyramidCorrelator {
+  class VW_STEREO_DECL PyramidCorrelator {
 
     BBox2 m_initial_search_range;
     Vector2i m_kernel_size;

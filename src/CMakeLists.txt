@@ -105,6 +105,7 @@ check_include_files( unistd.h    VW_HAVE_UNISTD_H    )
 ## VW Configuration defines for config.h creation
 ##################################################
 set( VW_BOOST_VERSION       ${Boost_VERSION} )
+set( VW_HAS_DECLSPEC        ${WIN32} CACHE BOOL "Enable dllexport/dllimport macros")
 set( VW_ENABLE_EXCEPTIONS   1 CACHE STRING "Enable exceptions" )
 set( VW_ENABLE_BOUNDS_CHECK 0 CACHE STRING "Enable image bounds checking (SLOW!)" )
 set( VW_ENABLE_CONFIG_FILE  1 CACHE STRING "Enable ~/.vwrc support" )

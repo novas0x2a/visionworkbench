@@ -1,3 +1,12 @@
+macro( vw_setup_lib_vars MODULE_PREFIX MODULE_NAME )
+  set( LIB_NAME  ${MODULE_PREFIX}${MODULE_NAME} )
+  set( EXPORT_H  ${MODULE_NAME}Export.h )
+  string( TOUPPER  "VW_${MODULE_NAME}_BUILD_DLL" EXPORT_DEFINE )
+  if( ${VW_DEFAULT_LIB_TYPE} MATCHES "SHARED" )
+    add_definitions(-D${EXPORT_DEFINE})
+  endif( ${VW_DEFAULT_LIB_TYPE} MATCHES "SHARED" )
+endmacro( vw_setup_lib_vars )
+
 foreach( MODULE_NAME ${MODULE_NAMES} )
   if( VW_BUILD_${MODULE_NAME} )
     add_subdirectory( ${MODULE_NAME} )

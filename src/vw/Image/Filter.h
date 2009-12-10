@@ -21,6 +21,7 @@
 #include <boost/type_traits.hpp>
 #include <boost/mpl/logical.hpp>
 
+#include <vw/Image/ImageExport.h>
 #include <vw/Image/ImageView.h>
 #include <vw/Image/Convolution.h>
 
@@ -40,17 +41,17 @@ namespace vw {
 
   /// Computes a Gaussian kernel.
   /// Instantiated by default only for float and double kernels.
-  template <class KernelT>
+  template <class KernelT> 
   void generate_gaussian_kernel( std::vector<KernelT>& kernel, double sigma, int32 size=0 );
 
   /// Computes a differentiation kernel.
   /// Instantiated by default only for float and double kernels.
-  template <class KernelT>
+  template <class KernelT> 
   void generate_derivative_kernel( std::vector<KernelT>& kernel, int32 deriv, int32 size=0 );
 
   /// Computes an oriented Gaussian derivative kernel.
   /// Instantiated by default only for float and double kernels.
-  template <class KernelT>
+  template <class KernelT> 
   void generate_gaussian_derivative_kernel( ImageView<KernelT>& kernel, double x_sigma, int32 x_deriv, double y_sigma, int32 y_deriv, double angle, int32 size );
 
   /// Computes an oriented Gaussian derivative kernel.
@@ -62,7 +63,7 @@ namespace vw {
 
   /// Computes a Laplacian of Gaussian kernel.
   /// Instantiated by default only for float and double kernels.
-  template <class KernelT>
+  template <class KernelT> 
   void generate_laplacian_of_gaussian_kernel( ImageView<KernelT>& kernel, double sigma, int32 size );
 
   /// Computes a Laplacian of Gaussian kernel.
@@ -332,6 +333,20 @@ namespace vw {
   inline per_pixel_channel_filter( ImageViewBase<SrcT> const& src, FuncT const& func ) {
     return UnaryPerPixelView<SrcT,UnaryCompoundFunctor<FuncT, typename SrcT::pixel_type> >( src.impl(), UnaryCompoundFunctor<FuncT,typename SrcT::pixel_type>(func) );
   }
+
+#ifdef VW_HAS_DECLSPEC
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_gaussian_kernel<float>( std::vector<float>& kernel, double sigma, int32 size );
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_gaussian_kernel<double>( std::vector<double>& kernel, double sigma, int32 size );
+
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_derivative_kernel<float>( std::vector<float>& kernel, int32 deriv, int32 size );
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_derivative_kernel<double>( std::vector<double>& kernel, int32 deriv, int32 size );
+
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_gaussian_derivative_kernel<float>( ImageView<float>& kernel, double sigma1, int32 deriv1, double sigma2, int32 deriv2, double angle, int32 size );
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_gaussian_derivative_kernel<double>( ImageView<double>& kernel, double sigma1, int32 deriv1, double sigma2, int32 deriv2, double angle, int32 size );
+    
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_laplacian_of_gaussian_kernel<float>( ImageView<float>& kernel, double sigma, int32 size );
+  VW_IMAGE_EXTERN template VW_IMAGE_DECL void generate_laplacian_of_gaussian_kernel<double>( ImageView<double>& kernel, double sigma, int32 size );
+#endif // VW_HAS_DECLSPEC
 
 } // namespace vw
 

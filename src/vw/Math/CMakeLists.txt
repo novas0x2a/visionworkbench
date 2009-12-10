@@ -1,5 +1,4 @@
-set( MODULE    Math )
-set( LIB_NAME  ${MODULE_PREFIX}${MODULE_NAME} )
+vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 if( LAPACK_FOUND )
   set( LAPACK_HEADERS 
@@ -15,6 +14,7 @@ endif( LAPACK_FOUND )
 
 
 set( HEADERS 
+  ${EXPORT_H}
   ${LAPACK_HEADERS}
   BBox.h                     
   ConjugateGradient.h        
@@ -36,6 +36,7 @@ set( HEADERS
                         
 set( SOURCES
   MinimumSpanningTree.cc
+  RANSAC.cc
 )
 
 link_libraries( vwCore )

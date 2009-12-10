@@ -22,7 +22,7 @@
 
 namespace vw {
 
-  class DiskImageResourceJPEG : public DiskImageResource {
+  class VW_FILEIO_DECL DiskImageResourceJPEG : public DiskImageResource {
   public:
 
     DiskImageResourceJPEG( std::string const& filename,

@@ -2,6 +2,8 @@
 #ifndef vw_geometry_TreeNode_h
 #define vw_geometry_TreeNode_h
 
+#include "GeometryExport.h"
+
 #include <algorithm>
 #include <deque>
 #include <vector>
@@ -31,7 +33,7 @@ namespace geometry
    * method is available.
    */
   template<class DATA>
-  class TreeNode
+  class VW_GEOMETRY_DECL TreeNode
   {
   public:
     //! Vector of tree node pointers.

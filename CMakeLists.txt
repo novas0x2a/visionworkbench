@@ -98,6 +98,12 @@ if( WIN32 )
   # macros are created and added to codebase
   set( VW_DEFAULT_LIB_TYPE STATIC )
   
+  ## test shared libraries
+  #set( VW_DEFAULT_LIB_TYPE SHARED )
+  #add_definitions( -DVW_ALL_DYN_LINK )
+
+  link_directories( ${Boost_LIBRARY_DIRS} )
+
   # not sure why LIBCMT is being pulled in... this
   # cures the symptom, not the cause. Warrants 
   # further investigation

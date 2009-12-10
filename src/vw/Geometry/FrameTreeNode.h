@@ -2,6 +2,8 @@
 #ifndef vw_geometry_FrameTreeNode_h
 #define vw_geometry_FrameTreeNode_h
 
+#include "GeometryExport.h"
+
 #include "TreeNode.h"
 #include "Frame.h"
 
@@ -30,12 +32,12 @@ namespace geometry
    * and source->data().location() is returned.
    * @param source The source coordinate frame. If NULL, the identity-matrix is returned.
    */
-  Frame::Location get_location(FrameTreeNode const * wrt_frame, FrameTreeNode const * source);
+  VW_GEOMETRY_DECL Frame::Location get_location(FrameTreeNode const * wrt_frame, FrameTreeNode const * source);
   //! Get location of location, expressed relative to the source frame, relative to the wrt_frame (wrt = with respect to). 
-  Frame::Location get_location_of(FrameTreeNode const * wrt_frame, FrameTreeNode const * source,
+  VW_GEOMETRY_DECL Frame::Location get_location_of(FrameTreeNode const * wrt_frame, FrameTreeNode const * source,
 				  Frame::Location const& location);
   //! Set location of the frame to the location specified realtive to the source frame.
-  void set_location(FrameTreeNode * frame, FrameTreeNode const * source,
+  VW_GEOMETRY_DECL void set_location(FrameTreeNode * frame, FrameTreeNode const * source,
 		    Frame::Location const& location);
 
   //! Lookup frame by name
@@ -51,7 +53,7 @@ namespace geometry
    *    * "..": parent frame
    *    * "...": 0 to n frames down in breadth-first order
    */
-  FrameTreeNode * lookup(FrameTreeNode * start_frame, std::string const& path);
+  VW_GEOMETRY_DECL FrameTreeNode * lookup(FrameTreeNode * start_frame, std::string const& path);
 
   inline
   Frame::Location 
@@ -79,7 +81,7 @@ namespace geometry
    *
    * @WARNING: Don't merge trees of nodes from different allocation categories (heap vs stack).
    */
-  void merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree);
+  VW_GEOMETRY_DECL void merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree);
 }
 }
 

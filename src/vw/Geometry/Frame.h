@@ -2,6 +2,8 @@
 #ifndef vw_Math_Frame_h
 #define vw_Math_Frame_h
 
+#include "GeometryExport.h"
+
 #include "ATrans.h"
 
 #include <string>
@@ -16,7 +18,7 @@ namespace geometry
    * This class is mostly used in combination with the TreeNode 
    * class to create a frame tree.
    */
-  class Frame 
+  class VW_GEOMETRY_DECL Frame 
   {
   public:
     typedef vw::ATrans3 Location;

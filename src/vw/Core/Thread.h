@@ -47,6 +47,8 @@
 #ifndef __VW_CORE_THREAD_H__
 #define __VW_CORE_THREAD_H__
 
+#include <vw/Core/CoreExport.h>
+
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/xtime.hpp>
@@ -76,7 +78,7 @@ namespace vw {
   // --------------------------------------------------------------  
 
   // A simple mutual exclusion class.
-  class Mutex : private boost::mutex {
+  class VW_CORE_DECL Mutex : private boost::mutex {
 
     friend class Lock;
 
@@ -106,7 +108,7 @@ namespace vw {
   };
 
   // A simple mutual exclusion class.
-  class RecursiveMutex : private boost::recursive_mutex {
+  class VW_CORE_DECL RecursiveMutex : private boost::recursive_mutex {
 
     friend class Lock;
 
@@ -139,7 +141,7 @@ namespace vw {
   //                            CONDITION
   // --------------------------------------------------------------  
 
-  class Condition : private boost::condition
+  class VW_CORE_DECL Condition : private boost::condition
   {
     // Ensure non-copyable semantics
     Condition( Condition const& );
@@ -201,7 +203,7 @@ namespace vw {
   // function that has the operator() defined.  When the Thread object
   // is destroyed it will join the child thread if it has not already
   // terminated.
-  class Thread {
+  class VW_CORE_DECL Thread {
 
     boost::thread m_thread;
 

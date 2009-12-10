@@ -19,7 +19,7 @@
 namespace vw {
 namespace cartography {
 
-  BBox2 camera_bbox( GeoReference const& georef, 
+  VW_CARTOGRAPHY_DECL BBox2 camera_bbox( GeoReference const& georef, 
                      boost::shared_ptr<vw::camera::CameraModel> camera_model, 
                      int32 cols, int32 rows, float &scale );
 

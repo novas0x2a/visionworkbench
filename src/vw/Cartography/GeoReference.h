@@ -34,7 +34,7 @@ namespace cartography {
   // here simplies the rest of the GeoReference class considerably, and
   // reduces the possibility of a memory related bug. Implementation 
   // code for most of it is in GeoReference.cc.
-  class ProjContext {
+  class VW_CARTOGRAPHY_DECL ProjContext {
     // Declare PJconsts as PJ like done in projects.h; sadly, C++ has no
     // forward declaration of typedefs. So if Proj ever changes their
     // names, we get screwed over here and have to change this as well.
@@ -60,7 +60,7 @@ namespace cartography {
   /// The georeference class contains the mapping from image coordinates
   /// (u,v) to geospatial coordinates (typically lat/lon, or possibly
   /// meters in a UTM grid cell, etc.)
-  class GeoReference : public GeoReferenceBase {
+  class VW_CARTOGRAPHY_DECL GeoReference : public GeoReferenceBase {
     Matrix<double,3,3> m_transform, m_inv_transform, m_shifted_transform, m_inv_shifted_transform;
     std::string m_proj_projection_str, m_gml_str;
     boost::shared_ptr<ProjContext> m_proj_context;
@@ -185,7 +185,7 @@ namespace cartography {
   //
 
   /// Read georeferencing information from an image resource.
-  void read_georeference( GeoReference& georef, ImageResource const& resource );
+  VW_CARTOGRAPHY_DECL void read_georeference( GeoReference& georef, ImageResource const& resource );
 
   /// A convenience function to read georeferencing information from an image file.
   inline void read_georeference( GeoReference& georef, const std::string &filename ) {
@@ -205,7 +205,7 @@ namespace cartography {
 
   /// Write georeferencing information to an image resource.  You should 
   /// generally call this prior to writing image data to the resource.
-  void write_georeference( ImageResource& resource, GeoReference const& georef );
+  VW_CARTOGRAPHY_DECL void write_georeference( ImageResource& resource, GeoReference const& georef );
 
   /// A convenience function to write image data and its georeferencing information 
   /// to a file.
@@ -231,7 +231,7 @@ namespace cartography {
       /// unprojected pixel space corresponding to a standard global KML
       /// image quad-tree to coordinates in degrees lon/lat in WGS84, and 
       /// vice versa.
-      GeoReference get_output_georeference(int xresolution, int yresolution);
+      VW_CARTOGRAPHY_DECL GeoReference get_output_georeference(int xresolution, int yresolution);
 
       // Returns the number of pixels per planetary circumference, 
       // rounding up to a power of two.
@@ -249,7 +249,7 @@ namespace cartography {
     } // namespace: vw::cartography::output::kml
 
     namespace tms {
-      GeoReference get_output_georeference(int resolution);
+      VW_CARTOGRAPHY_DECL GeoReference get_output_georeference(int resolution);
 
       // Returns the number of pixels per planetary circumference, 
       // rounding up to a power of two.

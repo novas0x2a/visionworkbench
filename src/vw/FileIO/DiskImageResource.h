@@ -18,6 +18,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
+#include <vw/FileIO/FileIOExport.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/ProgressCallback.h>
 #include <vw/Image/ImageResource.h>
@@ -32,7 +33,7 @@ namespace vw {
   // *******************************************************************
 
   /// Base class from which specific file handlers derive.
-  class DiskImageResource : public ImageResource {
+  class VW_FILEIO_DECL DiskImageResource : public ImageResource {
   public:
 
     virtual ~DiskImageResource() {};

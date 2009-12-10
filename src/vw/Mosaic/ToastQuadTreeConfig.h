@@ -287,7 +287,7 @@ namespace mosaic {
     }
   };
 
-  class ToastQuadTreeConfig {
+  class VW_MOSAIC_DECL ToastQuadTreeConfig {
   public:
     template <class ImageT>
     void configure( QuadTreeGenerator& qtree, ImageT const& image ) const {

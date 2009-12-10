@@ -18,7 +18,7 @@
 namespace vw {
 namespace mosaic {
 
-  class UniviewQuadTreeConfig {
+  class VW_MOSAIC_DECL UniviewQuadTreeConfig {
   public:
     UniviewQuadTreeConfig( bool terrain = false ) : m_terrain( terrain ) {}
 

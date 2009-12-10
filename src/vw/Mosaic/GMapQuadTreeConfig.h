@@ -20,7 +20,7 @@ namespace mosaic {
 
   // This class is overkill, but is exists by analogy to others 
   // like it for consistency.
-  class GMapQuadTreeConfig {
+  class VW_MOSAIC_DECL GMapQuadTreeConfig {
   public:
     void configure( QuadTreeGenerator& qtree ) const;
 

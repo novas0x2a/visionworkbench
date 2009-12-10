@@ -1,7 +1,7 @@
-set( MODULE_NAME Stereo )
-set( LIB_NAME ${MODULE_PREFIX}${MODULE_NAME} )
+vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 set( HEADERS 
+  ${EXPORT_H}
   Correlate.h 
   CorrelatorView.h
   DisparityMap.h 

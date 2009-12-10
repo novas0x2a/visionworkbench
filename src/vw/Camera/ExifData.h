@@ -23,6 +23,7 @@
 #ifndef __VW_CAMERA_EXIF_DATA_H__
 #define __VW_CAMERA_EXIF_DATA_H__
 
+#include <vw/Camera/CameraExport.h>
 #include <vw/Core/FundamentalTypes.h>
 #include <map> 
 
@@ -41,7 +42,7 @@ namespace camera {
     } value;
   } ExifTagData;
 
-  class ExifData {
+  class VW_CAMERA_DECL ExifData {
   private:
     static const int NUM_FORMATS = 12;
     

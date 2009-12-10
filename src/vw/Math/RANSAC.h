@@ -43,13 +43,14 @@
 #ifndef __VW_MATH_RANSAC_H__
 #define __VW_MATH_RANSAC_H__
 
+#include <vw/Math/MathExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Core/Log.h>
 
 namespace vw { 
 namespace math {
 
-  VW_DEFINE_EXCEPTION(RANSACErr, Exception);
+  VW_DEFINE_EXCEPTION(RANSACErr, Exception, VW_MATH_DECL);
 
   /// This is a basic error metric can be used when the mathematical
   /// multiplication and subtraction operators are defined for p1, p2,

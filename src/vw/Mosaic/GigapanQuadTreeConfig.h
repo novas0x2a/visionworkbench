@@ -21,7 +21,7 @@ namespace mosaic {
 
   struct GigapanQuadTreeConfigData;
 
-  class GigapanQuadTreeConfig {
+  class VW_MOSAIC_DECL GigapanQuadTreeConfig {
     // The implementation is stored in a shared pointer so that it can 
     // be safely bound to the quadtree callbacks in colsures even if 
     // this config object goes out of scope.
