@@ -41,10 +41,10 @@ set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty )
 #     CACHE STRING 
 #     "Only allow release w/ debug info for now (to keep things simple)"
 #     FORCE )
-
-# Build type options:
-#   Debug Release RelWithDebInfo MinSizeRel
-######################################################
-set( VW_BUILD_TYPE RelWithDebInfo )
+#
+## Build type options:
+##   Debug Release RelWithDebInfo MinSizeRel
+#######################################################
+#set( VW_BUILD_TYPE RelWithDebInfo )
 
 

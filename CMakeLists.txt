@@ -94,20 +94,13 @@ endif( NOT Boost_USE_STATIC_LIBS )
 
 set( VW_DEFAULT_LIB_TYPE SHARED )
 if( WIN32 )
-  # build static under win32 until proper __declspec
-  # macros are created and added to codebase
-  set( VW_DEFAULT_LIB_TYPE STATIC )
-  
+  #set( VW_DEFAULT_LIB_TYPE STATIC )
   ## test shared libraries
-  #set( VW_DEFAULT_LIB_TYPE SHARED )
-  #add_definitions( -DVW_ALL_DYN_LINK )
+  set( VW_DEFAULT_LIB_TYPE SHARED )
+  add_definitions( -DVW_ALL_DYN_LINK )
 
   link_directories( ${Boost_LIBRARY_DIRS} )
-
-  # not sure why LIBCMT is being pulled in... this
-  # cures the symptom, not the cause. Warrants 
-  # further investigation
-  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT" )
+  
 endif( WIN32 )
 
 ## Directories
