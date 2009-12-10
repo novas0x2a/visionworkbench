@@ -42,6 +42,18 @@ namespace geometry
    * FrameHandle data structure. This indirection is done to avoid
    * accidential use of FrameTreeNode nodes from the FrameStore
    * outside the class interface.
+   *
+   * The frame trees are managed as heap-allocated structures. Error
+   * checking is done to ensure the integrity of the tree structure,
+   * as well as to prevent segementation faults on null-handles.  So
+   * for instance, when re-parenting a frame, we check that the frame
+   * is actually part of the FrameStore instance and when adding
+   * frames we check for uniqueness of the name within the set of
+   * siblings.  Error checking is omitted for methods, where passing
+   * erronous arguments does only affect the the return value, but not
+   * the integrity of the tree. For instance, is_root() does not check
+   * for membership of the frame to the FrameStore.
+
    */
   class VW_GEOMETRY_DECL FrameStore {
 
