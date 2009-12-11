@@ -28,7 +28,7 @@ add_definitions( -DBOOST_MEM_FN_ENABLE_CDECL )
 
 # Dependency locations
 ########################
-set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost_1_35_0 )
+set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost-1.41-vc80 )
 set( PROJ4_ROOT_DIR       ${VW_DEPS_ROOT}/proj4 )
 set( GDAL_ROOT_DIR        ${VW_DEPS_ROOT}/gdal151-vc8 )
 set( OPENEXR_ROOT_DIR     ${VW_DEPS_ROOT}/openexr-1.4.0-vs2005 )
