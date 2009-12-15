@@ -131,7 +131,7 @@ namespace geometry
      * The frame argument is required to be non-NULL, otherwise
      * @vw::LogicErr is thrown.
      */
-    std::string const& name(FrameHandle frame) const throw();
+    std::string const& name(FrameHandle frame) const;
 
     //! Get fully qualified name of frame, including path of all parent frames.
     /**
@@ -152,7 +152,7 @@ namespace geometry
      * The frame argument is required to be non-NULL, otherwise
      * @vw::LogicErr is thrown.
      */
-    FrameHandle parent(FrameHandle frame) const throw();
+    FrameHandle parent(FrameHandle frame) const;
 
     //! Get the list of direct children of a frame.
     /**
@@ -160,7 +160,7 @@ namespace geometry
      * The frame argument is required to be non-NULL, otherwise
      * @vw::LogicErr is thrown.
      */
-    FrameHandleVector children(FrameHandle frame = NULL_HANDLE) const throw();
+    FrameHandleVector children(FrameHandle frame = NULL_HANDLE) const;
 
     //! Lookup a frame by name.
     /** 
@@ -183,7 +183,7 @@ namespace geometry
      * If a non-NULL scope frame is passed as second parameter, the 
      * search is restricted to the sub-tree spawned by this frame.
      */
-    FrameHandle lookup(std::string const& name, FrameHandle scope = NULL);
+    FrameHandle lookup(std::string const& name, FrameHandle scope = NULL) const;
     
     //! Adding a frame to the frame store.
     /** 
@@ -233,6 +233,13 @@ namespace geometry
      */
     void set_parent(FrameHandle frame, FrameHandle parent);
 
+    //! Return root node of specified frame.
+    /** 
+     * The frame-store can hold multiple-root nodes.
+     * @param frame
+     */
+    FrameHandle root(FrameHandle frame) const;
+
     //! @{ Public predicates.
 
     //! Test if frame is a base frame.
@@ -240,14 +247,14 @@ namespace geometry
      * That is, does not have a parent.
      * @param frame
      */
-    bool is_root(FrameHandle frame);
+    bool is_root(FrameHandle frame) const;
 
     //! Test if @frame is somewhere up in the chain of parents of @pop.
     /** 
      * @param frame
      * @param pop
      */
-    bool is_ancestor_of(FrameHandle frame, FrameHandle pop);
+    bool is_ancestor_of(FrameHandle frame, FrameHandle pop) const;
 
     //! Test if the frame belongs to this FrameStore instance.    
     bool is_member(FrameHandle frame) const throw();
