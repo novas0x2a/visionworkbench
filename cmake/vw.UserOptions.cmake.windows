@@ -32,7 +32,7 @@ set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost-1.41-vc80 )
 set( PROJ4_ROOT_DIR       ${VW_DEPS_ROOT}/proj4 )
 set( GDAL_ROOT_DIR        ${VW_DEPS_ROOT}/gdal151-vc8 )
 set( OPENEXR_ROOT_DIR     ${VW_DEPS_ROOT}/openexr-1.4.0-vs2005 )
-set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/CLAPACK-3.1.1-VisualStudio )
+set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/clapack-3.2.1-vc80 )
 set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty ) 
 
 ## Allowed build types
