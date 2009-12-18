@@ -47,11 +47,7 @@ endif(VW_BUILD_TYPE)
 
 ## find the packages we depend on 
 ##################################################
-set( VW_BOOST_COMPONENTS system filesystem program_options thread iostreams)
-if( WIN32 )
-  # boost wants to pull these components in as well on win32
-  set( VW_BOOST_COMPONENTS ${VW_BOOST_COMPONENTS} date_time )
-endif( WIN32 ) 
+set( VW_BOOST_COMPONENTS system filesystem program_options thread iostreams date_time)
 # boost is a required dep; bail if it's not found
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )
 message(STATUS "VW will be built using Boost version ${Boost_VERSION}")
