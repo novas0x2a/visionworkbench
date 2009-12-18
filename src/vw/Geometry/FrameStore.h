@@ -82,6 +82,12 @@ namespace geometry
       //! Update axis denominator.
       enum ParameterType { X, Y, Z, Roll, Pitch, Yaw };
 
+      FrameUpdate(FrameHandle h, ParameterType a, double v) :
+	handle(h),
+	axis(a),
+	value(v)
+      {}
+
       //! Handle to the frame to update.
       FrameHandle handle;
       //! Axis to update 
