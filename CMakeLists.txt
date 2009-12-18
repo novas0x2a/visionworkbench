@@ -47,27 +47,33 @@ endif(VW_BUILD_TYPE)
 
 ## find the packages we depend on 
 ##################################################
-set( VW_BOOST_COMPONENTS system filesystem program_options thread iostreams date_time)
+set( VW_BOOST_COMPONENTS 
+        system 
+        filesystem 
+        program_options 
+        thread 
+        iostreams 
+        date_time
+   )
 # boost is a required dep; bail if it's not found
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )
 message(STATUS "VW will be built using Boost version ${Boost_VERSION}")
 
 if(WIN32) 
   find_package( OpenSceneGraph3rdParty )
-  find_package( win32LAPACK )
 else(WIN32)
   find_package( JPEG )
   find_package( ZLIB )
   find_package( PNG )
   find_package( TIFF )
-  find_package( LAPACK ) 
 endif(WIN32)
 
 find_package( OpenEXR )
+find_package( LAPACK ) 
 find_package( GDAL )
-find_package( OpenGL )
 find_package( Proj4 )
 #find_package( Protobuf ) # part of CMake 2.8, not in CMake 2.6
+find_package( OpenGL )
 find_package( Qt4 )
 
 ## Add the in-source and out-of-source 
@@ -77,7 +83,6 @@ include_directories(
   "${PROJECT_SOURCE_DIR}/src"
   "${PROJECT_BINARY_DIR}/src"
 )
-
 
 ## Add some other project defaults
 ##################################################
@@ -91,12 +96,11 @@ endif( NOT Boost_USE_STATIC_LIBS )
 set( VW_DEFAULT_LIB_TYPE SHARED )
 if( WIN32 )
   #set( VW_DEFAULT_LIB_TYPE STATIC )
-  ## test shared libraries
-  set( VW_DEFAULT_LIB_TYPE SHARED )
-  add_definitions( -DVW_ALL_DYN_LINK )
-
-  link_directories( ${Boost_LIBRARY_DIRS} )
   
+  set( VW_DEFAULT_LIB_TYPE SHARED )
+  add_definitions( -DVW_ALL_DYN_LINK ) # add this if building shared libs
+  
+  link_directories( ${Boost_LIBRARY_DIRS} )
 endif( WIN32 )
 
 ## Directories

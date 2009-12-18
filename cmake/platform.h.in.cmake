@@ -61,6 +61,7 @@
   /*
    * use macros for calls with varargs
    */
+  #if (_MSC_VER < 1500)  
   #ifndef snprintf
   #  define snprintf     _snprintf
   #endif
@@ -73,6 +74,7 @@
   #ifndef strncasecmp
   #  define strncasecmp  _strnicmp
   #endif
+  #endif // _MSC_VER
   
   /*
    * we shouln't actually need these if 
