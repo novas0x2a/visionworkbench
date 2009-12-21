@@ -189,7 +189,7 @@ namespace geometry
      * If a non-NULL scope frame is passed as second parameter, the 
      * search is restricted to the sub-tree spawned by this frame.
      */
-    FrameHandle lookup(std::string const& name, FrameHandle scope = NULL) const;
+    FrameHandle lookup(std::string const& name, FrameHandle scope = NULL_HANDLE) const;
     
     //! Adding a frame to the frame store.
     /** 
@@ -221,7 +221,7 @@ namespace geometry
      * The start-node for the merge operation. The startFrame is required to have the same
      * name as the node.
      */
-     FrameHandle merge_tree(FrameTreeNode * tree, FrameHandle startFrame);
+     void merge_tree(FrameTreeNode * tree, FrameHandle start_frame = NULL_HANDLE);
 
     //! Delete frame from tree.
     /** 
@@ -272,7 +272,7 @@ namespace geometry
      * @param frame
      * @param wrt_frame
      */
-    Location get_location(FrameHandle frame, FrameHandle source = NULL);
+    Location get_location(FrameHandle frame, FrameHandle source = NULL_HANDLE);
 
     /** Return the position @loc, which is expressed relative to @source 
      * with respect to @frame.

@@ -68,8 +68,14 @@ namespace geometry
   set_location(FrameTreeNode * frame, FrameTreeNode const * source,
 	       Frame::Location const& loc)
   {
-    if (frame != NULL)
-      frame->data().set_location(get_location_of(frame->parent(), source, loc));
+    if (frame != NULL) {
+      if (source == NULL) {
+	frame->data().set_location(loc);
+      }
+      else {
+	frame->data().set_location(get_location_of(frame->parent(), source, loc));
+      }
+    }
   }
 
   //! Merging source_tree into target tree.

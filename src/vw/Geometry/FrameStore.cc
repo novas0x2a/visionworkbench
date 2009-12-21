@@ -360,6 +360,12 @@ namespace geometry
   }
 
   void
+  FrameStore::merge_tree(FrameTreeNode * tree, FrameHandle start_frame)
+  {
+    
+  }
+
+  void
   FrameStore::update_frames(UpdateVector const& updates) 
   {
     UpdateVector::const_iterator first, last = updates.end();
