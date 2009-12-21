@@ -39,6 +39,8 @@ namespace geometry
     void set_name(std::string const& name) { m_name = name; }
     /// Access location field.
     Location const& location() const throw() { return m_loc; }
+    /// Mutable access to location field.
+    Location& location() throw() { return m_loc; }
     /// Set location field.
     void set_location(Location const& loc) { m_loc = loc; }
     /// @}

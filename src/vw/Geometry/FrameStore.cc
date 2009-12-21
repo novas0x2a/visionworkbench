@@ -1,6 +1,7 @@
 #include "FrameStore.h"
 
 #include "vw/Core/Exception.h"
+#include "vw/Math/EulerAngles.h"
 
 #include <algorithm>
 
@@ -9,6 +10,7 @@ namespace vw
 namespace geometry
 {
   using namespace std;
+  using namespace vw::math;
 
   FrameHandle const FrameStore::NULL_HANDLE = FrameHandle(NULL);
 
@@ -362,7 +364,25 @@ namespace geometry
   void
   FrameStore::merge_tree(FrameTreeNode * tree, FrameHandle start_frame)
   {
+    // if a start node is given for mergin
+    if (start_frame != NULL_HANDLE) {
+      vw::geometry::merge_frame_trees(start_frame.node, tree);
+      tree->recursive_delete();
+      return;
+    }
+
+    // try to match one of the root nodes and merge with it
+    FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
+    for (first = m_root_nodes.begin(); first != last; ++first) {
+      if ((*first)->data().name() == tree->data().name()) {
+	vw::geometry::merge_frame_trees(*first, tree);
+	tree->recursive_delete();
+	return;
+      }
+    }
     
+    // just add the tree to the forest
+    m_root_nodes.push_back(tree);
   }
 
   void
@@ -370,7 +390,27 @@ namespace geometry
   {
     UpdateVector::const_iterator first, last = updates.end();
     for (first = updates.begin(); first != last; ++first) {
-      // update !!!
+      unsigned index = first->axis;
+      vw::ATrans3& atrans = first->handle.node->data().location();
+      switch (first->axis) {
+      case FrameUpdate::X:
+      case FrameUpdate::Y:
+      case FrameUpdate::Z:
+	atrans.translation()[index] = first->value;
+	break;
+      case FrameUpdate::Roll:
+      case FrameUpdate::Pitch:
+      case FrameUpdate::Yaw:
+	{
+	  index -= 3;
+	  Vector3 rpy = 
+	    rotation_matrix_to_euler_xyz(atrans.rotation());
+	  rpy[index] = first->value;
+	  atrans.rotation() =
+	    euler_to_rotation_matrix(rpy[0], rpy[1], rpy[2], "XYZ");
+	}
+	break;
+      }
     }
   }
 
