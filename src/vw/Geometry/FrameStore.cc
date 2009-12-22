@@ -297,7 +297,18 @@ namespace geometry
     VW_ASSERT (frame.node != NULL,
 	       vw::LogicErr("NULL handle not allowed as parameter."));
     
-    return frame.node->parent() == NULL;
+    return frame.node->is_root();
+  }
+  
+  bool
+  FrameStore::is_leaf(FrameHandle frame) const
+  {
+    RecursiveMutex::Lock lock(m_mutex);
+
+    VW_ASSERT (frame.node != NULL,
+	       vw::LogicErr("NULL handle not allowed as parameter."));
+    
+    return frame.node->is_leaf();
   }
   
   bool

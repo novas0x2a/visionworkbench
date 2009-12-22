@@ -21,7 +21,7 @@ namespace geometry
   {
     FrameTreeNode * node;
   public:
-    FrameHandle() {}
+    FrameHandle() : node(0) {}
     FrameHandle(FrameTreeNode * n) : 
       node(n)
     {}
@@ -248,12 +248,21 @@ namespace geometry
 
     //! @{ Public predicates.
 
-    //! Test if frame is a base frame.
+    //! Test if frame is a root frame.
     /** 
      * That is, does not have a parent.
      * @param frame
      */
     bool is_root(FrameHandle frame) const;
+
+    //! @{ Public predicates.
+
+    //! Test if frame is a leaf frame.
+    /** 
+     * That is, does not have any children.
+     * @param frame
+     */
+    bool is_leaf(FrameHandle frame) const;
 
     //! Test if @frame is somewhere up in the chain of parents of @pop.
     /** 
