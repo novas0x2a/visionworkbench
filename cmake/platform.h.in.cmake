@@ -12,8 +12,19 @@
   #ifndef NOMINMAX
   #  define NOMINMAX
   #endif
+  // don't include gobs of win32 headers
+  #ifndef WIN32_LEAN_AND_MEAN
+  #  define WIN32_LEAN_AND_MEAN
+  #endif 
+  // prefer winsock2 
+  #ifndef _WINSOCKAPI_
+  #  define _WINSOCKAPI_
+  #endif 
+  // include useful things like M_PI
+  #ifndef _USE_MATH_DEFINES
+  #  define _USE_MATH_DEFINES
+  #endif 
   
-  #define _USE_MATH_DEFINES
   #include <windows.h>
   #include <math.h>
   #include <stdlib.h>

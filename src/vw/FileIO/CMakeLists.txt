@@ -56,6 +56,8 @@ if( WIN32 )
   # INT32 and VC++ doesn't like that one bit. This works
   # around the compile error, but with unknown results...
   add_definitions(-DXMD_H)
+  # add Ws2_32.lib for ntohl
+  link_libraries(Ws2_32)
 endif( WIN32 )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}

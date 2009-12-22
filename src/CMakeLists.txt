@@ -30,12 +30,6 @@ set( MODULE_NAMES
   Stereo
 )
 
-if(WIN32) 
-  set(GDAL_FOUND FALSE)
-  message(STATUS "Disabling GDAL on win32 because of winsock conflicts")
-endif(WIN32)
-
-
 ## Temp variables for build flag defaults. 
 ## These are used only to initialize the cache
 ##################################################
@@ -43,14 +37,16 @@ set( Camera_DEFAULT        TRUE  )
 set( Cartography_DEFAULT   ${PROJ4_FOUND} )
 set( Core_DEFAULT          TRUE  )
 set( FileIO_DEFAULT        TRUE  )
+set( GPU_DEFAULT           FALSE  )
 set( Geometry_DEFAULT      TRUE  )
+set( HDR_DEFAULT           FALSE  )
 set( Image_DEFAULT         TRUE  )
 set( InterestPoint_DEFAULT ${LAPACK_FOUND} )
 set( Math_DEFAULT          TRUE  )
 set( Mosaic_DEFAULT        TRUE  )
 set( Plate_DEFAULT         ${PROTOBUF_FOUND} )
+set( Python_DEFAULT        FALSE )
 set( Stereo_DEFAULT        ${LAPACK_FOUND} ) 
-
 
 ## Create options (with roversw naming convention)
 ## to turn modules on/off

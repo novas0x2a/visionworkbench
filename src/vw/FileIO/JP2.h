@@ -25,10 +25,13 @@
 #include <boost/algorithm/string.hpp>
 
 #include <vw/config.h>
+
+#include <vw/FileIO/FileIOExport.h>
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Math/Matrix.h>
 
 #if VW_BYTE_ORDER == VW_BIG_ENDIAN
+
 #define ntohll(a) (a)
 #define htonll(a) (a)
 #elif VW_BYTE_ORDER == VW_LITTLE_ENDIAN
@@ -241,7 +244,7 @@ namespace vw
 #endif
 
   // Generic jp2/jpx box
-  class JP2Box
+  class VW_FILEIO_DECL JP2Box
   {
   protected:
     uint32 TBox;
@@ -426,7 +429,7 @@ namespace vw
   };
 
   // Reader Requirements box
-  class JP2ReaderRequirementsBox : public JP2Box
+  class VW_FILEIO_DECL JP2ReaderRequirementsBox : public JP2Box
   {
   protected:
     uint16 NSF;
@@ -806,7 +809,7 @@ namespace vw
   };
 
   // Generic jp2/jpx data box (non-superbox)
-  class JP2DataBox : public JP2Box
+  class VW_FILEIO_DECL JP2DataBox : public JP2Box
   {
     //friend class JP2File;
 
@@ -958,7 +961,7 @@ namespace vw
   };
 
   // Generic jp2/jpx superbox
-  class JP2SuperBox : public JP2Box
+  class VW_FILEIO_DECL JP2SuperBox : public JP2Box
   {
     //friend class JP2File;
 
@@ -1154,7 +1157,7 @@ namespace vw
   };
 
   // jp2/jpx file
-  class JP2File : public JP2SuperBox
+  class VW_FILEIO_DECL JP2File : public JP2SuperBox
   {
   public:
     // Get number of bytes including the header
