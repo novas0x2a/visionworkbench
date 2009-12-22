@@ -1,15 +1,3 @@
-## These are set in configure.ac in AC_INIT, parse that
-## file and grab them from there
-##################################################
-set( VW_VERSION           "2.0_beta5_pre"                    )
-set( VW_PACKAGE           "VisionWorkbench"                  )
-set( VW_PACKAGE_BUGREPORT "vision-workbench@lists.nasa.gov"  )
-set( VW_PACKAGE_NAME      "NASA ${VW_PACKAGE}"               )
-set( VW_PACKAGE_STRING    "${VW_PACKAGE_NAME} ${VW_VERSION}" )
-set( VW_PACKAGE_TARNAME   "${VW_PACKAGE}"                    )
-set( VW_PACKAGE_VERSION   "${VW_VERSION}"                    )
-
-
 # Define the vw modules...
 ##################################################
 set( MODULE_PREFIX "vw" )

@@ -1,6 +1,22 @@
 project(vw)
 cmake_minimum_required(VERSION 2.6)
 
+## These are set in configure.ac in AC_INIT
+## We duplicate them here because it's easier
+## than trying to parse that file
+##################################################
+set( VW_VERSION_MAJOR     "2"         )
+set( VW_VERSION_MINOR     "0"         )
+set( VW_VERSION_PATCH     "beta5_pre" )
+set( VW_VERSION           "${VW_VERSION_MAJOR}.${VW_VERSION_MINOR}.${VW_VERSION_PATCH}")
+set( VW_PACKAGE           "VisionWorkbench"                  )
+set( VW_PACKAGE_BUGREPORT "vision-workbench@lists.nasa.gov"  )
+set( VW_PACKAGE_NAME      "NASA ${VW_PACKAGE}"               )
+set( VW_PACKAGE_STRING    "${VW_PACKAGE_NAME} ${VW_VERSION}" )
+set( VW_PACKAGE_TARNAME   "${VW_PACKAGE}"                    )
+set( VW_PACKAGE_VERSION   "${VW_VERSION}"                    )
+set( VW_PACKAGE_URL       "http://ti.arc.nasa.gov/project/nasa-vision-workbench/")
+
 ## if ../cmake/Modules exists, then use that and 
 ## set default install dir to ../${ARCHITECTURE}
 ## (used when pulled in as part of roversw)
@@ -110,6 +126,8 @@ add_subdirectory( src )
 ## install the export file
 ##################################################
 install_export()
+
+include( CMakePack.txt )
 
 ## print the build switches
 ##################################################
