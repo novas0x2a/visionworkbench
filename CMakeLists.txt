@@ -72,7 +72,7 @@ find_package( OpenEXR )
 find_package( LAPACK ) 
 find_package( GDAL )
 find_package( Proj4 )
-#find_package( Protobuf ) # part of CMake 2.8, not in CMake 2.6
+find_package( Protobuf ) 
 find_package( OpenGL )
 find_package( Qt4 )
 

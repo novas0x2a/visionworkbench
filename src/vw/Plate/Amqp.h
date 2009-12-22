@@ -12,6 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 
+#include <vw/Plate/PlateExport.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Core/Exception.h>
@@ -19,17 +20,17 @@
 namespace vw {
 namespace platefile {
 
-  VW_DEFINE_EXCEPTION(AMQPErr,       IOErr);
-  VW_DEFINE_EXCEPTION(AMQPTimeout,   AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPErr,       IOErr,   VW_PLATE_DECL);
+  VW_DEFINE_EXCEPTION(AMQPTimeout,   AMQPErr, VW_PLATE_DECL);
 
   // This exception denotes a potentially desynchronizing AMQP error. Safest
   // recovery mechanism is to recreate the connection.
-  VW_DEFINE_EXCEPTION(AMQPAssertion, AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPAssertion, AMQPErr, VW_PLATE_DECL);
 
   // Forward declaration
   struct AmqpConnectionState;
 
-  class AmqpConnection {
+  class VW_PLATE_DECL AmqpConnection {
     boost::shared_ptr<AmqpConnectionState> m_state;
     vw::Mutex m_mutex;
     vw::int64 m_timeout;

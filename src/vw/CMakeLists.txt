@@ -25,5 +25,5 @@ install_files( /include/${MODULE_PREFIX} FILES vw.h )
 ## add tools and gui dirs
 ##--------------------------------------------------
 add_build_switch( tools  BUILD_DEFAULT_TRUE )
-add_build_switch( gui    QT4_FOUND AND )
+add_build_switch( gui    QT4_FOUND AND VW_BUILD_Plate )
 
