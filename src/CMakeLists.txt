@@ -32,32 +32,35 @@ set( MODULE_NAMES
 
 ## Temp variables for build flag defaults. 
 ## These are used only to initialize the cache
+## The initial values use the same syntax as the 
+## add_build_* macros so complete boolean expressions
+## can be formed. 
+## So don't use "TRUE" use "BUILD_DEFAULT_TRUE"
+## and don't dereference FOO_FOUND variables
 ##################################################
-set( Camera_DEFAULT        TRUE  )
-set( Cartography_DEFAULT   ${PROJ4_FOUND} )
-set( Core_DEFAULT          TRUE  )
-set( FileIO_DEFAULT        TRUE  )
-set( GPU_DEFAULT           FALSE  )
-set( Geometry_DEFAULT      TRUE  )
-set( HDR_DEFAULT           FALSE  )
-set( Image_DEFAULT         TRUE  )
-set( InterestPoint_DEFAULT ${LAPACK_FOUND} )
-set( Math_DEFAULT          TRUE  )
-set( Mosaic_DEFAULT        TRUE  )
-set( Plate_DEFAULT         ${PROTOBUF_FOUND} AND NOT WIN32 )
-set( Python_DEFAULT        FALSE )
-set( Stereo_DEFAULT        ${LAPACK_FOUND} ) 
+set( Camera_DEFAULT        BUILD_DEFAULT_TRUE  )
+set( Cartography_DEFAULT   PROJ4_FOUND )
+set( Core_DEFAULT          BUILD_DEFAULT_TRUE  )
+set( FileIO_DEFAULT        BUILD_DEFAULT_TRUE  )
+set( Geometry_DEFAULT      BUILD_DEFAULT_TRUE  )
+set( HDR_DEFAULT           LAPACK_FOUND )
+set( Image_DEFAULT         BUILD_DEFAULT_TRUE  )
+set( InterestPoint_DEFAULT LAPACK_FOUND )
+set( Math_DEFAULT          BUILD_DEFAULT_TRUE  )
+set( Mosaic_DEFAULT        BUILD_DEFAULT_TRUE  )
+set( Plate_DEFAULT         PROTOBUF_FOUND AND BUILD_DEFAULT_FALSE ) # needs AMQP
+set( Stereo_DEFAULT        LAPACK_FOUND ) 
 
 ## Create options (with roversw naming convention)
 ## to turn modules on/off
 ##################################################
 foreach( MODULE_NAME ${MODULE_NAMES} )
-  # not necessary, but set "FALSE" instead of empty var
+  # initialize any modules we've missed with false
   if( NOT ${MODULE_NAME}_DEFAULT )
-    set( ${MODULE_NAME}_DEFAULT FALSE ) 
+    set( ${MODULE_NAME}_DEFAULT BUILD_DEFAULT_FALSE ) 
   endif( NOT ${MODULE_NAME}_DEFAULT )
   
-  add_build_var( ${MODULE_NAME} ${MODULE_NAME}_DEFAULT )
+  add_build_var( ${MODULE_NAME} ${${MODULE_NAME}_DEFAULT} )
 
   # set vw variables based on cache variables
   string(TOUPPER ${MODULE_NAME} UPPER_NAME)
