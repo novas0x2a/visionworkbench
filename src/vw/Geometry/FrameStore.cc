@@ -95,8 +95,22 @@ namespace geometry
   FrameHandle 
   FrameStore::lookup(std::string const& name, FrameHandle scope) const
   {
-    string searchName = name;
     
+    if (scope == NULL &&
+	!name.empty() && name[0] != '/') {
+      // try to explicitly resolve the root frames
+      string searchName = "/" + name;
+      FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
+      for (first = m_root_nodes.begin(); first != last; ++first) {
+	FrameTreeNode * node = ::vw::geometry::lookup(*first, searchName);
+
+	if (node != NULL)
+	  return FrameHandle(node);
+      }
+    }
+
+    string searchName = name;
+
     // if not explicitly state otherwise, we search for .../name 
     if (!name.empty() && name[0] != '/') {
       if (name.length() < 4 || name.substr(0, 4) != ".../") {
@@ -357,6 +371,17 @@ namespace geometry
 	       vw::LogicErr("NULL handle not allowed as parameter."));
 
     vw::geometry::set_location(frame.node, wrt_frame.node, update);
+  }
+
+  void 
+  FrameStore::set_location_rel(FrameHandle frame, Location const& update)
+  {
+    RecursiveMutex::Lock lock(m_mutex);
+
+    VW_ASSERT (frame.node != NULL,
+	       vw::LogicErr("NULL handle not allowed as parameter."));
+
+    vw::geometry::set_location(frame.node, NULL, update);
   }
 
   bool

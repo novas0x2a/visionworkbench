@@ -166,6 +166,13 @@ namespace geometry
      * or increase it's size beyond it's capacity.
      */
     void clone_vec(TreeNode * parent, std::vector<TreeNode>& nodes) const {
+
+      // protect against tree size overrun
+      if (nodes.capacity() <= nodes.size()) {
+	nodes.clear();
+	return;
+      }
+	
       nodes.push_back(TreeNode(parent, this->data()));
 
       TreeNode * node = &nodes.back();
@@ -189,7 +196,8 @@ namespace geometry
       unsigned int offsprings = 0;
       TreeNode * child = this->m_first_child;
       while(child != NULL) {
-	offsprings += child->num_offsprings();
+	offsprings += 1 + child->num_offsprings();
+	child = child->m_next_sibling;
       }
       return offsprings;
     }
