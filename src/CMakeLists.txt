@@ -1,21 +1,23 @@
 # Define the vw modules...
 ##################################################
 set( MODULE_PREFIX "vw" )
+
+#in rough dependency order
 set( MODULE_NAMES
+  Core
+  Math
+  Geometry
+  Image
+  FileIO
+  InterestPoint
+  Mosaic
   Camera
   Cartography
-  Core
-  FileIO
-  Geometry
-  GPU
+  Stereo
   HDR
-  Image
-  InterestPoint
-  Math
-  Mosaic
+  GPU
   Plate
   Python
-  Stereo
 )
 
 ## Temp variables for build flag defaults. 
@@ -26,18 +28,18 @@ set( MODULE_NAMES
 ## So don't use "TRUE" use "BUILD_DEFAULT_TRUE"
 ## and don't dereference FOO_FOUND variables
 ##################################################
-set( Camera_DEFAULT        BUILD_DEFAULT_TRUE  )
-set( Cartography_DEFAULT   PROJ4_FOUND )
-set( Core_DEFAULT          BUILD_DEFAULT_TRUE  )
-set( FileIO_DEFAULT        BUILD_DEFAULT_TRUE  )
-set( Geometry_DEFAULT      BUILD_DEFAULT_TRUE  )
-set( HDR_DEFAULT           LAPACK_FOUND )
-set( Image_DEFAULT         BUILD_DEFAULT_TRUE  )
-set( InterestPoint_DEFAULT LAPACK_FOUND )
-set( Math_DEFAULT          BUILD_DEFAULT_TRUE  )
-set( Mosaic_DEFAULT        BUILD_DEFAULT_TRUE  )
+set( Core_DEFAULT          Boost_FOUND  )
+set( Math_DEFAULT          VW_BUILD_Core )
+set( Geometry_DEFAULT      VW_BUILD_Math )
+set( Image_DEFAULT         VW_BUILD_Math  )
+set( FileIO_DEFAULT        VW_BUILD_Image  )
+set( InterestPoint_DEFAULT VW_BUILD_FileIO AND LAPACK_FOUND )
+set( Mosaic_DEFAULT        VW_BUILD_FileIO  )
+set( Camera_DEFAULT        VW_BUILD_FileIO  )
+set( Cartography_DEFAULT   VW_BUILD_Camera AND PROJ4_FOUND )
+set( Stereo_DEFAULT        VW_BUILD_Camera AND LAPACK_FOUND ) 
+set( HDR_DEFAULT           VW_BUILD_Camera AND LAPACK_FOUND )
 set( Plate_DEFAULT         PROTOBUF_FOUND AND BUILD_DEFAULT_FALSE ) # needs AMQP
-set( Stereo_DEFAULT        LAPACK_FOUND ) 
 
 ## Create options (with roversw naming convention)
 ## to turn modules on/off

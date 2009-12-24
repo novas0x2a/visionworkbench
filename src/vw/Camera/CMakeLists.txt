@@ -62,7 +62,6 @@ set( SOURCES
 
 link_libraries( 
   ${Boost_IOSTREAMS_LIBRARY} 
-  vwCore 
   vwFileIO 
 )
 

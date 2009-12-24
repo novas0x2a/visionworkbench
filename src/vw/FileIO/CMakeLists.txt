@@ -19,7 +19,6 @@ set( SOURCES
 
 link_libraries( 
   ${Boost_FILESYSTEM_LIBRARY}
-  vwCore 
   vwImage
 )
 

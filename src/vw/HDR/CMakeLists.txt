@@ -15,7 +15,6 @@ set( SOURCES
 )
 
 link_libraries( 
-  vwMath
   vwCamera
 )
 

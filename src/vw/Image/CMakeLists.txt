@@ -45,7 +45,7 @@ set( SOURCES
 
 link_libraries( 
   ${Boost_SYSTEM_LIBRARY}
-  vwCore 
+  vwMath 
 )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}

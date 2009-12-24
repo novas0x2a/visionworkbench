@@ -34,7 +34,7 @@ endif( VW_HAVE_PKG_GDAL )
 
 include_directories( ${PROJ4_INCLUDE_DIR} )
 
-link_libraries( ${PROJ4_LIBRARIES} vwCore vwFileIO )
+link_libraries( ${PROJ4_LIBRARIES} vwCamera )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}

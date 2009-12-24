@@ -117,5 +117,7 @@ endif( VW_HAVE_PKG_STEREO AND VW_HAVE_PKG_LAPACK )
 
 ## install the lot
 ########################################
-install_targets( /bin ${TOOLS} )
+if( TOOLS )
+  install_targets( /bin ${TOOLS} )
+endif( TOOLS )
 

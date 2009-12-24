@@ -20,7 +20,7 @@ set( SOURCES
   FrameStore.cc
 )
 
-link_libraries( vwCore )
+link_libraries( vwMath )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${HEADERS}
