@@ -15,16 +15,6 @@ foreach( MODULE_NAME ${MODULE_NAMES} )
   if( VW_BUILD_${MODULE_NAME} )
     add_subdirectory( ${MODULE_NAME} )
     install_files( /include/${MODULE_PREFIX} FILES ${MODULE_NAME}.h )
-    
-    # XXX need to inquire what is up with 
-    # XXX version numbers. VW version is 2.0.beta5_pre,
-    # XXX but soversion is 4
-    set_target_properties( ${MODULE_PREFIX}${MODULE_NAME}
-      PROPERTIES
-        VERSION 4.0.0 # VW_VERSION??
-        SOVERSION 4
-    )
-    
   endif( VW_BUILD_${MODULE_NAME} )
 endforeach( MODULE_NAME )
 

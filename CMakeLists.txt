@@ -1,21 +1,25 @@
 project(vw)
 cmake_minimum_required(VERSION 2.6)
 
-## These are set in configure.ac in AC_INIT
+## Many of these are set in configure.ac in AC_INIT
 ## We duplicate them here because it's easier
 ## than trying to parse that file
 ##################################################
-set( VW_VERSION_MAJOR     "2"         )
-set( VW_VERSION_MINOR     "0"         )
-set( VW_VERSION_PATCH     "beta5_pre" )
-set( VW_VERSION           "${VW_VERSION_MAJOR}.${VW_VERSION_MINOR}.${VW_VERSION_PATCH}")
-set( VW_PACKAGE           "VisionWorkbench"                  )
-set( VW_PACKAGE_BUGREPORT "vision-workbench@lists.nasa.gov"  )
-set( VW_PACKAGE_NAME      "NASA ${VW_PACKAGE}"               )
-set( VW_PACKAGE_STRING    "${VW_PACKAGE_NAME} ${VW_VERSION}" )
-set( VW_PACKAGE_TARNAME   "${VW_PACKAGE}"                    )
-set( VW_PACKAGE_VERSION   "${VW_VERSION}"                    )
-set( VW_PACKAGE_URL       "http://ti.arc.nasa.gov/project/nasa-vision-workbench/")
+set( VW_VERSION_MAJOR      2         )
+set( VW_VERSION_MINOR      0         )
+set( VW_VERSION_PATCH      beta5_pre )
+set( VW_VERSION            "${VW_VERSION_MAJOR}.${VW_VERSION_MINOR}.${VW_VERSION_PATCH}")
+set( VW_PACKAGE            "VisionWorkbench"                  )
+set( VW_PACKAGE_BUGREPORT  "vision-workbench@lists.nasa.gov"  )
+set( VW_PACKAGE_NAME       "NASA ${VW_PACKAGE}"               )
+set( VW_PACKAGE_STRING     "${VW_PACKAGE_NAME} ${VW_VERSION}" )
+set( VW_PACKAGE_TARNAME    "${VW_PACKAGE}"                    )
+set( VW_PACKAGE_VERSION    "${VW_VERSION}"                    )
+set( VW_PACKAGE_URL        "http://ti.arc.nasa.gov/project/nasa-vision-workbench/")
+set( VW_SOVERSION_MAJOR    4 ) # epoch
+set( VW_SOVERSION_MINOR    0 ) # revision
+set( VW_SOVERSION_PATCH    0 ) # age
+set( VW_SOVERSION          "${VW_SOVERSION_MAJOR}.${VW_SOVERSION_MINOR}.${VW_SOVERSION_PATCH}" ) 
 
 ## if ../cmake/Modules exists, then use that and 
 ## set default install dir to ../${ARCHITECTURE}
@@ -75,15 +79,11 @@ set( VW_BOOST_COMPONENTS
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )
 message(STATUS "VW will be built using Boost version ${Boost_VERSION}")
 
-if(WIN32) 
-  find_package( OpenSceneGraph3rdParty )
-else(WIN32)
-  find_package( JPEG )
-  find_package( ZLIB )
-  find_package( PNG )
-  find_package( TIFF )
-endif(WIN32)
-
+find_package( JPEG )
+find_package( ZLIB )
+find_package( PNG )
+find_package( TIFF )
+find_package( OpenSceneGraph3rdParty ) # for jpeg, zlib, png & tiff on win32
 find_package( OpenEXR )
 find_package( LAPACK ) 
 find_package( GDAL )
@@ -100,7 +100,7 @@ include_directories(
   "${PROJECT_BINARY_DIR}/src"
 )
 
-## Add some other project defaults
+## Boost setup
 ##################################################
 include_directories( ${Boost_INCLUDE_DIR} )
 if( NOT Boost_USE_STATIC_LIBS )
@@ -109,6 +109,9 @@ if( NOT Boost_USE_STATIC_LIBS )
   add_definitions( -DBOOST_ALL_DYN_LINK )
 endif( NOT Boost_USE_STATIC_LIBS )
 
+
+## Add some other project defaults
+##################################################
 set( VW_DEFAULT_LIB_TYPE SHARED )
 if( WIN32 )
   #set( VW_DEFAULT_LIB_TYPE STATIC )
@@ -127,6 +130,8 @@ add_subdirectory( src )
 ##################################################
 install_export()
 
+## test what CPack can do
+##################################################
 include( CMakePack.txt )
 
 ## print the build switches
