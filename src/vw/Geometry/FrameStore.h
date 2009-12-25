@@ -276,12 +276,12 @@ namespace geometry
 
     //! @}
 
-    /** Return the location of @source with respect to @frame.
+    /** Return the location of @source expressed relative to @frame.
      * 
      * @param frame
      * @param wrt_frame
      */
-    Location get_location(FrameHandle frame, FrameHandle source = NULL_HANDLE);
+    Location get_location(FrameHandle frame, FrameHandle source);
 
     /** Return the position @loc, which is expressed relative to @source 
      * with respect to @frame.

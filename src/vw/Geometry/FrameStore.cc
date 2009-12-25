@@ -352,14 +352,10 @@ namespace geometry
   {
     RecursiveMutex::Lock lock(m_mutex);
     
-    FrameTreeNode * src = source.node;
-    if (src == NULL)
-      src = frame.node->parent();
-    
-    VW_ASSERT (frame.node != NULL, 
+    VW_ASSERT (source.node != NULL, 
 	       vw::LogicErr("NULL handle not allowed as frame parameter."));
-    
-    return vw::geometry::get_location(frame.node, src);
+       
+    return vw::geometry::get_location(frame.node, source.node);
   }
   
   void 
