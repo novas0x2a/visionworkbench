@@ -37,24 +37,27 @@
     inline float nearbyintf(float val) {
       return (val > 0 ? floorf(val+0.5f) : ceilf(val-0.5f));
     }
-    inline float roundf(float val) {
-  	  return nearbyintf(val);
-    }
     inline double nearbyint(double val) {
       return (val > 0 ? floor(val+0.5) : ceil(val-0.5));
     }
     inline double round(double val) {
       return nearbyint(val);
     }
+    inline float roundf(float val){
+      return nearbyintf(val);
+    }
     inline double log2(double x) {
       return log(x)/log(2.0); 
     }
-
     inline int random() {
       return rand();
     }
     inline void srandom( unsigned int seed ) {
       srand(seed);
+    }
+    inline double drand48() {
+      // NOT a comparable rand function, but it builds
+      return rand()/(double)RAND_MAX;
     }
 
     //inline double hypot (double a, double b) { return _hypot(a,b); }
@@ -99,9 +102,6 @@
   #  define M_PI_2 1.570796326794896558
   #endif//M_PI_2
   
-  #include <boost/cstdint.hpp>
-  using namespace boost;
-
   #endif // WIN32_WORKAROUNDS_INCLUDED
 #endif// _WIN32
 

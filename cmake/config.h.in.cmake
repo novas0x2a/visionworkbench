@@ -101,6 +101,10 @@
 #else 
 // include a helper header on win32
 #  include "platform.h"
+
+#  include <boost/cstdint.hpp>
+   using namespace boost;
+   
 // XXX error preprocessor directive isn't understood by MSVC...
 // XXX find a way to do the boost version check
 #endif
