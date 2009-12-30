@@ -204,11 +204,11 @@ namespace geometry
      * @param node
      * The FrameStore takes ownership of the passed sub-tree.
      * The tree must not be member of a FrameStore already. Otherwise,
-     * vw::LogicErr is throwsn
+     * vw::LogicErr is thrown.
      *
      * @param parent
      */
-     FrameHandle add(FrameTreeNode * node, FrameHandle parent);
+     void add(FrameTreeNode * node, FrameHandle parent);
 
     //! Merging a tree with the the frame store
     /** 
@@ -315,6 +315,10 @@ namespace geometry
     static FrameHandle const NULL_HANDLE;
 
   protected:
+    void assert_unique(std::string const& name, FrameTreeNode * parent) const;
+    //! Test if the frame belongs to this FrameStore instance.    
+    bool is_member(FrameTreeNode * node) const throw();
+
     //! Vector of FrameTreeNode pointers.
     typedef std::vector<FrameTreeNode *> FrameTreeNodeVector;
 

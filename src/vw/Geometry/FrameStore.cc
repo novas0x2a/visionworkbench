@@ -4,6 +4,7 @@
 #include "vw/Math/EulerAngles.h"
 
 #include <algorithm>
+#include <memory>
 
 namespace vw
 {
@@ -225,39 +226,42 @@ namespace geometry
   FrameHandle
   FrameStore::add(std::string const& name, FrameHandle parent, Location const& p)
   {
-    VW_ASSERT (name.length() != 0,
-	       vw::LogicErr("None empty name required for frame."));
-
-    RecursiveMutex::Lock lock(m_mutex);
-
-    VW_ASSERT (parent.node == NULL || is_member(parent),
-	       vw::LogicErr("None member node not allowed as parent."));
-    
-
-    // check frame name uniqueness
-    if (parent.node == NULL) {
-      FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
-      for (first = m_root_nodes.begin(); first != last; ++ first) {
-	VW_ASSERT((*first)->data().name() != name,
-		  vw::LogicErr("Name not unique as root node."));
-      }
-    }
-    else {
-      FrameTreeNodeVector children = parent.node->children();
-      FrameTreeNodeVector::const_iterator first, last = children.end();
-      for (first = children.begin(); first != last; ++ first) {
-	VW_ASSERT((*first)->data().name() != name,
-		  vw::LogicErr("Name not unique as root node."));
-      }
-    }
-    
-    FrameTreeNode * node = new FrameTreeNode(parent.node, Frame(name, p));
-    if (parent.node == NULL)
-      m_root_nodes.push_back(node);
+    // create new node
+    FrameTreeNode * node = new FrameTreeNode(NULL, Frame(name, p));
+    // add node
+    add(node, parent);
 
     return node;
   }
   
+  void
+  FrameStore::add(FrameTreeNode * node, FrameHandle parent)
+  {
+    RecursiveMutex::Lock lock(m_mutex);
+
+    VW_ASSERT (node != NULL,
+		 vw::LogicErr("NULL pointer not allowed as node parameter."));
+    VW_ASSERT (!is_member(node),
+		 vw::LogicErr("Node already member of FrameStore instance."));
+
+    auto_ptr<FrameTreeNode> n(node);
+
+    VW_ASSERT (node->data().name().length() != 0,
+	       vw::LogicErr("None empty frame name required."));
+    VW_ASSERT (parent.node == NULL || is_member(parent),
+	       vw::LogicErr("None member node not allowed as parent."));
+    
+    // check frame name uniqueness
+    assert_unique(node->data().name(), parent.node);
+      
+    if (parent.node == NULL)
+      m_root_nodes.push_back(node);
+      
+    node->set_parent(parent.node);
+
+    n.release();
+  }
+ 
   void
   FrameStore::del(FrameHandle frame, bool recursive)
   {
@@ -299,6 +303,11 @@ namespace geometry
 	       vw::LogicErr("NULL handle not allowed as frame parameter."));
     VW_ASSERT (parent.node == NULL || is_member(parent),
 	       vw::LogicErr("None member node not allowed as parent."));
+
+    if (frame.node->parent() == parent.node)
+      return;
+
+    assert_unique(frame.node->data().name(), parent.node);
 
     frame.node->set_parent(parent.node);
   }
@@ -381,16 +390,10 @@ namespace geometry
   }
 
   bool
-  FrameStore::is_member(FrameHandle frame) const throw() {
-    if (frame.node != NULL) {
-      FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
-      for (first = m_root_nodes.begin(); first != last; ++first) {
-	if ((*first) == frame.node ||
-	    (*first)->is_ancestor_of(frame.node))
-	  return true;
-      }
-    }
-    return false;
+  FrameStore::is_member(FrameHandle frame) const throw() 
+  {
+    RecursiveMutex::Lock lock(m_mutex);
+    return is_member(frame.node);
   }
 
   void
@@ -443,6 +446,48 @@ namespace geometry
 	}
 	break;
       }
+    }
+  }
+
+  bool
+  FrameStore::is_member(FrameTreeNode * node) const throw() {
+    if (node != NULL) {
+      FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
+      for (first = m_root_nodes.begin(); first != last; ++first) {
+	if ((*first) == node ||
+	    (*first)->is_ancestor_of(node))
+	  return true;
+      }
+    }
+    return false;
+  }
+
+  // check name uniqueness
+  void
+  FrameStore::assert_unique(std::string const& name, FrameTreeNode * parent) const
+  {
+    char const * const childError = "Name not unique as child node.";
+    char const * const rootError = "Name not unique as root node.";
+    char const * err = NULL;
+
+    FrameTreeNodeVector children;
+    FrameTreeNodeVector::const_iterator first, last;
+
+    if (parent == NULL) {
+      first = m_root_nodes.begin();
+      last = m_root_nodes.end();
+      err = rootError;
+    }
+    else {
+      children = parent->children();
+      first = children.begin();
+      last = children.end();
+      err = childError;
+    }
+    
+    for (; first != last; ++ first) {
+      if ((*first)->data().name() == name)
+	vw_throw(vw::LogicErr(err));
     }
   }
 
