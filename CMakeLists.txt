@@ -138,3 +138,19 @@ include( CMakePack.txt )
 ##################################################
 print_build_switches()
 
+
+
+#------------------------------------
+include( GatherDlls )
+gather_dlls( 
+  ${Boost_LIBRARIES} 
+  ${JPEG_LIBRARIES} 
+  ${ZLIB_LIBRARIES}
+  ${PNG_LIBRARIES}
+  ${TIFF_LIBRARIES}
+  ${OPENEXR_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  ${GDAL_LIBRARIES}
+  ${PROJ4_LIBRARIES}
+)
+
