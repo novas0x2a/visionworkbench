@@ -1,11 +1,48 @@
 # test out CPack
 
+## Gather external dlls on win32
+######################################
+include( GatherDlls )
+gather_dlls( 
+  ${Boost_LIBRARIES} 
+  ${JPEG_LIBRARIES} 
+  ${ZLIB_LIBRARIES}
+  ${PNG_LIBRARIES}
+  ${TIFF_LIBRARIES}
+  ${OPENEXR_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+)
+# proj4 and gdal have inconsistently named dlls
+gather_all_dlls_in( ${GDAL_LIBRARY_DIR} )
+gather_all_dlls_in( ${PROJ4_LIBRARY_DIR} )
+gather_dlls_install()
+  
+
+## Standard CPack stuff
+######################################
 include ( InstallRequiredSystemLibraries )
+
+# copy macro, will create empty dest file if src doesn't exist
+macro( filecopy SRC_FILE DST_FILE )
+  if( EXISTS ${SRC_FILE} )
+    exec_program("${CMAKE_COMMAND}" ARGS 
+                  -E copy_if_different        
+                  ${SRC_FILE}  
+                  ${DST_FILE} 
+    )
+  else( EXISTS ${SRC_FILE} )
+    file( WRITE ${DST_FILE} "" )
+  endif( EXISTS ${SRC_FILE} )
+endmacro( filecopy )
+
+# mac installer won't accept files w/o an extension, so copy 
+filecopy( "${PROJECT_SOURCE_DIR}/README"  "${PROJECT_BINARY_DIR}/README.txt"  )
+filecopy( "${PROJECT_SOURCE_DIR}/COPYING" "${PROJECT_BINARY_DIR}/COPYING.txt" )
 
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "${VW_PACKAGE_NAME}" )
 set( CPACK_PACKAGE_VENDOR              "NASA Ames" )
-set( CPACK_PACKAGE_DESCRIPTION_FILE    "${CMAKE_CURRENT_SOURCE_DIR}/README" )
-set( CPACK_RESOURCE_FILE_LICENSE       "${CMAKE_CURRENT_SOURCE_DIR}/COPYING" )
+set( CPACK_PACKAGE_DESCRIPTION_FILE    "${PROJECT_BINARY_DIR}/README.txt" )
+set( CPACK_RESOURCE_FILE_LICENSE       "${PROJECT_BINARY_DIR}/COPYING.txt" )
 set( CPACK_PACKAGE_VERSION_MAJOR       "${VW_VERSION_MAJOR}")
 set( CPACK_PACKAGE_VERSION_MINOR       "${VW_VERSION_MINOR}")
 set( CPACK_PACKAGE_VERSION_PATCH       "${VW_VERSION_PATCH}")

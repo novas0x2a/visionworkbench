@@ -130,27 +130,11 @@ add_subdirectory( src )
 ##################################################
 install_export()
 
-## test what CPack can do
-##################################################
-include( CMakePack.txt )
-
 ## print the build switches
 ##################################################
 print_build_switches()
 
-
-
-#------------------------------------
-include( GatherDlls )
-gather_dlls( 
-  ${Boost_LIBRARIES} 
-  ${JPEG_LIBRARIES} 
-  ${ZLIB_LIBRARIES}
-  ${PNG_LIBRARIES}
-  ${TIFF_LIBRARIES}
-  ${OPENEXR_LIBRARIES}
-  ${LAPACK_LIBRARIES}
-  ${GDAL_LIBRARIES}
-  ${PROJ4_LIBRARIES}
-)
+## test what CPack can do
+##################################################
+include( CMakePack.txt )
 
