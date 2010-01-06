@@ -22,4 +22,7 @@
 #include <vw/Geometry/TreeNode.h>
 #include <vw/Geometry/FrameTreeNode.h>
 
+/// Geometry module
+namespace vw::geometry {}
+
 #endif // __VW_GEOMETRY_H__
