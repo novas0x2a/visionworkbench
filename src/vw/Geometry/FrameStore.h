@@ -194,7 +194,7 @@ namespace vw
        * not guaranteed which node is returned if multiple nodes with
        * the same name are specified at the same depth level.
        *
-       * @param sope
+       * @param scope
        * If a non-NULL scope frame is passed as second parameter, the
        * search is restricted to the sub-tree spawned by this frame.
        */

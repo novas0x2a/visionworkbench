@@ -102,25 +102,19 @@ set( VW_NUM_THREADS         4 CACHE STRING "Define to the default number of thre
 
 ## Create the config files in the out-of-source tree
 ##################################################
-configure_file(
-  ${PROJECT_SOURCE_DIR}/cmake/platform.h.in.cmake
-  ${PROJECT_BINARY_DIR}/src/vw/platform.h
-)
+if( WIN32 )
+  include( SetupConfigureFile )
+  setup_win32_workarounds( vw )
+endif( WIN32 )
 configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/config.h.in.cmake
   ${PROJECT_BINARY_DIR}/src/vw/config.h
 )
-
-## print out some info for the user
-##################################################
-message( STATUS "----------------------------------------------")
-message( STATUS "   ${VW_PACKAGE_STRING}" )
 
 ## Directories
 ##################################################
 add_subdirectory( vw )
 
 install(FILES ${PROJECT_BINARY_DIR}/src/vw/config.h
-			  ${PROJECT_BINARY_DIR}/src/vw/platform.h
         DESTINATION include/vw )
 

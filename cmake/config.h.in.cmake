@@ -90,24 +90,19 @@
 #define VW_PACKAGE_VERSION   "${VW_PACKAGE_VERSION}"
 #define VW_VERSION           "${VW_VERSION}"
 
-
-#ifndef  WIN32
-// Check to make sure the user is using the same version of Boost
-// headers that the software was built with.
-#  include <boost/version.hpp>
-#  if BOOST_VERSION != VW_BOOST_VERSION
-#    error You are using a different version of Boost than you used to build VW_!
-#  endif
-#else 
-// include a helper header on win32
-#  include "platform.h"
-
-#  include <boost/cstdint.hpp>
-   using namespace boost;
-   
-// XXX error preprocessor directive isn't understood by MSVC...
-// XXX find a way to do the boost version check
+#include <boost/version.hpp>
+#if BOOST_VERSION != VW_BOOST_VERSION
+#  error You are using a different version of Boost than you used to build VW_!
 #endif
+
+
+#ifdef _WIN32
+// include a helper header on win32
+#  include "win32_workarounds.h"
+// stdint.h not available, use boost
+#  include <boost/cstdint.hpp> 
+   using namespace boost;
+#endif //_WIN32
 
 
 //------------------------------------------------

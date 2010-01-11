@@ -140,6 +140,7 @@ namespace vw
 
           // double dot is "one up"
           if (*first == "..") {
+          // XXX mallan 010610: shouldn't this be if(!node->is_root()) node = node->parent() ?
             node = node->parent();
             if (node == NULL)
               break;

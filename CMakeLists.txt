@@ -132,6 +132,8 @@ install_export()
 
 ## print the build switches
 ##################################################
+message( STATUS "----------------------------------------------")
+message( STATUS "   ${VW_PACKAGE_STRING}" )
 print_build_switches()
 
 ## test what CPack can do
