@@ -35,6 +35,11 @@ endif( EXISTS ${PROJECT_SOURCE_DIR}/../cmake/Modules )
 ##################################################
 set( CMAKE_MODULE_PATH ${ROOTDIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
 
+## disable strict aliasing 
+if( CMAKE_COMPILER_IS_GNUCXX )
+  set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing" )
+endif( CMAKE_COMPILER_IS_GNUCXX )
+
 include( UserOptions )
 include( SetArchitecture )
 include( SetupWarnLevel )
