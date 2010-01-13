@@ -42,12 +42,10 @@ endif( CMAKE_COMPILER_IS_GNUCXX )
 
 include( UserOptions )
 include( SetArchitecture )
-include( SetupWarnLevel )
-include( SetupRPATH )
+include( SetupBuildSwitch )
 include( SetupInstall )
-include( AddBuildSwitch )
-string( TOUPPER ${PROJECT_NAME} PROJECT_UPPER )
-build_switch_init( ${PROJECT_UPPER} )
+include( SetupRPATH )
+include( SetupWarnLevel )
 
 ## we have to play some tricks to get install
 ## path to "stick" in Windows.
