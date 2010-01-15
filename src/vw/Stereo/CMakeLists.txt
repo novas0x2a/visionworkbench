@@ -2,14 +2,22 @@ vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 set( HEADERS 
   ${EXPORT_H}
+  AffineMixtureComponent.h 
   Correlate.h 
-  CorrelatorView.h
+  CorrelatorView.h	
   DisparityMap.h 
+  EMSubpixelCorrelatorView.h 		
+  EMSubpixelCorrelatorView.hpp
+  GammaMixtureComponent.h 		
+  GaussianMixtureComponent.h				
+  MixtureComponent.h 
   OptimizedCorrelator.h 
   PyramidCorrelator.h 
-  ReferenceCorrelator.h	
+  ReferenceCorrelator.h		
   StereoModel.h	
   StereoView.h 
+  SubpixelView.h 
+  UniformMixtureComponent.h	
 )
 
 set( SOURCES 

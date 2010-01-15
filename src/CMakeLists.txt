@@ -61,14 +61,19 @@ endforeach( MODULE_NAME )
 ## External Package defines for config.h creation
 ##################################################
 set( VW_HAVE_PKG_BOOST                  ${Boost_FOUND}   )
+set( VW_HAVE_PKG_BOOST_DATETIME         ${Boost_DATE_TIME_LIBRARY} )
 set( VW_HAVE_PKG_BOOST_FILESYSTEM       ${Boost_FILESYSTEM_LIBRARY} )
-set( VW_HAVE_PKG_BOOST_PROGRAM_OPTIONS  ${Boost_PROGRAM_OPTIONS_LIBRARY} )
-set( VW_HAVE_PKG_BOOST_THREAD           ${Boost_THREAD_LIBRARY} )
+set( VW_HAVE_PKG_BOOST_GRAPH            ${Boost_GRAPH_LIBRARY} )
 set( VW_HAVE_PKG_BOOST_IOSTREAMS        ${Boost_IOSTREAMS_LIBRARY} )
+set( VW_HAVE_PKG_BOOST_PROGRAM_OPTIONS  ${Boost_PROGRAM_OPTIONS_LIBRARY} )
+set( VW_HAVE_PKG_BOOST_REGEX            ${Boost_REGEX_LIBRARY} )
+set( VW_HAVE_PKG_BOOST_SYSTEM           ${Boost_SYSTEM_LIBRARY} )
+set( VW_HAVE_PKG_BOOST_THREAD           ${Boost_THREAD_LIBRARY} )
 set( VW_HAVE_PKG_GDAL                   ${GDAL_FOUND}    )
 set( VW_HAVE_PKG_GL                     ${OPENGL_FOUND}  )
 set( VW_HAVE_PKG_JPEG                   ${JPEG_FOUND}    )
 set( VW_HAVE_PKG_OPENEXR                ${OPENEXR_FOUND} )
+set( VW_HAVE_PKG_ILMBASE                ${OPENEXR_FOUND} )
 set( VW_HAVE_PKG_PNG                    ${PNG_FOUND}     )
 set( VW_HAVE_PKG_PROJ4                  ${PROJ4_FOUND}   )
 set( VW_HAVE_PKG_TIFF                   ${TIFF_FOUND}    )
@@ -79,17 +84,26 @@ set( VW_HAVE_PKG_LAPACK                 ${LAPACK_FOUND}  )
 ## but do it anyway just for kicks and wiggles
 ##################################################
 include(CheckIncludeFiles)
+check_include_files( cxxabi.h    VW_HAVE_CXXABI_H    )
 check_include_files( dlfcn.h     VW_HAVE_DLFCN_H     )
+check_include_files( execinfo.h  VW_HAVE_EXECINFO_H  )
 check_include_files( inttypes.h  VW_HAVE_INTTYPES_H  )
 check_include_files( memory.h    VW_HAVE_MEMORY_H    )
 check_include_files( pwd.h       VW_HAVE_PWD_H       )
 check_include_files( stdint.h    VW_HAVE_STDINT_H    )
 check_include_files( stdlib.h    VW_HAVE_STDLIB_H    )
-check_include_files( strings.h   VW_HAVE_STRINGS_H   )
 check_include_files( string.h    VW_HAVE_STRING_H    )
+check_include_files( strings.h   VW_HAVE_STRINGS_H   )
 check_include_files( sys/stat.h  VW_HAVE_SYS_STAT_H  )
 check_include_files( sys/types.h VW_HAVE_SYS_TYPES_H )
 check_include_files( unistd.h    VW_HAVE_UNISTD_H    )
+
+## check for some functions
+##################################################
+include(CheckFunctionExists)
+check_function_exists( backtrace VW_HAVE_BACKTRACE   )
+check_function_exists( getpid    VW_HAVE_GETPID      )
+check_function_exists( getpwuid  VW_HAVE_GETPWUID    )
 
 ## VW Configuration defines for config.h creation
 ##################################################
@@ -99,6 +113,13 @@ set( VW_ENABLE_EXCEPTIONS   1 CACHE STRING "Enable exceptions" )
 set( VW_ENABLE_BOUNDS_CHECK 0 CACHE STRING "Enable image bounds checking (SLOW!)" )
 set( VW_ENABLE_CONFIG_FILE  1 CACHE STRING "Enable ~/.vwrc support" )
 set( VW_NUM_THREADS         4 CACHE STRING "Define to the default number of threads that the Vision Workbench should spawn for multi-threaded operations.")
+
+## Directories
+##################################################
+add_subdirectory( vw )
+
+set( VW_HAVE_PKG_TOOLS ${VW_BUILD_tools} )
+set( VW_HAVE_PKG_GUI   ${VW_BUILD_gui}   )
 
 ## Create the config files in the out-of-source tree
 ##################################################
@@ -110,11 +131,6 @@ configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/config.h.in.cmake
   ${PROJECT_BINARY_DIR}/src/vw/config.h
 )
-
-## Directories
-##################################################
-add_subdirectory( vw )
-
 install(FILES ${PROJECT_BINARY_DIR}/src/vw/config.h
         DESTINATION include/vw )
 

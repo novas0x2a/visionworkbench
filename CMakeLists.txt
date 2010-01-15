@@ -1,5 +1,5 @@
 project(vw)
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6.3)
 
 ## Many of these are set in configure.ac in AC_INIT
 ## We duplicate them here because it's easier
@@ -37,7 +37,7 @@ set( CMAKE_MODULE_PATH ${ROOTDIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
 
 ## disable strict aliasing 
 if( CMAKE_COMPILER_IS_GNUCXX )
-  set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing" )
+  set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing -Wextra" )
 endif( CMAKE_COMPILER_IS_GNUCXX )
 
 include( UserOptions )
@@ -45,6 +45,7 @@ include( SetArchitecture )
 include( SetupBuildSwitch )
 include( SetupInstall )
 include( SetupRPATH )
+include( SetupUtilities )
 include( SetupWarnLevel )
 
 ## we have to play some tricks to get install
@@ -71,12 +72,14 @@ endif(VW_BUILD_TYPE)
 ## find the packages we depend on 
 ##################################################
 set( VW_BOOST_COMPONENTS 
-        system 
-        filesystem 
-        program_options 
-        thread 
-        iostreams 
         date_time
+        filesystem 
+        graph
+        iostreams 
+        program_options 
+        regex
+        system 
+        thread 
    )
 # boost is a required dep; bail if it's not found
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )
@@ -94,6 +97,22 @@ find_package( Proj4 )
 find_package( Protobuf ) 
 find_package( OpenGL )
 find_package( Qt4 )
+
+minimum_requirements( Boost_FOUND ) 
+
+## modify and extend find results where necessary
+##################################################
+# if gdal has tiff support, disable native tiff 
+if( GDAL_FOUND AND GDAL_HAS_TIFF ) 
+  set( TIFF_FOUND FALSE )
+  set( TIFF_LIBRARIES "")
+  set( VW_HAS_BIGTIFF ${GDAL_HAS_BIGTIFF} )
+else( GDAL_FOUND AND GDAL_HAS_TIFF ) 
+  if( TIFF_FOUND )
+    include( CheckLibraryExists )
+    check_library_exists( ${TIFF_LIBRARY} TIFFScanlineSize64 "" VW_HAS_BIGTIFF )
+  endif( TIFF_FOUND )
+endif( GDAL_FOUND AND GDAL_HAS_TIFF ) 
 
 ## Add the in-source and out-of-source 
 ## include paths by default 
