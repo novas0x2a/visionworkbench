@@ -1,5 +1,9 @@
 project(vw)
-cmake_minimum_required(VERSION 2.6.3)
+cmake_minimum_required(VERSION 2.6)
+#cmake_minimum_required(VERSION 2.6.3)
+# relax version enforcement until cmake on RHWS5 machines is updated
+# (currently at 2.6.0, version 2.8.0 update is pending)
+# cmake < 2.6.3 is broken on OSX
 
 ## Many of these are set in configure.ac in AC_INIT
 ## We duplicate them here because it's easier
