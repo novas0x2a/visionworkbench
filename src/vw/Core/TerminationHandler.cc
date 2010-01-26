@@ -32,6 +32,9 @@
 
 #include "TerminationHandler.h"
 
+#if defined(VW_HAVE_GETPID) && defined(_WIN32)
+#include <process.h>
+#endif
 
 #if defined(VW_HAVE___CXA_DEMANGLE) && defined(VW_HAVE_CXXABI_H)
 #  if defined(VW_HAVE___CXA_CURRENT_EXCEPTION_TYPE)
