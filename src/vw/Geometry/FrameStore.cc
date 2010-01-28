@@ -416,31 +416,30 @@ namespace vw
       m_root_nodes.push_back(tree);
     }
 
-    void
-    FrameStore::update_frames(UpdateVector const& updates)
+    void 
+    FrameStore::get_frame_locations(FrameHandleVector const& frames, LocationVector& locations) const
     {
-      UpdateVector::const_iterator first, last = updates.end();
-      for (first = updates.begin(); first != last; ++first) {
-        unsigned index = first->axis;
-        vw::ATrans3& atrans = first->handle.node->data().location();
-        switch (first->axis) {
-          case FrameUpdate::X:
-          case FrameUpdate::Y:
-          case FrameUpdate::Z:
-            atrans.translation()[index] = first->value;
-            break;
-          case FrameUpdate::Roll:
-          case FrameUpdate::Pitch:
-          case FrameUpdate::Yaw: {
-            index -= 3;
-            Vector3 rpy =
-              rotation_matrix_to_euler_xyz(atrans.rotation());
-            rpy[index] = first->value;
-            atrans.rotation() =
-              euler_to_rotation_matrix(rpy[0], rpy[1], rpy[2], "XYZ");
-          }
-          break;
-        }
+      locations.clear();
+      locations.reserve(frames.size());
+
+      RecursiveMutex::Lock lock(m_mutex);
+      FrameHandleVector::const_iterator first, last = frames.end();
+      for (first = frames.begin(); first != last; ++first) {
+	locations.push_back(first->node->data().location());
+      }
+    }
+
+    void
+    FrameStore::set_frame_locations(FrameHandleVector const& frames, LocationVector const& locations)
+    {
+      VW_ASSERT(frames.size() == locations.size(), 
+		vw::LogicErr("Parameter vectors not of same size."));
+
+      RecursiveMutex::Lock lock(m_mutex);
+      FrameHandleVector::const_iterator first, last = frames.end();
+      LocationVector::const_iterator loc;
+      for (first = frames.begin(); first != last; ++first, ++loc) {
+	first->node->data().set_location(*loc);
       }
     }
 

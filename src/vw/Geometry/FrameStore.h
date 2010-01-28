@@ -82,28 +82,9 @@ namespace vw
       typedef std::vector<FrameTreeNode> FrameTree;
 
       /**
-       * Struct holding a single axis frame update.
-       * As frame-updates from robot joints are a frequent operation, we
-       * try to optimize this operation, by minimizing lock operations.
+       * @brief A vector of Locations's.
        */
-      struct FrameUpdate {
-        /** Update axis denominator.*/
-        enum ParameterType { X, Y, Z, Roll, Pitch, Yaw };
-
-        FrameUpdate(FrameHandle h, ParameterType a, double v) :
-            handle(h),
-            axis(a),
-            value(v) {}
-
-        /** Handle to the frame to update. */
-        FrameHandle handle;
-        /** Axis to update */
-        ParameterType axis;
-        /** New axis value. */
-        double value;
-      };
-      /** A vector of frame updates used in @update_frames(). */
-      typedef std::vector<FrameUpdate> UpdateVector;
+      typedef std::vector<Location> LocationVector;
 
       //! @}
 
@@ -318,11 +299,8 @@ namespace vw
        */
       void set_location_rel(FrameHandle frame, Location const& loc);
 
-      /**
-       * Update a set of frames at once.
-       */
-      void update_frames(UpdateVector const& updates);
-
+      void get_frame_locations(FrameHandleVector const& handles, LocationVector& locations) const;
+      void set_frame_locations(FrameHandleVector const& handles, LocationVector const& locations);
 
       /**
        * A static instance to a NULL handle, for reference.
