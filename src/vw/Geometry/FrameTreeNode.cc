@@ -7,15 +7,15 @@ namespace vw
   namespace geometry {
     using namespace std;
 
-    Frame::Location
-    get_location(FrameTreeNode const * wrtFrame, FrameTreeNode const * source)
+    Frame::Transform
+    get_transform(FrameTreeNode const * wrtFrame, FrameTreeNode const * source)
     {
-      Frame::Location loc = vw::identity_matrix(4);
+      Frame::Transform loc = vw::identity_matrix(4);
 
       if (source != NULL) {
 
         if (wrtFrame == NULL)
-          return source->data().location();
+          return source->data().transform();
 
         if (wrtFrame != source) {
 
@@ -33,7 +33,7 @@ namespace vw
               ++iter;
               if (iter != nodes.end()) {
                 for (; iter != nodes.end(); ++iter) {
-                  loc *= (*iter)->data().location();
+                  loc *= (*iter)->data().transform();
                 }
                 loc = inverse(loc);
               }
@@ -49,7 +49,7 @@ namespace vw
               assert (iter != nodes.end());
 
               for (; iter != nodes.end(); ++iter) {
-                loc *= (*iter)->data().location();
+                loc *= (*iter)->data().transform();
               }
             }
           }
@@ -68,7 +68,7 @@ namespace vw
     }
 
     void
-    merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree)
+    merge_frame_trees(FrameTreeNode * source_tree, FrameTreeNode * target_tree)
     {
       if (target_tree->data().name() != source_tree->data().name())
         return;

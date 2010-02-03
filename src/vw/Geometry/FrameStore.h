@@ -68,7 +68,7 @@ namespace vw
       /**
        * The affine transform type used to denote a location
        */
-      typedef vw::ATrans3 Location;
+      typedef vw::ATrans3 Transform;
 
       /**
        * A vector of frame handles.
@@ -82,9 +82,9 @@ namespace vw
       typedef std::vector<FrameTreeNode> FrameTree;
 
       /**
-       * @brief A vector of Locations's.
+       * @brief A vector of Transforms's.
        */
-      typedef std::vector<Location> LocationVector;
+      typedef std::vector<Transform> TransformVector;
 
       //! @}
 
@@ -187,7 +187,7 @@ namespace vw
        * @param parent
        * @param l
        */
-      FrameHandle add(std::string const& name, FrameHandle parent, Location const& p);
+      FrameHandle add(std::string const& name, FrameHandle parent, Transform const& p);
 
       /**
        * Adding a sub-tree to the frame store
@@ -203,15 +203,22 @@ namespace vw
       /**
        * Merging a tree with the the frame store
        * @param node
-       * The FrameStore takes ownership of the passed sub-tree.
-       * The tree must not be member of a FrameStore already. Otherwise,
-       * vw::LogicErr is throwsn
+       * On successful merging the FrameStore takes ownership of the passed sub-tree.
+       * If vw::LogicErr is thrown, the passed tree is still owned by the caller, to
+       * allow forensics.
+       *  * The tree must not be member of a FrameStore already. Otherwise,
+       *  vw::LogicErr is thrown.
+       *  * If a NULL_HANDLE is passed as start_frame the tree is merged into the forrest.
+       *  * If start_frame is not the NULL_HANDLE, the names of the start_frame and the
+       *  name of the tree root_node have to match.
        *
-       * @param startFrame
+       * @param start_frame
        * The start-node for the merge operation. The startFrame is required to have the same
        * name as the node.
+       * @return True, if the tree was merged, 
+       * false if the tree was added as a new tree to the forest.
        */
-      void merge_tree(FrameTreeNode * tree, FrameHandle start_frame = NULL_HANDLE);
+      bool merge_tree(FrameTreeNode * tree, FrameHandle start_frame = NULL_HANDLE);
 
       /**
        * Delete frame from tree.
@@ -269,11 +276,11 @@ namespace vw
       //! @}
 
       /**
-       * Return the location of @source expressed relative to @frame.
+       * Return the transform of @source expressed relative to @frame.
        * @param frame
        * @param wrt_frame
        */
-      Location get_location(FrameHandle frame, FrameHandle source);
+      Transform get_transform(FrameHandle frame, FrameHandle source);
 
       /**
        * Return the position @loc, which is expressed relative to @source
@@ -282,25 +289,25 @@ namespace vw
        * @param wrt_frame
        * @param loc
        */
-      Location get_location_of(FrameHandle frame, FrameHandle source, Location const& loc);
+      Transform get_transform_of(FrameHandle frame, FrameHandle source, Transform const& loc);
 
       /**
-       * Set the location of @frame to @update, which is expressed relative to @wrt_frame.
+       * Set the transform of @frame to @update, which is expressed relative to @wrt_frame.
        * @param frame
        * @param wrt_frame
        * @param update
        */
-      void set_location(FrameHandle frame, FrameHandle wrt_frame, Location const& update);
+      void set_transform(FrameHandle frame, FrameHandle wrt_frame, Transform const& update);
 
       /**
-       * Update the location of @frame to @loc, expressed relative to current location.
+       * Update the transform of @frame to @loc, expressed relative to current transform.
        * @param frame
        * @param loc
        */
-      void set_location_rel(FrameHandle frame, Location const& loc);
+      void set_transform_rel(FrameHandle frame, Transform const& loc);
 
-      void get_frame_locations(FrameHandleVector const& handles, LocationVector& locations) const;
-      void set_frame_locations(FrameHandleVector const& handles, LocationVector const& locations);
+      void get_frame_transforms(FrameHandleVector const& handles, TransformVector& transforms) const;
+      void set_frame_transforms(FrameHandleVector const& handles, TransformVector const& transforms);
 
       /**
        * A static instance to a NULL handle, for reference.

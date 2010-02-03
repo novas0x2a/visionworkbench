@@ -26,22 +26,22 @@ namespace vw
     typedef TreeNode<Frame> FrameTreeNode;
 
     /**
-     * @brief Get location of the source frame relative to the wrt_frame (wrt = with respect to).
+     * @brief Get transform of the source frame relative to the wrt_frame (wrt = with respect to).
      * @param wrt_frame The coordinate frame to convert to. If NULL is passed as source frame, source->parent() is assumed
-     * and source->data().location() is returned.
+     * and source->data().transform() is returned.
      * @param source The source coordinate frame. If NULL, the identity-matrix is returned.
      */
-    VW_GEOMETRY_DECL Frame::Location get_location(FrameTreeNode const * wrt_frame, FrameTreeNode const * source);
+    VW_GEOMETRY_DECL Frame::Transform get_transform(FrameTreeNode const * wrt_frame, FrameTreeNode const * source);
     /**
-     * Get location of location, expressed relative to the source frame, relative to the wrt_frame (wrt = with respect to).
+     * Get transform of transform, expressed relative to the source frame, relative to the wrt_frame (wrt = with respect to).
      */
-    VW_GEOMETRY_DECL Frame::Location get_location_of(FrameTreeNode const * wrt_frame, FrameTreeNode const * source,
-        Frame::Location const& location);
+    VW_GEOMETRY_DECL Frame::Transform get_transform_of(FrameTreeNode const * wrt_frame, FrameTreeNode const * source,
+        Frame::Transform const& transform);
     /**
-     * Set location of the frame to the location specified realtive to the source frame.
+     * Set transform of the frame to the transform specified realtive to the source frame.
      */
-    VW_GEOMETRY_DECL void set_location(FrameTreeNode * frame, FrameTreeNode const * source,
-                                       Frame::Location const& location);
+    VW_GEOMETRY_DECL void set_transform(FrameTreeNode * frame, FrameTreeNode const * source,
+                                       Frame::Transform const& transform);
 
     /**
      * @brief Lookup frame by name
@@ -59,24 +59,24 @@ namespace vw
     VW_GEOMETRY_DECL FrameTreeNode * lookup(FrameTreeNode * start_frame, std::string const& path);
 
     inline
-    Frame::Location
-    get_location_of(FrameTreeNode const * wrtFrame, FrameTreeNode const * source,
-                    Frame::Location const& loc)
+    Frame::Transform
+    get_transform_of(FrameTreeNode const * wrtFrame, FrameTreeNode const * source,
+                    Frame::Transform const& trans)
     {
-      return get_location(wrtFrame, source) * loc;
+      return get_transform(wrtFrame, source) * trans;
     }
 
     inline
     void
-    set_location(FrameTreeNode * frame, FrameTreeNode const * source,
-                 Frame::Location const& loc)
+    set_transform(FrameTreeNode * frame, FrameTreeNode const * source,
+                 Frame::Transform const& trans)
     {
       if (frame != NULL) {
         if (source == NULL) {
-          frame->data().set_location(loc);
+          frame->data().set_transform(trans);
         }
         else {
-          frame->data().set_location(get_location_of(frame->parent(), source, loc));
+          frame->data().set_transform(get_transform_of(frame->parent(), source, trans));
         }
       }
     }
@@ -90,7 +90,7 @@ namespace vw
      *
      * @WARNING: Don't merge trees of nodes from different allocation categories (heap vs stack).
      */
-    VW_GEOMETRY_DECL void merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree);
+    VW_GEOMETRY_DECL void merge_frame_trees(FrameTreeNode * source_tree, FrameTreeNode * target_tree);
   }
 }
 

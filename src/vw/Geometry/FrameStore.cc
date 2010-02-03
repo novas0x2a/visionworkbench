@@ -220,7 +220,7 @@ namespace vw
 
 
     FrameHandle
-    FrameStore::add(std::string const& name, FrameHandle parent, Location const& p)
+    FrameStore::add(std::string const& name, FrameHandle parent, Transform const& p)
     {
       // create new node
       FrameTreeNode * node = new FrameTreeNode(NULL, Frame(name, p));
@@ -341,48 +341,48 @@ namespace vw
       return frame.node->is_ancestor_of(pop.node);
     }
 
-    Frame::Location
-    FrameStore::get_location_of(FrameHandle frame, FrameHandle source, Location const& loc)
+    Frame::Transform
+    FrameStore::get_transform_of(FrameHandle frame, FrameHandle source, Transform const& trans)
     {
       RecursiveMutex::Lock lock(m_mutex);
 
       VW_ASSERT (frame.node != NULL && source.node != NULL,
                  vw::LogicErr("NULL handle not allowed as parameter."));
 
-      return vw::geometry::get_location_of(frame.node, source.node, loc);
+      return vw::geometry::get_transform_of(frame.node, source.node, trans);
     }
 
-    Frame::Location
-    FrameStore::get_location(FrameHandle frame, FrameHandle source)
+    Frame::Transform
+    FrameStore::get_transform(FrameHandle frame, FrameHandle source)
     {
       RecursiveMutex::Lock lock(m_mutex);
 
       VW_ASSERT (source.node != NULL,
                  vw::LogicErr("NULL handle not allowed as frame parameter."));
 
-      return vw::geometry::get_location(frame.node, source.node);
+      return vw::geometry::get_transform(frame.node, source.node);
     }
 
     void
-    FrameStore::set_location(FrameHandle frame, FrameHandle wrt_frame, Location const& update)
+    FrameStore::set_transform(FrameHandle frame, FrameHandle wrt_frame, Transform const& update)
     {
       RecursiveMutex::Lock lock(m_mutex);
 
       VW_ASSERT (frame.node != NULL,
                  vw::LogicErr("NULL handle not allowed as parameter."));
 
-      vw::geometry::set_location(frame.node, wrt_frame.node, update);
+      vw::geometry::set_transform(frame.node, wrt_frame.node, update);
     }
 
     void
-    FrameStore::set_location_rel(FrameHandle frame, Location const& update)
+    FrameStore::set_transform_rel(FrameHandle frame, Transform const& update)
     {
       RecursiveMutex::Lock lock(m_mutex);
 
       VW_ASSERT (frame.node != NULL,
                  vw::LogicErr("NULL handle not allowed as parameter."));
 
-      vw::geometry::set_location(frame.node, NULL, update);
+      vw::geometry::set_transform(frame.node, NULL, update);
     }
 
     bool
@@ -392,54 +392,60 @@ namespace vw
       return is_member(frame.node);
     }
 
-    void
+    bool
     FrameStore::merge_tree(FrameTreeNode * tree, FrameHandle start_frame)
     {
+      VW_ASSERT (!is_member(tree),
+                 vw::LogicErr("Merged tree must not yet be member of the FrameStore."));
+      
       // if a start node is given for mergin
       if (start_frame != NULL_HANDLE) {
-        vw::geometry::merge_frame_trees(start_frame.node, tree);
+	VW_ASSERT (tree->data().name() == start_frame.node->data().name(),
+		   vw::LogicErr("Tree root node does not match start node."));
+        vw::geometry::merge_frame_trees(tree, start_frame.node);
         tree->recursive_delete();
-        return;
+        return true;
       }
 
       // try to match one of the root nodes and merge with it
       FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
       for (first = m_root_nodes.begin(); first != last; ++first) {
         if ((*first)->data().name() == tree->data().name()) {
-          vw::geometry::merge_frame_trees(*first, tree);
+          vw::geometry::merge_frame_trees(tree, *first);
           tree->recursive_delete();
-          return;
+          return true;
         }
       }
 
       // just add the tree to the forest
       m_root_nodes.push_back(tree);
+      return false;
     }
 
     void 
-    FrameStore::get_frame_locations(FrameHandleVector const& frames, LocationVector& locations) const
+    FrameStore::get_frame_transforms(FrameHandleVector const& frames, TransformVector& transforms) const
     {
-      locations.clear();
-      locations.reserve(frames.size());
+      transforms.clear();
+      transforms.reserve(frames.size());
 
       RecursiveMutex::Lock lock(m_mutex);
       FrameHandleVector::const_iterator first, last = frames.end();
       for (first = frames.begin(); first != last; ++first) {
-	locations.push_back(first->node->data().location());
+	transforms.push_back(first->node->data().transform());
       }
     }
 
     void
-    FrameStore::set_frame_locations(FrameHandleVector const& frames, LocationVector const& locations)
+    FrameStore::set_frame_transforms(FrameHandleVector const& frames, TransformVector const& transforms)
     {
-      VW_ASSERT(frames.size() == locations.size(), 
+      VW_ASSERT(frames.size() == transforms.size(), 
 		vw::LogicErr("Parameter vectors not of same size."));
 
       RecursiveMutex::Lock lock(m_mutex);
       FrameHandleVector::const_iterator first, last = frames.end();
-      LocationVector::const_iterator loc;
-      for (first = frames.begin(); first != last; ++first, ++loc) {
-	first->node->data().set_location(*loc);
+      TransformVector::const_iterator trans;
+      for (first = frames.begin(); first != last; ++first, ++trans) {
+	first->node->data().set_transform(*trans);
       }
     }
 
