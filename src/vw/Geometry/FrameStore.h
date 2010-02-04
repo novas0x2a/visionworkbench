@@ -2,9 +2,9 @@
 #ifndef vw_geometry_FrameStore_h
 #define vw_geometry_FrameStore_h
 
-#include "GeometryExport.h"
-
+#include "FrameHandle.h"
 #include "FrameTreeNode.h"
+#include "GeometryExport.h"
 
 #include "vw/Core/Thread.h"
 
@@ -14,26 +14,6 @@ namespace vw
   namespace geometry {
     // forward declaration
     class FrameStore;
-
-    /**
-     * Handle to a frame tree node stored in a frame-store.
-     */
-    class VW_GEOMETRY_DECL FrameHandle
-    {
-      FrameTreeNode * node;
-    public:
-      FrameHandle() : node(0) {}
-      FrameHandle(FrameTreeNode * n) :
-          node(n) {}
-      bool operator==(FrameHandle const& rhs) {
-        return this->node == rhs.node;
-      }
-      bool operator!=(FrameHandle const& rhs) {
-        return this->node != rhs.node;
-      }
-
-      friend class FrameStore;
-    };
 
     /**
      * @brief Thread-safe coordinate-frame tree class.

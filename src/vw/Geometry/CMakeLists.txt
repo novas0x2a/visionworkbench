@@ -11,6 +11,7 @@ set( HEADERS
   #SpatialTree.h
   Sphere.h
   TreeNode.h
+  FrameHandle.h
   FrameStore.h
 )                       
                         
