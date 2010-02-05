@@ -258,9 +258,18 @@ namespace vw
       /**
        * Return the transform of @source expressed relative to @frame.
        * @param frame
-       * @param wrt_frame
+       * @param source
        */
       Transform get_transform(FrameHandle frame, FrameHandle source);
+
+      /**
+       * Return the transform @loc, which is expressed relative to @source
+       * with respect to @frame.
+       * @param frame
+       * @param wrt_frame
+       * @param loc
+       */
+      Transform get_transform_of(FrameHandle frame, FrameHandle source, Transform const& loc);
 
       /**
        * Return the position @loc, which is expressed relative to @source
@@ -269,7 +278,7 @@ namespace vw
        * @param wrt_frame
        * @param loc
        */
-      Transform get_transform_of(FrameHandle frame, FrameHandle source, Transform const& loc);
+      Vector3 get_position_of(FrameHandle frame, FrameHandle source, Vector3 const& loc);
 
       /**
        * Set the transform of @frame to @update, which is expressed relative to @wrt_frame.

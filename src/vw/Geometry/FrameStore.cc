@@ -352,6 +352,17 @@ namespace vw
       return vw::geometry::get_transform_of(frame.node, source.node, trans);
     }
 
+    Vector3
+    FrameStore::get_position_of(FrameHandle frame, FrameHandle source, Vector3 const& trans)
+    {
+      RecursiveMutex::Lock lock(m_mutex);
+
+      VW_ASSERT (frame.node != NULL && source.node != NULL,
+                 vw::LogicErr("NULL handle not allowed as parameter."));
+
+      return vw::geometry::get_transform(frame.node, source.node) * trans;
+    }
+
     Frame::Transform
     FrameStore::get_transform(FrameHandle frame, FrameHandle source)
     {
