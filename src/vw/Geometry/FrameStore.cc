@@ -300,12 +300,24 @@ namespace vw
       VW_ASSERT (parent.node == NULL || is_member(parent),
                  vw::LogicErr("None member node not allowed as parent."));
 
+      // don't do anything if old and new parent are the same
       if (frame.node->parent() == parent.node)
         return;
 
       assert_unique(frame.node->data().name(), parent.node);
 
+      // if root node, delete there
+      FrameTreeNodeVector::iterator node =
+	find(m_root_nodes.begin(), m_root_nodes.end(), frame.node);
+      if (node != m_root_nodes.end()) {
+	m_root_nodes.erase(node);
+      }
+
       frame.node->set_parent(parent.node);
+
+      if (parent.node == 0) {
+	m_root_nodes.push_back(frame.node);
+      }
     }
 
     bool
@@ -454,7 +466,7 @@ namespace vw
 
       RecursiveMutex::Lock lock(m_mutex);
       FrameHandleVector::const_iterator first, last = frames.end();
-      TransformVector::const_iterator trans;
+      TransformVector::const_iterator trans = transforms.begin();
       for (first = frames.begin(); first != last; ++first, ++trans) {
 	first->node->data().set_transform(*trans);
       }

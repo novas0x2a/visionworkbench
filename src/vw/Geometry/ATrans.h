@@ -154,7 +154,7 @@ namespace vw
     ATrans<ElemT, SizeN>::operator*(VectorT const& p) const
     {
       VectorT v = m_r * p;
-      return v + p;
+      return v + m_p;
     }
 
     template<class ElemT, int SizeN>
