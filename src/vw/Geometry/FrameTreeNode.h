@@ -26,16 +26,16 @@ namespace vw
     typedef TreeNode<Frame> FrameTreeNode;
 
     /**
-     * @brief Get transform of the source frame relative to the wrt_frame (wrt = with respect to).
-     * @param wrt_frame The coordinate frame to convert to. If NULL is passed as source frame, source->parent() is assumed
+     * @brief Get transform of the source frame relative to the traget frane.
+     * @param target The coordinate frame to convert to. If NULL is passed as source frame, source->parent() is assumed
      * and source->data().transform() is returned.
      * @param source The source coordinate frame. If NULL, the identity-matrix is returned.
      */
-    VW_GEOMETRY_DECL Frame::Transform get_transform(FrameTreeNode const * wrt_frame, FrameTreeNode const * source);
+    VW_GEOMETRY_DECL Frame::Transform get_transform(FrameTreeNode const * target, FrameTreeNode const * source);
     /**
-     * Get transform of transform, expressed relative to the source frame, relative to the wrt_frame (wrt = with respect to).
+     * Get transform of transform, expressed relative to the source frame, relative to the target frame.
      */
-    VW_GEOMETRY_DECL Frame::Transform get_transform_of(FrameTreeNode const * wrt_frame, FrameTreeNode const * source,
+    VW_GEOMETRY_DECL Frame::Transform get_transform_of(FrameTreeNode const * target, FrameTreeNode const * source,
         Frame::Transform const& transform);
     /**
      * Set transform of the frame to the transform specified realtive to the source frame.
@@ -60,16 +60,16 @@ namespace vw
 
     inline
     Frame::Transform
-    get_transform_of(FrameTreeNode const * wrtFrame, FrameTreeNode const * source,
-                    Frame::Transform const& trans)
+    get_transform_of(FrameTreeNode const * target, FrameTreeNode const * source,
+		     Frame::Transform const& trans)
     {
-      return get_transform(wrtFrame, source) * trans;
+      return get_transform(target, source) * trans;
     }
 
     inline
     void
     set_transform(FrameTreeNode * frame, FrameTreeNode const * source,
-                 Frame::Transform const& trans)
+		  Frame::Transform const& trans)
     {
       if (frame != NULL) {
         if (source == NULL) {
