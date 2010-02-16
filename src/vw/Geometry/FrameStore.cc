@@ -434,7 +434,7 @@ namespace vw
       FrameTreeNodeVector::const_iterator first, last = m_root_nodes.end();
       for (first = m_root_nodes.begin(); first != last; ++first) {
         if ((*first)->data().name() == tree->data().name()) {
-          vw::geometry::merge_frame_trees(tree, *first);
+          vw::geometry::merge_frame_trees(*first, tree);
           tree->recursive_delete();
           return true;
         }

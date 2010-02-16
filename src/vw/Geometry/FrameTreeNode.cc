@@ -67,30 +67,30 @@ namespace vw
     }
 
     void
-    merge_frame_trees(FrameTreeNode * source_tree, FrameTreeNode * target_tree)
+    merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree)
     {
       if (target_tree->data().name() != source_tree->data().name())
         return;
 
-      FrameTreeNode::NodeVector src_children = target_tree->children();
+      FrameTreeNode::NodeVector src_children = source_tree->children();
 
       if (src_children.size() > 0) {
-        FrameTreeNode::NodeVector tgt_children = source_tree->children();
+        FrameTreeNode::NodeVector tgt_children = target_tree->children();
 
         FtnLess less;
         sort(src_children.begin(), src_children.end(), less);
         sort(tgt_children.begin(), tgt_children.end(), less);
 
         FrameTreeNode::NodeVector::const_iterator first, last = src_children.end();
-        FrameTreeNode::NodeVector::const_iterator tgt_iter = tgt_children.end();
+        FrameTreeNode::NodeVector::const_iterator tgt_iter = tgt_children.begin();
         for (first = src_children.begin(); first != last; ++first) {
           while (tgt_iter != tgt_children.end() &&
-                      (*first)->data().name() > (*tgt_iter)->data().name()) {
+		 (*first)->data().name() > (*tgt_iter)->data().name()) {
             ++tgt_iter;
           }
 
           if (tgt_iter == tgt_children.end() ||
-                      (*first)->data().name() < (*tgt_iter)->data().name()) {
+	      (*first)->data().name() < (*tgt_iter)->data().name()) {
             (*first)->set_parent(target_tree);
           }
           else if ((*first)->data().name() == (*tgt_iter)->data().name()) {

@@ -90,7 +90,7 @@ namespace vw
      *
      * @WARNING: Don't merge trees of nodes from different allocation categories (heap vs stack).
      */
-    VW_GEOMETRY_DECL void merge_frame_trees(FrameTreeNode * source_tree, FrameTreeNode * target_tree);
+    VW_GEOMETRY_DECL void merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree);
   }
 }
 
