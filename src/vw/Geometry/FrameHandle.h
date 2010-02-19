@@ -24,10 +24,10 @@ namespace vw
       FrameHandle() : node(0) {}
       FrameHandle(FrameTreeNode * n) :
 	node(n) {}
-      bool operator==(FrameHandle const& rhs) {
+      bool operator==(FrameHandle const& rhs) const throw() {
         return this->node == rhs.node;
       }
-      bool operator!=(FrameHandle const& rhs) {
+      bool operator!=(FrameHandle const& rhs) const throw() {
         return this->node != rhs.node;
       }
       
