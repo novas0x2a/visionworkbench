@@ -116,6 +116,23 @@ namespace vw
       std::string full_name(FrameHandle frame) const;
 
       /**
+       * Get cloned extras object from Frame.
+       * If no extras are associated with the Frame, a NULL-pointer
+       * is returned.
+       * The frame argument is required to be non-NULL, otherwise
+       * @vw::LogicErr is thrown.
+        */
+      Frame::Extras * get_extras(FrameHandle frame) const;
+      /**
+       * Set  extras object for Frame.
+       * The frame argument is required to be non-NULL, otherwise
+       * @vw::LogicErr is thrown.
+       * The FrameStore takes ownership of the passed Extras object,
+       * a NULL-pointer will delete the stored extras object.
+       */
+      void set_extras(FrameHandle frame, Frame::Extras * extras);
+
+      /**
        * @return list of fully qualified names of all frames.
        */
       std::vector<std::string> frame_names() const;
