@@ -47,7 +47,7 @@ namespace platefile {
   /// reached.  This shouldn't ever really happen in practice unless
   /// something is wrong.
   ///
-  VW_DEFINE_EXCEPTION(BlobLimitErr, PlatefileErr);
+  VW_DEFINE_EXCEPTION(BlobLimitErr, PlatefileErr, VW_PLATE_DECL);
 
   /// BlobIoErr exception 
   ///
@@ -55,7 +55,7 @@ namespace platefile {
   /// reached.  This shouldn't ever really happen in practice unless
   /// something is wrong.
   ///
-  VW_DEFINE_EXCEPTION(BlobIoErr, PlatefileErr);
+  VW_DEFINE_EXCEPTION(BlobIoErr, PlatefileErr, VW_PLATE_DECL);
 
   /// InvalidPlatefileErr exception 
   ///

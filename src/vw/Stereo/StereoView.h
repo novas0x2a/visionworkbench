@@ -13,14 +13,6 @@
 #include <vw/Camera/CameraModel.h>
 #include <limits>
 
-#ifdef __APPLE__
-#include <float.h>                         // for DBL_MAX
-#elif _WIN32
-#include <cfloat>
-#else
-#include <values.h>                        // for DBL_MAX
-#endif
-
 namespace vw {
 namespace stereo {
 

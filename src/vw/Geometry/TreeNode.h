@@ -358,7 +358,7 @@ namespace vw
        * depth of the tree.
        */
       TreeNode * last_common_ancestor(TreeNode const * node) const {
-	int index = last_common_ancestor_index(node);
+        int index = last_common_ancestor_index(node);
 
         return (index >= 0)? ancestry_[index] : NULL;
       }

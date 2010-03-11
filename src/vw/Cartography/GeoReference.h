@@ -15,9 +15,6 @@
 // Boost
 #include <boost/algorithm/string.hpp>
 #include <boost/smart_ptr.hpp>
-#include <vw/config.h>
-
-//#define VW_HAVE_PKG_GDAL 1
 
 // Forward declaration of Proj.4 things. C++ needs forward declaration of 
 // typedefs so we can call it PJ instead of PJconsts. Bad if Proj ever 

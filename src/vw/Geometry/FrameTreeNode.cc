@@ -94,12 +94,12 @@ namespace geometry
         FrameTreeNode::NodeVector::const_iterator tgt_iter = tgt_children.begin();
         for (first = src_children.begin(); first != last; ++first) {
           while (tgt_iter != tgt_children.end() &&
-		 (*first)->data().name() > (*tgt_iter)->data().name()) {
+                 (*first)->data().name() > (*tgt_iter)->data().name()) {
             ++tgt_iter;
           }
 
           if (tgt_iter == tgt_children.end() ||
-	      (*first)->data().name() < (*tgt_iter)->data().name()) {
+              (*first)->data().name() < (*tgt_iter)->data().name()) {
             (*first)->set_parent(target_tree);
           }
           else if ((*first)->data().name() == (*tgt_iter)->data().name()) {

@@ -9,9 +9,8 @@
 #ifndef vw_Math_Frame_h
 #define vw_Math_Frame_h
 
-#include "GeometryExport.h"
-
-#include "ATrans.h"
+#include <vw/Geometry/GeometryExport.h>
+#include <vw/Geometry/ATrans.h>
 
 #include <string>
 
@@ -33,8 +32,8 @@ namespace vw
       class Extras
       {
       public:
-	virtual ~Extras() throw() {}
-	virtual Extras * clone() = 0;
+        virtual ~Extras() throw() {}
+        virtual Extras * clone() = 0;
       };
 
       /**
@@ -47,26 +46,26 @@ namespace vw
       Frame(std::string const& name, Transform const& trans = identity_matrix<4>()) :
           m_name(name),
           m_trans(trans),
-	  m_extras(NULL)
+          m_extras(NULL)
       {}
       Frame(Frame const& rhs) :
-	m_name(rhs.m_name),
-	m_trans(rhs.m_trans),
-	m_extras((rhs.m_extras == NULL)? NULL : rhs.m_extras->clone())
+        m_name(rhs.m_name),
+        m_trans(rhs.m_trans),
+        m_extras((rhs.m_extras == NULL)? NULL : rhs.m_extras->clone())
       {}
 
       ~Frame() throw()
       {
-	delete m_extras;
+        delete m_extras;
       }
 
       Frame& operator = (Frame const& rhs) {
-	if (&rhs != this) {
-	  m_name = rhs.m_name;
-	  m_trans = rhs.m_trans;
-	  m_extras = (rhs.m_extras == NULL)? NULL : rhs.m_extras->clone();
-	}
-	return *this;
+        if (&rhs != this) {
+          m_name = rhs.m_name;
+          m_trans = rhs.m_trans;
+          m_extras = (rhs.m_extras == NULL)? NULL : rhs.m_extras->clone();
+        }
+        return *this;
       }
 
       /// @{ Accessor methods
@@ -85,7 +84,7 @@ namespace vw
       }
       /** Mutable access to transform field. */
       Transform& transform() throw() {
-		  return m_trans;
+                  return m_trans;
       }
       /** Set transform field. */
       void set_transform(Transform const& trans) {
@@ -93,12 +92,12 @@ namespace vw
       }
 
       Extras * extras() const throw() {
-	return m_extras;
+        return m_extras;
       }
-      
+
       void set_extras(Extras * extras) {
-	delete m_extras;
-	m_extras = extras;
+        delete m_extras;
+        m_extras = extras;
       }
       /// @}
 

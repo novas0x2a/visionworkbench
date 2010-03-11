@@ -13,14 +13,14 @@
 
 namespace vw
 {
-  namespace geometry 
+  namespace geometry
   {
     // forward declaration
     class FrameStore;
     class Frame;
     template<typename P> class TreeNode;
     typedef TreeNode<Frame> FrameTreeNode;
-    
+
     /**
      * Handle to a frame tree node stored in a frame-store.
      */
@@ -30,14 +30,14 @@ namespace vw
     public:
       FrameHandle() : node(0) {}
       FrameHandle(FrameTreeNode * n) :
-	node(n) {}
+        node(n) {}
       bool operator==(FrameHandle const& rhs) const throw() {
         return this->node == rhs.node;
       }
       bool operator!=(FrameHandle const& rhs) const throw() {
         return this->node != rhs.node;
       }
-      
+
       friend class FrameStore;
     };
   }

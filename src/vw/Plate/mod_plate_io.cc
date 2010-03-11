@@ -46,9 +46,9 @@
 using namespace vw;
 using namespace vw::platefile;
 
-VW_DEFINE_EXCEPTION(PlateException, Exception);
-VW_DEFINE_EXCEPTION(BadRequest,  PlateException);
-VW_DEFINE_EXCEPTION(ServerError, PlateException);
+VW_DEFINE_EXCEPTION(PlateException, Exception,   VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(BadRequest,  PlateException, VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(ServerError, PlateException, VW_PLATE_DECL);
 
 typedef std::map<std::string, std::string> QueryMap;
 
