@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -25,6 +25,12 @@
 #include <vw/Image/ImageView.h>
 #include <vw/Image/ImageIO.h>
 #include <vw/Image/Manipulation.h>
+
+#if defined(VW_COMPILER_HAS_ATTRIBUTE_DEPRECATED) && (VW_COMPILER_HAS_ATTRIBUTE_DEPRECATED==1)
+#define DEPRECATED __attribute__((deprecated))
+#else
+#define DEPRECATED
+#endif
 
 namespace vw {
 
@@ -97,7 +103,10 @@ namespace vw {
     /// write a file, however in some situations you may want to
     /// register the default file types _before_ registering your own
     /// file types so that you can override the default FileIO drivers. 
-    static void register_default_file_types(); 
+    //
+    /// This function is called automatically when you call register_file_type
+    /// the first time, so you don't need to call it manually anymore.
+    static void register_default_file_types() DEPRECATED;
 
     // Specify whether values should be rescaled when converting 
     // from one channel type to another during reads or writes. 

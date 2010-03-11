@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -130,4 +130,20 @@ TEST(Thread, RunOnce) {
   EXPECT_EQ( 1, once_value );
   once.run( run_once_func );
   EXPECT_EQ( 1, once_value );
+}
+
+struct ReturnFalse {
+  bool operator()() { return false; }
+};
+struct ReturnTrue {
+  bool operator()() { return true; }
+};
+
+TEST(Thread, TimedWait) {
+  Mutex m;
+  Mutex::Lock lock(m);
+  Condition c;
+  EXPECT_FALSE(c.timed_wait(m, 0));
+  EXPECT_FALSE(c.timed_wait(m, 0, ReturnFalse()));
+  EXPECT_TRUE (c.timed_wait(m, 0, ReturnTrue()));
 }

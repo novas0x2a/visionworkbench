@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -66,18 +66,25 @@ int main( int argc, char *argv[] ) {
   po::options_description all_options("Allowed Options");
   all_options.add(general_options).add(positional_options);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(all_options).positional(positional_options_desc).run(), vm );
-  po::notify( vm );
-
   std::ostringstream usage;
   usage << "Usage: " << argv[0] << " [options] <cnet> <image-mean>\n\n";
   usage << general_options << std::endl;
 
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(all_options).positional(positional_options_desc).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e ) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
+
   if ( vm.count("help") ||
        !vm.count("cnet") ||
        !vm.count("image-mean") ) {
-    std::cout << usage.str() << std::endl;
+    vw_out() << usage.str() << std::endl;
     return 1;
   }
 
@@ -107,7 +114,7 @@ int main( int argc, char *argv[] ) {
   std::list<double> image_errors;
   f.read((char*)&(error_size), sizeof(unsigned));
 
-  for ( unsigned i = 0; i < error_size; i++ ) {
+  for ( uint i = 0; i < error_size; i++ ) {
     double temp;
     f.read((char*)&(temp), sizeof(double));
     image_errors.push_back(temp);
@@ -127,7 +134,7 @@ int main( int argc, char *argv[] ) {
   mean_image /= error_size;
   stddev_image /=  error_size;
   stddev_image = sqrt( stddev_image - mean_image*mean_image );
-  std::cout << "Image min: " << min_image << " max: " << max_image
+  vw_out() << "Image min: " << min_image << " max: " << max_image
             << " mean: " << mean_image << " stddev: " << stddev_image
             << std::endl;
 
@@ -162,21 +169,23 @@ int main( int argc, char *argv[] ) {
       deleted[del_i] = true;
     }
   }
-  std::cout << float(clipping_count) * 100.0 / float(clipping_count + other_count)
+  vw_out() << float(clipping_count) * 100.0 / float(clipping_count + other_count)
             << "% (" << clipping_count << ") of the control measures removed.\n";
-  std::cout << float(cp_clip_count) * 100.0 / float(cp_clip_count+cnet.size())
+  vw_out() << float(cp_clip_count) * 100.0 / float(cp_clip_count+cnet.size())
             << "% (" << cp_clip_count << ") of control points removed.\n";
 
-  std::cout << "\nWriting out new control network\n";
-  std::string outfile_str = fs::path(data_dir / output_cnet_file.branch_path() / fs::basename(output_cnet_file)).string();
+  vw_out() << "\nWriting out new control network\n";
+  std::string outfile_str = fs::path(data_dir / output_cnet_file ).string();
+  vw_out() << "\tfile: " << outfile_str << "\n";
   cnet.write_binary(outfile_str);
 
-  std::cout << "\nWriting deleted index file\n";
-  std::string delindex_file_str = fs::path(data_dir / output_deleted_index_file.branch_path() / fs::basename(output_deleted_index_file)).string();
+  vw_out() << "\nWriting deleted index file\n";
+  std::string delindex_file_str = fs::path(data_dir / output_deleted_index_file ).string();
+  vw_out() << "\tfile: " << delindex_file_str << "\n";
+
   std::ofstream di_out(delindex_file_str.c_str());
-  int i;
-  for (i = 0; i < deleted.size()-1; i++) {
+  for ( uint i = 0; i < deleted.size()-1; i++) 
     di_out << deleted[i] << " ";
-  }
-  di_out << deleted[i] << "\n";
+  di_out << deleted[deleted.size()-1] << "\n";
+  di_out.close();
 }

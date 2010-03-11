@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -10,10 +10,10 @@
 
 #include <vw/Math/Vector.h>
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <sys/time.h>
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <map>
 #include <vector>

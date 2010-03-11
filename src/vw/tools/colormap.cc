@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -15,7 +15,7 @@
 #undef NDEBUG
 #endif
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
@@ -115,30 +115,36 @@ UnaryPerPixelView<ViewT, ColormapFunc> colormap(ImageViewBase<ViewT> const& view
 
 template <class PixelT>
 void do_colorized_dem(po::variables_map const& vm) {
+  vw_out() << "Creating colorized DEM.\n";
 
   cartography::GeoReference georef;
   cartography::read_georeference(georef, input_file_name);
-  
-  DiskImageView<PixelT> disk_dem_file(input_file_name);
-  ImageViewRef<PixelGray<float> > input_image = channel_cast<float>(disk_dem_file);
 
-  
-  std::cout << "Creating colorized DEM.\n";
+  // Attempt to extract nodata value
+  DiskImageResource *disk_dem_rsrc = DiskImageResource::open(input_file_name);
+  if (vm.count("nodata-value")) {
+    vw_out() << "\t--> Using user-supplied nodata value: " << nodata_value << ".\n";
+  } else if ( disk_dem_rsrc->has_nodata_value() ) {
+    nodata_value = disk_dem_rsrc->nodata_value();
+    vw_out() << "\t--> Extracted nodata value from file: " << nodata_value << ".\n";
+  } 
+
+  // Compute min/max
+  DiskImageView<PixelT> disk_dem_file(input_file_name);
+  ImageViewRef<PixelGray<float> > input_image = pixel_cast<PixelGray<float> >(select_channel(disk_dem_file,0));
   if (min_val == 0 && max_val == 0) {
     min_max_channel_values( create_mask( input_image, nodata_value), min_val, max_val);
-    std::cout << "\t--> DEM color map range: [" << min_val << "  " << max_val << "]\n";
+    vw_out() << "\t--> DEM color map range: [" << min_val << "  " << max_val << "]\n";
   } else {
-    std::cout << "\t--> Using user-specified color map range: [" << min_val << "  " << max_val << "]\n";
+    vw_out() << "\t--> Using user-specified color map range: [" << min_val << "  " << max_val << "]\n";
   }
 
   ImageViewRef<PixelMask<PixelGray<float> > > dem;
-  DiskImageResource *disk_dem_rsrc = DiskImageResource::open(input_file_name);
-  if (vm.count("nodata-value")) {
-    std::cout << "\t--> Masking nodata value: " << nodata_value << ".\n";
+  if ( PixelHasAlpha<PixelT>::value ) {
+    dem = alpha_to_mask(channel_cast<float>(disk_dem_file) );
+  } else if (vm.count("nodata-value")) {
     dem = channel_cast<float>(create_mask(input_image, nodata_value));
   } else if ( disk_dem_rsrc->has_nodata_value() ) {
-    nodata_value = disk_dem_rsrc->nodata_value();
-    std::cout << "\t--> Extracted nodata value from file: " << nodata_value << ".\n";
     dem = create_mask(input_image, nodata_value);
   } else {
     dem = pixel_cast<PixelMask<PixelGray<float> > >(input_image);
@@ -148,14 +154,16 @@ void do_colorized_dem(po::variables_map const& vm) {
   ImageViewRef<PixelMask<PixelRGB<float> > > colorized_image = colormap(normalize(dem,min_val,max_val,0,1.0));
 
   if (shaded_relief_file_name != "") {
-    std::cout << "\t--> Incorporating hillshading from: " << shaded_relief_file_name << ".\n";
+    vw_out() << "\t--> Incorporating hillshading from: " << shaded_relief_file_name << ".\n";
     DiskImageView<PixelMask<float> > shaded_relief_image(shaded_relief_file_name);
     ImageViewRef<PixelMask<PixelRGB<float> > > shaded_image = copy_mask(colorized_image*apply_mask(shaded_relief_image), shaded_relief_image);
-    std::cout << "Writing image color-mapped image: " << output_file_name << "\n";
-    write_georeferenced_image(output_file_name, channel_cast_rescale<uint8>(shaded_image), georef, TerminalProgressCallback());
+    vw_out() << "Writing image color-mapped image: " << output_file_name << "\n";
+    write_georeferenced_image(output_file_name, channel_cast_rescale<uint8>(shaded_image), georef,
+                              TerminalProgressCallback( "tools.colormap", "Writing:"));
   } else {
-    std::cout << "Writing image color-mapped image: " << output_file_name << "\n";
-    write_georeferenced_image(output_file_name, channel_cast_rescale<uint8>(colorized_image), georef, TerminalProgressCallback());
+    vw_out() << "Writing image color-mapped image: " << output_file_name << "\n";
+    write_georeferenced_image(output_file_name, channel_cast_rescale<uint8>(colorized_image), georef,
+                              TerminalProgressCallback( "tools.colormap", "Writing:"));
   }
 }
 
@@ -197,8 +205,15 @@ int main( int argc, char *argv[] ) {
   p.add("input-file", 1);
 
   po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
-  po::notify( vm );
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << desc << std::endl;
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << desc << std::endl;
@@ -255,6 +270,14 @@ int main( int argc, char *argv[] ) {
       case VW_CHANNEL_INT16:  do_colorized_dem<PixelGray<int16>   >(vm); break;
       case VW_CHANNEL_UINT16: do_colorized_dem<PixelGray<uint16>  >(vm); break;
       default:                do_colorized_dem<PixelGray<float32> >(vm); break;
+      }
+      break;
+    case VW_PIXEL_GRAYA:
+      switch(channel_type) {
+      case VW_CHANNEL_UINT8:  do_colorized_dem<PixelGrayA<uint8>   >(vm); break;
+      case VW_CHANNEL_INT16:  do_colorized_dem<PixelGrayA<int16>   >(vm); break;
+      case VW_CHANNEL_UINT16: do_colorized_dem<PixelGrayA<uint16>  >(vm); break;
+      default:                do_colorized_dem<PixelGrayA<float32> >(vm); break;
       }
       break;
     default:

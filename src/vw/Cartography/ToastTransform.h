@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -118,7 +118,13 @@ namespace cartography {
     virtual Vector2 reverse( Vector2 const& point ) const;
 
     virtual BBox2i forward_bbox( BBox2i const& bbox ) const;
-    virtual BBox2i reverse_bbox( BBox2i const& bbox ) const;
+
+    // We override reverse_bbox so it understands to check if the
+    // image crosses the poles or not.  Pass in 'approximate' to
+    // compute reverse bounding boxes by transforming corner
+    // coordinates only.  (This is much faster, but not 100%
+    // accurate.)
+    virtual BBox2i reverse_bbox( BBox2i const& bbox, bool approximate = false ) const;
 
     // Attempt to expand the given bounding box in the source pixel space
     // to include any poles containd in the given bounding box in the

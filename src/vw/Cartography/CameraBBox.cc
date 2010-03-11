@@ -1,19 +1,21 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
 
 
 #include <vw/Cartography/CameraBBox.h>
-#include <vw/Cartography/PointImageManipulation.h>
 
 using namespace vw;
 
-Vector2 geospatial_intersect( Vector2 pix,
-                              cartography::GeoReference const& georef,
-                              boost::shared_ptr<camera::CameraModel> camera_model,
-                              double z_scale, bool& did_intersect ) {
+// Return map projected point location (the intermediate between LLA
+// and Pixel)
+Vector2
+cartography::geospatial_intersect( Vector2 pix,
+                                   cartography::GeoReference const& georef,
+                                   boost::shared_ptr<camera::CameraModel> camera_model,
+                                   double z_scale, bool& did_intersect ) {
   Vector3 ccenter = camera_model->camera_center( pix );
   Vector3 cpoint = camera_model->pixel_to_vector( pix );
   ccenter.z() *= z_scale;
@@ -45,17 +47,15 @@ Vector2 geospatial_intersect( Vector2 pix,
 // Compute the bounding box in points (georeference space) that is
 // defined by georef. Scale is MPP as georeference space is in meters.
 BBox2 cartography::camera_bbox( cartography::GeoReference const& georef,
-                                        boost::shared_ptr<camera::CameraModel> camera_model,
-                                        int32 cols, int32 rows, float &scale ) {
+                                boost::shared_ptr<camera::CameraModel> camera_model,
+                                int32 cols, int32 rows, float &scale ) {
 
   double semi_major_axis = georef.datum().semi_major_axis();
   double semi_minor_axis = georef.datum().semi_minor_axis();
   double z_scale = semi_major_axis / semi_minor_axis;
-  double radius = semi_major_axis;
-  double radius_sqr = radius*radius;
 
   BBox2 georeference_space_bbox;
-  bool first_sign=false, pole=true, last_valid=false;
+  bool last_valid=false;
   Vector3 last_intersection;
   Vector2 last_geospatial_point;
   scale = -1;
@@ -80,9 +80,7 @@ BBox2 cartography::camera_bbox( cartography::GeoReference const& georef,
         scale = current_scale;
     }
     last_geospatial_point = geospatial_point;
-
     georeference_space_bbox.grow( geospatial_point );
-
     last_valid = true;
   }
   // Bottom row
@@ -106,9 +104,7 @@ BBox2 cartography::camera_bbox( cartography::GeoReference const& georef,
         scale = current_scale;
     }
     last_geospatial_point = geospatial_point;
-
     georeference_space_bbox.grow( geospatial_point );
-
     last_valid = true;
   }
   // Left side
@@ -132,12 +128,7 @@ BBox2 cartography::camera_bbox( cartography::GeoReference const& georef,
         scale = current_scale;
     }
     last_geospatial_point = geospatial_point;
-
     georeference_space_bbox.grow( geospatial_point );
-
-    //bbox_180.grow( lonlat );
-    //lonlat.x() += 360.0;
-    //bbox_360.grow( lonlat );
     last_valid = true;
   }
   // Right side
@@ -162,9 +153,7 @@ BBox2 cartography::camera_bbox( cartography::GeoReference const& georef,
         scale = current_scale;
     }
     last_geospatial_point = geospatial_point;
-
     georeference_space_bbox.grow( geospatial_point );
-
     last_valid = true;
   }
 
@@ -200,14 +189,14 @@ BBox2 cartography::camera_bbox( cartography::GeoReference const& georef,
   // involving camera distortion and near alignment of one side of the
   // bounding box with the prime meridian over a pole.
   // if( (bbox_180.min().x() < 180.0 && bbox_180.max().x() > 180.0) ||
-//       (bbox_180.min().x() < -180.0 && bbox_180.max().x() > -180.0) )
-//     bbox = bbox_360;
-//   if( pole ) {
-//     bbox.min().x() = -180;
-//     bbox.max().x() = 180;
-//     if( bbox.min().y() > -bbox.max().y() ) bbox.max().y() = 90;
-//     else bbox.min().y() = -90;
-//   }
+  //       (bbox_180.min().x() < -180.0 && bbox_180.max().x() > -180.0) )
+  //     bbox = bbox_360;
+  //   if( pole ) {
+  //     bbox.min().x() = -180;
+  //     bbox.max().x() = 180;
+  //     if( bbox.min().y() > -bbox.max().y() ) bbox.max().y() = 90;
+  //     else bbox.min().y() = -90;
+  //   }
 
   return bbox;
 

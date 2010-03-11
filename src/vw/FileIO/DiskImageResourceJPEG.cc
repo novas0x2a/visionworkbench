@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -318,7 +318,7 @@ void DiskImageResourceJPEG::read( ImageBuffer const& dest, BBox2i const& bbox) c
   boost::scoped_array<uint8> buf( new uint8[ctx->cstride * bbox.width() * bbox.height()] );
 
   int32 offset = 0;
-  while (int(ctx->decompress_ctx.output_scanline) < end_row)
+  while ( ctx->decompress_ctx.output_scanline < end_row)
   {
     ctx->readline();
 

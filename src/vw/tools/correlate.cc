@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -81,23 +81,30 @@ int main( int argc, char *argv[] ) {
     p.add("right", 1);
 
     po::variables_map vm;
-    po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
-    po::notify( vm );
+    try {
+      po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
+      po::notify( vm );
+    } catch (po::error &e) {
+      std::cout << "An error occured while parsing command line arguments.\n";
+      std::cout << "\t" << e.what() << "\n\n";
+      std::cout << desc << std::endl;
+      return 1;
+    }
 
     if( vm.count("help") ) {
-      vw_out(0) << desc << std::endl;
+      vw_out() << desc << std::endl;
       return 1;
     }
 
     if( vm.count("left") != 1 || vm.count("right") != 1 ) {
-      vw_out(0) << "Error: Must specify one (and only one) left and right input file!" << std::endl;
-      vw_out(0) << desc << std::endl;
+      vw_out() << "Error: Must specify one (and only one) left and right input file!" << std::endl;
+      vw_out() << desc << std::endl;
       return 1;
     }
 
     if ( fs::exists( prefix_from_filename( left_file_name ) + "__" +
                      prefix_from_filename( right_file_name ) + ".match" ) ) {
-      vw_out(0) << "Found a match file. Using it to pre-align images.\n";
+      vw_out() << "Found a match file. Using it to pre-align images.\n";
       std::vector<ip::InterestPoint> matched_ip1, matched_ip2;
       ip::read_binary_match_file( prefix_from_filename( left_file_name ) + "__" +
                                   prefix_from_filename( right_file_name ) + ".match",
@@ -110,7 +117,7 @@ int main( int argc, char *argv[] ) {
       DiskImageView<PixelGray<float> > right_disk_image( right_file_name );
       right_file_name = "aligned_right.tif";
       write_image( right_file_name, transform(right_disk_image, HomographyTransform(alignment)),
-                   TerminalProgressCallback(InfoMessage, "Aligning: ") );
+                   TerminalProgressCallback( "tools.correlate", "Aligning: ") );
       found_alignment = true;
     }
 

@@ -1,12 +1,12 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
 
 
-/// \file Core/Threads.h
-/// 
+/// \file Core/Thread.h
+///
 /// A very simple, abstracted threading system.  Currently this is
 /// simply built on top of Boost threads, but its abstracted so that
 /// it's easy to port the Vision Workbench to environments where Boost
@@ -17,23 +17,23 @@
 /// To create a thread, pass in any object that has the operator()
 /// defined.
 ///
-/// The rest of the interface is sraightforward.  These are the 
-/// the things you will need to implement if you want to use a 
+/// The rest of the interface is straightforward.  These are
+/// the things you will need to implement if you want to use a
 /// different thread library.  The interface consists of:
 ///
 /// * A Thread class, whose constructor takes a shared pointer to a
 ///   Task.  The constructor should invoke the Task's operator()
 ///   function in a new thread, and the destructor should join the
-///   child thread.  The static yeild() function should yield the
-///   active thread, and the static sleep_ms() functin should sleep
+///   child thread.  The static yield() function should yield the
+///   active thread, and the static sleep_ms() function should sleep
 ///   the active thread for the given number of milliseconds.  The
 ///   Thread class may be non-copyable.
 ///
-/// * A Mutex class, implementing a simple mutual exclusion lock. 
-///   This should have no methods other than the default constructor 
-///   and destructor.  All locking and unlocking takes place through 
-///   a nested Mutex::Lock class, whose constructor takes a Mutex& 
-///   to lock and whose destructor unlocks it.  Both the Mutex and 
+/// * A Mutex class, implementing a simple mutual exclusion lock.
+///   This should have no methods other than the default constructor
+///   and destructor.  All locking and unlocking takes place through
+///   a nested Mutex::Lock class, whose constructor takes a Mutex&
+///   to lock and whose destructor unlocks it.  Both the Mutex and
 ///   Lock classes may be non-copyable.
 ///
 /// * A RunOnce class, implementing run-once semantics.  This must be
@@ -58,12 +58,12 @@ namespace vw {
 
   // --------------------------------------------------------------
   //                            RUNONCE
-  // --------------------------------------------------------------  
+  // --------------------------------------------------------------
 
 #define VW_RUNONCE_INIT { BOOST_ONCE_INIT }
 
-  // A special POD class to enable safe library initialization.  You 
-  // should only define these objects at global or namespace scope, 
+  // A special POD class to enable safe library initialization.  You
+  // should only define these objects at global or namespace scope,
   // and statically initialize them to VW_RUNONCE_INIT.
   struct RunOnce {
     boost::once_flag m_flag;
@@ -74,8 +74,8 @@ namespace vw {
   };
 
   // --------------------------------------------------------------
-  //                            MUTEX 
-  // --------------------------------------------------------------  
+  //                            MUTEX
+  // --------------------------------------------------------------
 
   // A simple mutual exclusion class.
   class VW_CORE_DECL Mutex : private boost::mutex {
@@ -85,25 +85,24 @@ namespace vw {
     // Ensure non-copyable semantics
     Mutex( Mutex const& );
     Mutex& operator=( Mutex const& );
-    
+
   public:
     inline Mutex() {}
 
+    void lock()   { boost::mutex::lock(); }
+    void unlock() { boost::mutex::unlock(); }
+
     // A scoped lock class, used to lock and unlock a Mutex.
-    //
-    // TODO: This should inherit privately from
-    // boost::mutex::scoped_lock, but this causes a compilation error
-    // when the Condition class below tries to get access to the
-    // members of scoped_lock.  I'm stumped how to fix this at the
-    // moment, but we should do this at some point. -mbroxton
-    class Lock : public boost::mutex::scoped_lock {
+    class Lock : private boost::unique_lock<Mutex> {
 
       // Ensure non-copyable semantics
       Lock( Lock const& );
       Lock& operator=( Lock const& );
 
     public:
-      inline Lock( Mutex &mutex ) : boost::mutex::scoped_lock( mutex ) {}
+      inline Lock( Mutex &mutex ) : boost::unique_lock<Mutex>( mutex ) {}
+      void lock()   { boost::unique_lock<Mutex>::lock(); }
+      void unlock() { boost::unique_lock<Mutex>::unlock(); }
     };
   };
 
@@ -115,31 +114,30 @@ namespace vw {
     // Ensure non-copyable semantics
     RecursiveMutex( RecursiveMutex const& );
     RecursiveMutex& operator=( RecursiveMutex const& );
-    
+
   public:
     inline RecursiveMutex() {}
 
+    void lock()   { boost::recursive_mutex::lock(); }
+    void unlock() { boost::recursive_mutex::unlock(); }
+
     // A scoped lock class, used to lock and unlock a Mutex.
-    //
-    // TODO: This should inherit privately from
-    // boost::mutex::scoped_lock, but this causes a compilation error
-    // when the Condition class below tries to get access to the
-    // members of scoped_lock.  I'm stumped how to fix this at the
-    // moment, but we should do this at some point. -mbroxton
-    class Lock : public boost::recursive_mutex::scoped_lock {
+    class Lock : private boost::unique_lock<RecursiveMutex> {
 
       // Ensure non-copyable semantics
       Lock( Lock const& );
       Lock& operator=( Lock const& );
 
     public:
-      inline Lock( RecursiveMutex &mutex ) : boost::recursive_mutex::scoped_lock( mutex ) {}
+      inline Lock( RecursiveMutex &mutex ) : boost::unique_lock<RecursiveMutex>( mutex ) {}
+      void lock()   { boost::unique_lock<RecursiveMutex>::lock(); }
+      void unlock() { boost::unique_lock<RecursiveMutex>::unlock(); }
     };
   };
 
   // --------------------------------------------------------------
   //                            CONDITION
-  // --------------------------------------------------------------  
+  // --------------------------------------------------------------
 
   class VW_CORE_DECL Condition : private boost::condition
   {
@@ -156,21 +154,21 @@ namespace vw {
       boost::condition::notify_one();
     }
 
-    void notify_all() { 
+    void notify_all() {
       boost::condition::notify_all();
     }
 
     // waiting
-    template<typename LockT> void wait(LockT &lock) { 
+    template<typename LockT> void wait(LockT &lock) {
       boost::condition::wait(lock);
     }
 
-    template<typename LockT, typename Pred> 
+    template<typename LockT, typename Pred>
     void wait(LockT &lock, Pred pred) {
       boost::condition::wait(lock,pred);
     }
 
-    template<typename LockT> 
+    template<typename LockT>
     bool timed_wait(LockT &lock, unsigned long milliseconds) {
       boost::xtime xt;
       boost::xtime_get(&xt, boost::TIME_UTC);
@@ -178,11 +176,11 @@ namespace vw {
         xt.sec++;
         milliseconds -= 1000;
       }
-      xt.nsec+=1e6*milliseconds;
-      return boost::condition::wait(lock, xt);
+      xt.nsec+=int_fast32_t(1e6*milliseconds);
+      return boost::condition::timed_wait(lock, xt);
     }
 
-    template<typename LockT, typename Pred> 
+    template<typename LockT, typename Pred>
     bool timed_wait(LockT &lock, unsigned long milliseconds, Pred pred) {
       boost::xtime xt;
       boost::xtime_get(&xt, boost::TIME_UTC);
@@ -190,14 +188,14 @@ namespace vw {
         xt.sec++;
         milliseconds -= 1000;
       }
-      xt.nsec+=1e6*milliseconds;
-      return boost::condition::wait(lock, xt, pred);
+      xt.nsec+=int_fast32_t(1e6*milliseconds);
+      return boost::condition::timed_wait(lock, xt, pred);
     }
   };
 
   // --------------------------------------------------------------
   //                            THREAD
-  // --------------------------------------------------------------  
+  // --------------------------------------------------------------
 
   // A thread class, that runs a "Task", which is an object or
   // function that has the operator() defined.  When the Thread object
@@ -214,7 +212,7 @@ namespace vw {
     // For some reason, the boost thread library makes a copy of the
     // Task object before handing it off to the thread.  This is
     // annoying, because it means that the parent thread no longer has
-    // direct acess to the child thread's instance of the task object.
+    // direct access to the child thread's instance of the task object.
     // This helper allows the parent thread to retain direct access to
     // the child instance of the task.
     template <class TaskT>
@@ -228,14 +226,14 @@ namespace vw {
   public:
 
     /// This variant of the constructor takes a Task that is copy
-    /// constructable.  The thread mades a copy of the task, and this
+    /// constructable.  The thread made a copy of the task, and this
     /// instance is no longer directly accessibly from the parent
     /// thread.
     template<class TaskT>
     inline Thread( TaskT task ) : m_thread( task ) {}
 
     /// This variant of the constructor takes a shared point to a task.
-    /// The thread mades a copy of the shared pointer task, allowing
+    /// The thread made a copy of the shared pointer task, allowing
     /// the parent to still access the task instance that is running in
     /// the thread.
     template<class TaskT>
@@ -254,10 +252,10 @@ namespace vw {
     // --------------
     // STATIC METHODS
     // --------------
-    
+
     /// Returns a unique ID for the current thread.  The ID for a
     /// thread is not determined until the thread calls the id()
-    /// function for the first time, so there is no gurantee that IDs
+    /// function for the first time, so there is no guarantee that IDs
     /// will be assigned in the same order that threads are created.
     static int id();
 

@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -15,7 +15,7 @@
 #undef NDEBUG
 #endif
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
@@ -189,17 +189,18 @@ void do_hillshade(po::variables_map const& vm) {
     std::cout << "\t--> Blurring pixel with gaussian kernal.  Sigma = " << blur_sigma << "\n";
     dem = gaussian_filter(dem, blur_sigma);
   }
-  
+
   // The final result is the dot product of the light source with the normals
   ImageViewRef<PixelMask<PixelGray<uint8> > > shaded_image = channel_cast_rescale<uint8>(clamp(dot_prod(compute_normals(dem, u_scale, v_scale), light)));
-  
+
   // Save the result
   std::cout << "Writing shaded relief image: " << output_file_name << "\n";
 
   DiskImageResourceGDAL rsrc(output_file_name, shaded_image.format());
   rsrc.set_block_size(Vector2i(1024,1024));
   write_georeference(rsrc, georef);
-  write_image(rsrc, shaded_image, TerminalProgressCallback());
+  write_image(rsrc, shaded_image,
+              TerminalProgressCallback( "tools.hillshade", "Writing:"));
 }
 
 int main( int argc, char *argv[] ) {
@@ -220,8 +221,15 @@ int main( int argc, char *argv[] ) {
   p.add("input-file", 1);
 
   po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
-  po::notify( vm );
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << desc << std::endl;
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << desc << std::endl;
@@ -244,7 +252,7 @@ int main( int argc, char *argv[] ) {
     ChannelTypeEnum channel_type = rsrc->channel_type();
     PixelFormatEnum pixel_format = rsrc->pixel_format();
     delete rsrc;
-    
+
     switch(pixel_format) {
     case VW_PIXEL_GRAY:
     case VW_PIXEL_GRAYA:
@@ -266,6 +274,6 @@ int main( int argc, char *argv[] ) {
   } catch( Exception& e ) {
     std::cout << "Error: " << e.what() << std::endl;
   }
- 
+
   return 0;
 }

@@ -1,18 +1,18 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
 
 
 /// \file ProgressCallback.h
-/// 
+///
 /// A class for monitoring the progress of lengthy operations.
 ///
 #ifndef __VW_CORE_PROGRESSCALLBACK_H__
 #define __VW_CORE_PROGRESSCALLBACK_H__
 
-#include <math.h>
+#include <cmath>
 #include <string>
 
 #include <vw/Core/CoreExport.h>
@@ -20,18 +20,26 @@
 #include <vw/Core/Exception.h>
 #include <vw/Core/Thread.h>
 
+#include <boost/algorithm/string/replace.hpp>
+
 #include <vw/config.h>
+
+#if defined(VW_COMPILER_HAS_ATTRIBUTE_DEPRECATED) && (VW_COMPILER_HAS_ATTRIBUTE_DEPRECATED==1)
+#define DEPRECATED __attribute__((deprecated))
+#else
+#define DEPRECATED
+#endif
 
 namespace vw {
 
   /// The base class for progress monitoring.
   class VW_CORE_DECL ProgressCallback {
   protected:
-    // WARNING:  These may not be valid for some subclasses.  Always access these 
+    // WARNING:  These may not be valid for some subclasses.  Always access these
     // values through the relevant public functions unless you know what you're doing.
-    // Arguably having every single member variable be mutable suggests a design 
-    // flaw.  The idea is that we often want to create a temporary progress callback 
-    // object to pass to a function performing some complex task, but that requires 
+    // Arguably having every single member variable be mutable suggests a design
+    // flaw.  The idea is that we often want to create a temporary progress callback
+    // object to pass to a function performing some complex task, but that requires
     // that all the key functions be const.  This isn't pretty, but it works for now.
     mutable bool m_abort_requested;
     mutable double m_progress;
@@ -48,21 +56,21 @@ namespace vw {
     // Subclasses should reimplement where appropriate
     //
     // progress is from 0 (not done) to 1 (finished)
-    // 
-    virtual void report_progress(double progress) const { 
+    //
+    virtual void report_progress(double progress) const {
       Mutex::Lock lock(m_mutex);
-      m_progress = progress; 
+      m_progress = progress;
     }
 
-    virtual void report_incremental_progress(double incremental_progress) const { 
+    virtual void report_incremental_progress(double incremental_progress) const {
       Mutex::Lock lock(m_mutex);
-      m_progress += incremental_progress; 
+      m_progress += incremental_progress;
     }
 
     virtual void report_aborted(std::string /*why*/="") const {}
-    virtual void report_finished() const { 
+    virtual void report_finished() const {
       Mutex::Lock lock(m_mutex);
-      m_progress = 1.0; 
+      m_progress = 1.0;
     }
 
     // Helper method which computes progress and calls report_progress
@@ -71,9 +79,9 @@ namespace vw {
     }
 
     // Has an abort been requested?
-    virtual bool abort_requested() const { 
+    virtual bool abort_requested() const {
       Mutex::Lock lock(m_mutex);
-      return m_abort_requested; 
+      return m_abort_requested;
     }
 
     // Throw vw::Aborted if abort has been requested
@@ -85,9 +93,9 @@ namespace vw {
     }
 
     // Request abort
-    virtual void request_abort() const { 
+    virtual void request_abort() const {
       Mutex::Lock lock(m_mutex);
-      m_abort_requested = true; 
+      m_abort_requested = true;
     }
 
     virtual double progress() const { return m_progress; }
@@ -111,7 +119,7 @@ namespace vw {
       double parent_progress = m_from + (m_to - m_from)*progress;
       m_parent.report_progress(parent_progress);
     }
-    virtual void report_incremental_progress(double incremental_progress) const { 
+    virtual void report_incremental_progress(double incremental_progress) const {
       double parent_progress = (m_to - m_from)*incremental_progress;
       m_parent.report_incremental_progress(parent_progress);
     }
@@ -131,18 +139,43 @@ namespace vw {
   /// A progress monitor that prints a progress bar on STDOUT.
   class VW_CORE_DECL TerminalProgressCallback : public ProgressCallback {
     MessageLevel m_level;
+    std::string m_namespace;
     std::string m_pre_progress_text;
     mutable double m_last_reported_progress;
     uint32_t m_precision;
     double  m_step;
 
+    static const uint32_t m_max_characters = 80;
+    uint32_t m_bar_length;
+
+    void calculate_bar_length() {
+      VW_ASSERT( m_pre_progress_text.size()+8+m_precision < 80,
+                 ArgumentErr() << "Pre-progress Text or Precision too big to allow progress bar to fit inside 80 char" );
+      m_bar_length = m_max_characters - m_pre_progress_text.size() - 4 - 3;
+      if ( m_precision > 0 )
+        m_bar_length -= m_precision + 1; // 1 for decimal point
+    }
+
   public:
-    TerminalProgressCallback( MessageLevel level = InfoMessage, std::string pre_progress_text = "", uint32_t precision = 0) :
-      m_level(level), m_pre_progress_text(pre_progress_text), m_last_reported_progress(-1), m_precision(precision), m_step(::pow(10., -(int32_t(precision)+2)))  {}
+    TerminalProgressCallback( MessageLevel level = InfoMessage, std::string pre_progress_text = "", uint32_t precision = 0 ) DEPRECATED;
+
+    TerminalProgressCallback( std::string log_namespace, std::string progress_text, MessageLevel log_level = InfoMessage, uint32_t precision = 0) :
+      m_level(log_level), m_namespace(log_namespace), m_pre_progress_text(progress_text), m_last_reported_progress(-1), m_precision(precision), m_step(std::pow(10., -(int32_t(precision)+2))) {
+
+      m_namespace += ".progress";
+      boost::replace_all(m_pre_progress_text,"\t","        ");
+
+      if ( m_level <  InfoMessage )
+        vw_throw( ArgumentErr() << "TerminalProgressBar must be message level InfoMessage or higher." );
+
+      calculate_bar_length();
+    }
+
     virtual ~TerminalProgressCallback() {}
 
     TerminalProgressCallback( const TerminalProgressCallback& copy ) : ProgressCallback(copy) {
       m_level = copy.message_level();
+      m_namespace = copy.message_namespace();
       m_pre_progress_text = copy.pre_progress_text();
       m_progress = copy.progress();
       m_abort_requested = copy.abort_requested();
@@ -151,6 +184,8 @@ namespace vw {
     void set_progress_text( std::string const& text ) {
       Mutex::Lock lock(m_mutex);
       m_pre_progress_text = text;
+
+      calculate_bar_length();
     }
 
     virtual void report_progress(double progress) const {
@@ -172,6 +207,7 @@ namespace vw {
 
     std::string pre_progress_text() const { return m_pre_progress_text; }
     MessageLevel message_level() const { return m_level; }
+    std::string message_namespace() const { return m_namespace; }
   };
 
 } // namespace vw

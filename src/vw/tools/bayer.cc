@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -36,8 +36,15 @@ int main( int argc, char *argv[] ) {
   p.add("input-file", 1);
 
   po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
-  po::notify( vm );
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
+    po::notify( vm );
+  } catch ( po::error &e ) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << desc;
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << desc << std::endl;

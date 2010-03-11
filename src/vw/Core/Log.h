@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -50,10 +50,11 @@ namespace vw {
   // Debugging output types and functions
   // ----------------------------------------------------------------
 
+  // Lower number -> higher priority
   enum MessageLevel {
-    InfoMessage = 0,
-    ErrorMessage = 10,
-    WarningMessage = 20,
+    ErrorMessage = 0,
+    WarningMessage = 10,
+    InfoMessage = 20,
     DebugMessage = 30,
     VerboseDebugMessage = 40,
     EveryMessage = 100
@@ -230,11 +231,11 @@ namespace vw {
       // character string *ends* with a newline, thereby flushing the
       // buffer and printing a line to the log file.
       if ( buffer.size() > 0 ) {
-	int last_char_position = buffer.size()-1;
+        int last_char_position = buffer.size()-1;
 
-	if ( buffer[last_char_position] == '\n' ||
-	     buffer[last_char_position] == '\r' )
-	  sync();
+        if ( buffer[last_char_position] == '\n' ||
+             buffer[last_char_position] == '\r' )
+          sync();
       }
       return num;
     }
@@ -319,6 +320,23 @@ namespace vw {
     rules_type m_rules;
     Mutex m_mutex;
 
+    // Help functions
+    inline bool has_leading_wildcard( std::string const& exp ) {
+      size_t index = exp.rfind("*");
+      if ( index == std::string::npos )
+        return false;
+      return size_t(exp.size())-1 > index;
+    }
+
+    inline std::string after_wildcard( std::string const& exp ) {
+      int index = exp.rfind("*");
+      if ( index != -1 ) {
+        index++;
+        return exp.substr(index,exp.size()-index);
+      }
+      return "";
+    }
+
   public:
 
     // Ensure Copyable semantics
@@ -333,7 +351,7 @@ namespace vw {
 
 
     // by default, the LogRuleSet is set up to pass "console" messages
-    // at level vw::InfoMessage or higher.
+    // at level vw::WarningMessage or higher priority.
     LogRuleSet() {
       m_rules.push_back(rule_type(vw::InfoMessage, "console"));
     }
@@ -355,20 +373,39 @@ namespace vw {
     virtual bool operator() (int log_level, std::string log_namespace) {
       Mutex::Lock lock(m_mutex);
 
+      std::string lower_namespace = boost::to_lower_copy(log_namespace);
+
       for (rules_type::iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
 
         // Pass through rule for complete wildcard
-        if ( vw::EveryMessage == (*it).first && (*it).second == "*" )
+        if ( (*it).second == "*" &&
+             ( (*it).first == vw::EveryMessage ||
+               log_level <= (*it).first ) )
           return true;
 
-        // Pass through if the level matches and the namespace is a wildcard
-        if ( log_level <= (*it).first && (*it).second == "*" )
-          return true;
+        // For explicit matching on namespace
+        if ( (*it).second == lower_namespace ) {
+          if ( log_level <= (*it).first )
+            return true;
+          else
+            return false;
+        }
 
-        // Pass through if the level and namepace match
-        if ( log_level <= (*it).first && (*it).second == boost::to_lower_copy(log_namespace) )
-           return true;
+        // Evaluation of half wild card
+        if ( has_leading_wildcard( (*it).second )  &&
+             boost::iends_with(lower_namespace,after_wildcard((*it).second)) ) {
+          if ( log_level <= (*it).first )
+            return true;
+          else
+            return false;
+        }
       }
+
+      // Progress bars get a free ride at InfoMessage level unless a
+      // rule above modifies that.
+      if ( boost::iends_with(lower_namespace,".progress") &&
+           log_level == vw::InfoMessage )
+        return true;
 
       // We reach this line if all of the rules have failed, in
       // which case we return a NULL stream, which will result in

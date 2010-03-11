@@ -7,6 +7,7 @@ if( LAPACK_FOUND )
     LevenbergMarquardt.h 
     LinearAlgebra.h 
     PoseEstimation.h 
+    FundamentalMatrix.h
   )
   add_definitions( ${LAPACK_DEFINITIONS} )
   link_libraries(  ${LAPACK_LIBRARIES} )
@@ -23,13 +24,13 @@ set( HEADERS
   Functions.h                
   Functors.h                 
   KDTree.h                   
-  Matrix.h                        
+  Matrix.h             
+  MatrixSparseSkyline.h           
   MinimumSpanningTree.h           
   NelderMead.h                    
   ParticleSwarmOptimization.h
   Quaternion.h               
   RANSAC.h               
-  SparseSkylineMatrix.h        
   Statistics.h               
   Vector.h                   
 )                       

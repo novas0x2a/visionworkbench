@@ -1,8 +1,9 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
+
 
 /// \file Exception.h
 ///
@@ -40,7 +41,23 @@ namespace platefile {
   ///
   VW_DEFINE_EXCEPTION(InvalidPlatefileErr, PlatefileErr, VW_PLATE_DECL);
 
-  /// InvalidPlatefileErr exception
+  /// BlobLimitErr exception 
+  ///
+  /// This exception is thrown whenever the maximum number of blobs is
+  /// reached.  This shouldn't ever really happen in practice unless
+  /// something is wrong.
+  ///
+  VW_DEFINE_EXCEPTION(BlobLimitErr, PlatefileErr);
+
+  /// BlobIoErr exception 
+  ///
+  /// This exception is thrown whenever the maximum number of blobs is
+  /// reached.  This shouldn't ever really happen in practice unless
+  /// something is wrong.
+  ///
+  VW_DEFINE_EXCEPTION(BlobIoErr, PlatefileErr);
+
+  /// InvalidPlatefileErr exception 
   ///
   /// This exception is thrown by the IndexService when an error
   /// occurs while attempting to create a new platefile.

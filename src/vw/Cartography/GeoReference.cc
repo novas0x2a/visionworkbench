@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -233,7 +233,7 @@ namespace cartography {
     std::string proj4_str = proj_str_tmp;
     CPLFree( proj_str_tmp );
     // For debugging:
-    //      vw_out(0) << "PROJ in --> " << proj4_str << "\n";
+    //      vw_out() << "PROJ in --> " << proj4_str << "\n";
 
     std::vector<std::string> input_strings;
     std::vector<std::string> output_strings;
@@ -273,7 +273,7 @@ namespace cartography {
       strm << output_strings[i] << " ";
     }
     // For debugging:
-    //      vw_out(0) << "     out --> " << strm.str() << "\n";
+    //      vw_out() << "     out --> " << strm.str() << "\n";
 
     // If the file contains no projection related information, we
     // supply proj.4 with a "default" interpretation that the file
@@ -363,25 +363,21 @@ namespace cartography {
   Vector2 GeoReference::lonlat_to_point(Vector2 lon_lat) const {
     if ( ! m_is_projected ) return lon_lat;
 
-    // Clamp the latitude range to [-90, 90] as occasionally we get edge 
-    // pixels that extend slightly beyond that range and cause Proj.4 to 
-    // fail.
-    if(lon_lat[1] > 90) lon_lat[1] = 90;
-    else if(lon_lat[1] < -90) lon_lat[1] = -90;
-
-    XY projected;  
+    XY projected;
     LP unprojected;
 
-    // Proj.4 expects the (lon,lat) pair to be in radians, so we
-    // must make a conversion if the CS in geographic (lat/lon).
+    // Proj.4 expects the (lon,lat) pair to be in radians
     unprojected.u = lon_lat[0] * DEG_TO_RAD;
     unprojected.v = lon_lat[1] * DEG_TO_RAD;
 
+    // Clamp the latitude range to [-HALFPI,HALFPI] ([-90, 90]) as occasionally
+    // we get edge pixels that extend slightly beyond that range (probably due
+    // to pixel as area vs point) and cause Proj.4 to fail. We use HALFPI
+    // rather than other incantations for pi/2 because that's what proj.4 uses.
+    if(lon_lat[1] > HALFPI)       lon_lat[1] = HALFPI;
+    else if(lon_lat[1] < -HALFPI) lon_lat[1] = -HALFPI;
+
     projected = pj_fwd(unprojected, m_proj_context->proj_ptr());
-    // Needed because latitudes -90 and 90 can fail on spheroids.
-    if(pj_errno == -20)
-      if(lon_lat[1] == 90 || lon_lat[1] == -90)
-        return Vector2(-1, -1);
     CHECK_PROJ_ERROR;
 
     return Vector2(projected.u, projected.v);

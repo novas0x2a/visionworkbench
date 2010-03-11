@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -12,6 +12,7 @@
 #include <vw/Image/ImageViewRef.h>
 #include <vw/Image/MaskViews.h>
 #include <vw/Image/Transform.h>
+#include <vw/Image/Filter.h>
 #include <vw/Stereo/DisparityMap.h>
 #include <vw/Stereo/OptimizedCorrelator.h>
 
@@ -100,6 +101,7 @@ namespace stereo {
     void write_debug_images(int n, ImageViewRef<PixelMask<Vector2f> > const& disparity_map,
                             std::vector<BBox2i> nominal_blocks);
     std::vector<BBox2i> subdivide_bboxes(ImageView<PixelMask<Vector2f> > const& disparity_map,
+                                         ImageView<PixelMask<uint32> > const& valid_pad,
                                          BBox2i const& box);
 
     template <class ViewT>
@@ -129,12 +131,16 @@ namespace stereo {
       BBox2 initial_search_range = m_initial_search_range / pow(2.0, m_pyramid_levels-1);
       ImageView<PixelMask<Vector2f> > disparity_map;
 
+      // Overall Progress Bar
+      TerminalProgressCallback prog( "stereo", "Pyr Search:");
+
       // Refined the disparity map by searching in the local region
       // where the last good disparity value was found.
       for (int n = m_pyramid_levels - 1; n >=0; --n) {
         std::ostringstream current_level;
         current_level << n;
-        TerminalProgressCallback prog(InfoMessage,"\tLevel " + current_level.str() );
+
+        SubProgressCallback subbar(prog,float(m_pyramid_levels-1-n)/float(m_pyramid_levels), float(m_pyramid_levels-n)/float(m_pyramid_levels));
 
         ImageView<PixelMask<Vector2f> > new_disparity_map(left_pyramid[n].cols(), left_pyramid[n].rows());
 
@@ -152,14 +158,25 @@ namespace stereo {
           nominal_blocks.push_back(BBox2i(0,0,left_pyramid[n].cols(), left_pyramid[n].rows()));
           search_ranges.push_back(initial_search_range);
         } else {
-          //nominal_blocks = image_blocks(left_pyramid[n], 512, 512);
-          nominal_blocks = subdivide_bboxes(disparity_map,
+          std::vector<vw::uint32> x_kern(m_kernel_size.x()), y_kern(m_kernel_size.y());
+          std::fill(x_kern.begin(), x_kern.end(), 1);
+          std::fill(y_kern.begin(), y_kern.end(), 1);
+
+          // valid_pad masks all the pixels already masked by disparity_map, with the addition 
+          // of a m_kernel_size/2 pad around each pixel.  This is used to prevent 
+          // subdivide_bboxes from rejecting subregions that may actually later get filled
+          // with valid pixels at a higher scale (which helps prevent 'cutting' into the
+          // disparity map)
+          ImageViewRef<uint32> valid = apply_mask(copy_mask(ConstantView<uint32>(1, disparity_map.cols(), disparity_map.rows()), disparity_map));
+          ImageView<PixelMask<uint32> > valid_pad = create_mask(separable_convolution_filter(valid, x_kern, y_kern));
+          
+          nominal_blocks = subdivide_bboxes(disparity_map, valid_pad,
                                             BBox2i(0,0,left_pyramid[n].cols(), left_pyramid[n].rows()));
           search_ranges = compute_search_ranges(disparity_map, nominal_blocks);
         }
 
         for (unsigned r = 0; r < nominal_blocks.size(); ++r) {
-          prog.report_progress((float)r/nominal_blocks.size());
+          subbar.report_progress((float)r/nominal_blocks.size());
 
           // Given a block from the left image, compute the bounding
           // box of pixels we will be searching in the right image
@@ -205,7 +222,7 @@ namespace stereo {
                                                             nominal_blocks[r].width(),
                                                             nominal_blocks[r].height());
         }
-        prog.report_finished();
+        subbar.report_finished();
 
 
         // Clean up the disparity map by rejecting outliers in the lower
@@ -247,6 +264,7 @@ namespace stereo {
         if (m_debug_prefix.size() > 0)
           write_debug_images(n, disparity_map, nominal_blocks);
       }
+      prog.report_finished();
 
       return disparity_map;
     }

@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -35,8 +35,20 @@ namespace vw {
 }
 
 void print_usage(po::options_description const& visible_options) {
-  vw_out(0) << "\nUsage: vwv [options] <image file> \n";
-  vw_out(0) << visible_options << std::endl;
+  vw_out() << "\nUsage: vwv [options] <image file> \n";
+  vw_out() << "\nHere is a quick list of vwv keybindings:\n\n"
+           << "  drag mouse - moves the image around\n"
+           << "  mousewheel - zooms in and out   <-- also works with two-finger-drag gestures on some laptops\n"
+           << "  +/-   -   Change requested transaction_id.\n"
+           << "  e - turn on \"exact\" transaction_id matching (otherwise vwv will show the tile with the largest t_id <= requested t_id)\n"
+           << "  t - turn on visualization of tile boundaries\n"
+           << "  1-4 - View R,G,B,Alpha channels separately\n"
+           << "  0 - View all channels together as RGBA\n"
+           << "  o - turn on 'offset' mode.  Drag mouse left and right to shift pixel intensities by offset\n"
+           << "  g - turn on 'gain' mode.  Drag mouse left and right to multiply pixel intensities by gain\n"
+           << "  v - turn on 'gamma' mode. Drag mouse left and right to scale pixels by gamma value\n"
+           << "  i - toggle nearest neighbor/bilinear interpolation\n\n";
+  vw_out() << visible_options << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -44,6 +56,7 @@ int main(int argc, char *argv[]) {
   unsigned cache_size;
   std::string image_filename;
   float nodata_value;
+  int transaction_id = -1;;
 
   // Set up command line options
   po::options_description visible_options("Options");
@@ -51,6 +64,7 @@ int main(int argc, char *argv[]) {
     ("help,h", "Display this help message")
     ("normalize,n", "Attempt to normalize the image before display.")
     ("nodata-value", po::value<float>(&nodata_value), "Choose a \"nodata\" value in the image to treat as transparent.")
+    ("transaction-id,t", po::value<int>(&transaction_id), "Choose an initial transaction_id.")
     ("cache", po::value<unsigned>(&cache_size)->default_value(1000), "Cache size, in megabytes");
 
   po::options_description positional_options("Positional Options");
@@ -75,7 +89,7 @@ int main(int argc, char *argv[]) {
   }
 
   if( vm.count("image") != 1 ) {
-    vw_out(0) << "Error: Must specify exactly one input file!" << std::endl;
+    vw_out() << "Error: Must specify exactly one input file!" << std::endl;
     print_usage(visible_options);
     return 1;
   }
@@ -85,12 +99,12 @@ int main(int argc, char *argv[]) {
 
   // Start up the Qt GUI
   QApplication app(argc, argv);
-  vw::gui::MainWindow main_window(image_filename, nodata_value, vm.count("normalize"), vm);
+  vw::gui::MainWindow main_window(image_filename, nodata_value, transaction_id, vm.count("normalize"), vm);
   main_window.show();
   try {
     app.exec();
   } catch (vw::Exception &e) {
-    vw_out(0) << "An unexpected error occurred: " << e.what() << "\nExiting\n\n";
+    vw_out() << "An unexpected error occurred: " << e.what() << "\nExiting\n\n";
   }
 
   return 0;

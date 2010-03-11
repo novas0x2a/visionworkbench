@@ -1,8 +1,9 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
+
 
 /// \file PlateFile.h
 ///
@@ -96,19 +97,19 @@
 #include <vw/Math/Vector.h>
 #include <vw/Image/ImageView.h>
 #include <vw/FileIO/DiskImageResource.h>
+#include <vw/Core/ThreadPool.h>
 
 #include <vw/Plate/Index.h>
-#include <vw/Plate/LocalIndex.h>
 #include <vw/Plate/Blob.h>
+#include <vw/Plate/Exception.h>
 
 #include <vector>
 #include <fstream>
+#include <stdlib.h>
+
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/convenience.hpp>
-
-// Protocol Buffer
-#include <vw/Plate/ProtoBuffers.pb.h>
-
+#include <boost/scoped_array.hpp>
 namespace fs = boost::filesystem;
 
 namespace vw {
@@ -123,7 +124,6 @@ namespace platefile {
   class TemporaryTileFile {
 
     std::string m_filename;
-    bool m_delete_afterwards;
 
     // Define these as private methods to enforce TemporaryTileFile'
     // non-copyable semantics.
@@ -132,57 +132,33 @@ namespace platefile {
     TemporaryTileFile& operator=(TemporaryTileFile const&) { return *this; }
   
   public:
-
-    static std::string unique_tempfile_name(std::string file_extension) {
-      char base_name[100] = "/tmp/vw_plate_tile_XXXXXXX";
-      std::string name = mktemp(base_name);
-      return name + "." + file_extension;
-    }
+    
+    /// Generate a unique filename ( usually in /tmp, though this can
+    /// be overridden using vw_settings().tmp_directory() ).
+    static std::string unique_tempfile_name(std::string file_extension);
 
     /// This constructor assumes control over an existing file on disk,
     /// and deletes it when the TemporaryTileFile object is de-allocated.
-    TemporaryTileFile(std::string filename, bool delete_afterwards = true) : 
-      m_filename(filename), m_delete_afterwards(delete_afterwards) {
-      vw_out(DebugMessage, "plate::tempfile") << "Assumed control of temporary file: " 
-                                              << m_filename << "\n";
-
-    }
+    TemporaryTileFile(std::string filename);
 
     /// This constructor assumes control over an existing file on disk,
     /// and deletes it when the TemporaryTileFile object is de-allocated.
     template <class ViewT>
     TemporaryTileFile(ImageViewBase<ViewT> const& view, std::string file_extension) : 
-      m_filename(unique_tempfile_name(file_extension)), m_delete_afterwards(true) {
+      m_filename(unique_tempfile_name(file_extension)) {
       write_image(m_filename, view);
       vw_out(DebugMessage, "plate::tempfile") << "Created temporary file: " 
                                               << m_filename << "\n";
     }
 
-    ~TemporaryTileFile() {
-      if (m_delete_afterwards) {
-        int result = unlink(m_filename.c_str());
-        if (result)
-          vw_out(ErrorMessage, "plate::tempfile") 
-            << "WARNING: unlink() failed in ~TemporaryTileFile() for filename \"" 
-            << m_filename << "\"\n";
-        vw_out(DebugMessage, "plate::tempfile") << "Destroyed temporary file: " 
-                                                << m_filename << "\n";
-      }
-    }
+    ~TemporaryTileFile();
 
     std::string file_name() const { return m_filename; }
 
     /// Opens the temporary file and determines its size in bytes.
-    int64 file_size() const {
-      std::ifstream istr(m_filename.c_str(), std::ios::binary);
-      
-      if (!istr.is_open())
-        vw_throw(IOErr() << "TempPlateFile::file_size() -- could not open \"" 
-                 << m_filename << "\".");
-      istr.seekg(0, std::ios_base::end);
-      return istr.tellg();
-    }
+    int64 file_size() const;
 
+    // Read an image from the temporary tile file.
     template <class PixelT> 
     ImageView<PixelT> read() const {
       ImageView<PixelT> img;
@@ -201,6 +177,8 @@ namespace platefile {
   class PlateFile {
     boost::shared_ptr<Index> m_index;
     FifoWorkQueue m_queue;
+    boost::shared_ptr<Blob> m_write_blob;
+    int m_write_blob_id;
 
   public:
     PlateFile(std::string url);
@@ -215,6 +193,9 @@ namespace platefile {
     /// Returns the name of the root directory containing the plate file.
     std::string name() const { return m_index->platefile_name(); }
 
+    /// Returns the name of the root directory containing the plate file.
+    IndexHeader index_header() const { return m_index->index_header(); }
+
     /// Returns the file type used to store tiles in this plate file.
     std::string default_file_type() const { return m_index->tile_filetype(); }
 
@@ -224,144 +205,171 @@ namespace platefile {
 
     ChannelTypeEnum channel_type() const { return m_index->channel_type(); }
 
-    int depth() const { return m_index->max_depth(); }
+    int num_levels() const { return m_index->num_levels(); }
 
-    /// Read the tile header. You supply a base name (without the
-    /// file's image extension).  The image extension will be appended
-    /// automatically for you based on the filetype in the TileHeader.
+    void sync() const { m_index->sync(); }
+
+    void log(std::string message) { m_index->log(message); }
+
+    /// Read data directly to a file on disk. You supply a base name
+    /// (without the file's image extension).  The image extension
+    /// will be appended automatically for you based on the filetype
+    /// in the TileHeader.
     std::string read_to_file(std::string const& base_name, 
-                             int col, int row, int depth, int transaction_id) {
+                             int col, int row, int level, int transaction_id);
 
-      TileHeader result;
-      std::string filename = base_name;
-
-      // 1. Call index read_request(col,row,depth).  Returns IndexRecord.
-      IndexRecord record = m_index->read_request(col, row, depth, transaction_id);
-      if (record.status() != INDEX_RECORD_EMPTY) {
-        std::ostringstream blob_filename;
-        blob_filename << this->name() << "/plate_" << record.blob_id() << ".blob";
-
-        // 2. Open the blob file and read the header
-        Blob blob(blob_filename.str());
-        TileHeader header = blob.read_header<TileHeader>(record.blob_offset());
-
-        // 3. Choose a temporary filename and call BlobIO
-        // read_as_file(filename, offset, size) [ offset, size from
-        // IndexRecord ]
-        filename += "." + header.filetype();
-        blob.read_to_file(filename, record.blob_offset());
-
-        // 4. Return the name of the file
-        return filename;
-      } else {
-        vw_throw(TileNotFoundErr() << "Index record was found, but was marked as empty.");
-        return filename; // never reached
-      }
-
-    }
-
-
-    /// Read an image from the specified tile location in the plate file.
+    /// Read an image from the specified tile location in the plate file.  
+    ///
+    /// By default, this call to read will return a tile with the MOST
+    /// RECENT transaction_id <= to the transaction_id you specify
+    /// here in the function arguments (if a tile exists).  However,
+    /// setting exact_transaction_match = true will force the
+    /// PlateFile to search for a tile that has the EXACT SAME
+    /// transaction_id as the one that you specify.
+    ///
+    /// A transaction ID of -1 indicates that we should return the
+    /// most recent tile, regardless of its transaction id.
     template <class ViewT>
-    TileHeader read(ViewT &view, int col, int row, int depth, int transaction_id) {
+    TileHeader read(ViewT &view, int col, int row, int level, 
+                    int transaction_id, bool exact_transaction_match = false) const {
 
       TileHeader result;
       
-      // 1. Call index read_request(col,row,depth).  Returns IndexRecord.
-      IndexRecord record = m_index->read_request(col, row, depth, transaction_id);
-      if (record.status() != INDEX_RECORD_EMPTY) {
+      // 1. Call index read_request(col,row,level).  Returns IndexRecord.
+      IndexRecord record = m_index->read_request(col, row, level, 
+                                                 transaction_id, exact_transaction_match);
+
+      // 2. Open the blob file and read the header.  If we are reading
+      // from the same blob as we already have open for writing, we go
+      // ahead and use that already-open file pointer.  Otherwise, we
+      // open the new blob for reading.
+      boost::shared_ptr<Blob> read_blob;
+      if (m_write_blob && record.blob_id() == m_write_blob_id) {
+        read_blob = m_write_blob;
+      } else {
         std::ostringstream blob_filename;
         blob_filename << this->name() << "/plate_" << record.blob_id() << ".blob";
-
-        // 2. Open the blob file and read the header
-        Blob blob(blob_filename.str());
-        TileHeader header = blob.read_header<TileHeader>(record.blob_offset());
-
-        // 3. Choose a temporary filename and call BlobIO
-        // read_as_file(filename, offset, size) [ offset, size from
-        // IndexRecord ]
-        std::string tempfile = TemporaryTileFile::unique_tempfile_name(header.filetype());
-        blob.read_to_file(tempfile, record.blob_offset());
-        TemporaryTileFile tile(tempfile);
-
-        // 4. Read data from temporary file.
-        view = tile.read<typename ViewT::pixel_type>();
-
-        // 5. Access the tile header and return it.
-        result = blob.read_header<TileHeader>(record.blob_offset());
-        return result;
-      } else {
-        vw_throw(TileNotFoundErr() << "Index record was found, but was marked as empty.");
-        return result; // never reached
+        read_blob.reset(new Blob(blob_filename.str(), true));
       }
+      TileHeader header = read_blob->read_header<TileHeader>(record.blob_offset());
+      
+      // 3. Choose a temporary filename and call BlobIO
+      // read_as_file(filename, offset, size) [ offset, size from
+      // IndexRecord ]
+      std::string tempfile = TemporaryTileFile::unique_tempfile_name(header.filetype());
+      read_blob->read_to_file(tempfile, record.blob_offset());
+      TemporaryTileFile tile(tempfile);
+      
+      // 4. Read data from temporary file.
+      view = tile.read<typename ViewT::pixel_type>();
+      
+      // 5. Return the tile header.
+      return header;
     }
+    
+    /// Writing, pt. 1: Locks a blob and returns the blob id that can
+    /// be used to write tiles.
+    void write_request();
 
-    /// Write an image to the specified tile location in the plate file.
+    /// Writing, pt. 2: Write an image to the specified tile location
+    /// in the plate file.
     template <class ViewT>
-    void write(ImageViewBase<ViewT> const& view, 
-               int col, int row, int depth, int transaction_id) {      
+    void write_update(ImageViewBase<ViewT> const& view, 
+                      int col, int row, int level, int transaction_id) {      
+
+      if (!m_write_blob)
+        vw_throw(BlobIoErr() << "Error issuing write_update().  No blob file open.  "
+                 << "Are you sure your ran write_request()?");
+
+      // 0. Create a write_header
+      TileHeader write_header;
+      write_header.set_col(col);
+      write_header.set_row(row);
+      write_header.set_level(level);
+      write_header.set_transaction_id(transaction_id);
+      write_header.set_filetype(this->default_file_type());
 
       // 1. Write data to temporary file. 
       TemporaryTileFile tile(view, this->default_file_type());
       std::string tile_filename = tile.file_name();
-      int64 file_size = tile.file_size();
 
-      // 2. Make write_request(size) to index. Returns blob id.
-      int blob_id = m_index->write_request(file_size);
-      std::ostringstream blob_filename;
-      blob_filename << this->name() << "/plate_" << blob_id << ".blob";
+      // 3. Create a blob and call write_from_file(filename).  Returns
+      // offset, size.  
+      int64 blob_offset;
+      m_write_blob->write_from_file(tile_filename, write_header, blob_offset);
 
-      // 3. Create a blob and call write_from_file(filename).  Returns offset, size.
-      Blob blob(blob_filename.str());
+      // 4. Call write_update(col, row, level, record) to update the
+      // index with the new data.
+      IndexRecord write_record;
+      write_record.set_blob_id(m_write_blob_id);
+      write_record.set_blob_offset(blob_offset);
+      
+      m_index->write_update(write_header, write_record);
+    }
 
+    /// Writing, pt. 2, alternate: Write raw data (as a tile) to a specified
+    /// tile location. Use the filetype to identify the data later.
+    void write_update(const boost::shared_array<uint8> data, uint64 data_size,
+                      int col, int row, int level, int transaction_id) {
+
+      if (!m_write_blob)
+        vw_throw(BlobIoErr() << "Error issuing write_update(). No blob file open. "
+                             << "Are you sure your ran write_request()?");
+
+      // 0. Create a write_header
       TileHeader write_header;
       write_header.set_col(col);
       write_header.set_row(row);
-      write_header.set_depth(depth);
+      write_header.set_level(level);
       write_header.set_transaction_id(transaction_id);
       write_header.set_filetype(this->default_file_type());
 
-      int64 blob_offset;
-      blob.write_from_file(tile_filename, write_header, blob_offset);
+      // 1. Write the data into the blob
+      int64 blob_offset = m_write_blob->write(write_header, data, data_size);
 
-      // 4. Call write_complete(col, row, depth, record)
-
+      // 2. Update the index
       IndexRecord write_record;
-      write_record.set_blob_id(blob_id);
+      write_record.set_blob_id(m_write_blob_id);
       write_record.set_blob_offset(blob_offset);
-      write_record.set_status(INDEX_RECORD_VALID);
 
-      m_index->write_complete(write_header, write_record);
+      m_index->write_update(write_header, write_record);
     }
 
+    /// Writing, pt. 3: Signal the completion of the write operation.
+    void write_complete();
 
     /// Read a record out of the platefile.  
     ///
+    /// By default, this call to read will return a tile with the MOST
+    /// RECENT transaction_id <= to the transaction_id you specify
+    /// here in the function arguments (if a tile exists).  However,
+    /// setting exact_transaction_match = true will force the
+    /// PlateFile to search for a tile that has the EXACT SAME
+    /// transaction_id as the one that you specify.
+    ///
     /// A transaction ID of -1 indicates that we should return the
     /// most recent tile, regardless of its transaction id.
-    IndexRecord read_record(int col, int row, int depth, int transaction_id) {
-      return m_index->read_request(col, row, depth, transaction_id);
-    }
+    IndexRecord read_record(int col, int row, int level, 
+                            int transaction_id, bool exact_transaction_match = false);
 
     // --------------------- TRANSACTIONS ------------------------
 
     // Clients are expected to make a transaction request whenever
     // they start a self-contained chunk of mosaicking work.  .
     virtual int32 transaction_request(std::string transaction_description,
-                                      std::vector<TileHeader> const& tile_headers) {
-      return m_index->transaction_request(transaction_description, tile_headers);
-    }
-
-    /// Called right before the beginning of the mipmapping pass
-    virtual void root_complete(int transaction_id,
-                          std::vector<TileHeader> const& tile_headers) {
-      m_index->root_complete(transaction_id, tile_headers);
+                                      int transaction_id_override) {
+      return m_index->transaction_request(transaction_description, transaction_id_override);
     }
 
     // Once a chunk of work is complete, clients can "commit" their
     // work to the mosaic by issuding a transaction_complete method.
-    virtual void transaction_complete(int32 transaction_id) {
-      m_index->transaction_complete(transaction_id);
+    virtual void transaction_complete(int32 transaction_id, bool update_read_cursor) {
+      m_index->transaction_complete(transaction_id, update_read_cursor);
+    }
+
+    // If a transaction fails, we may need to clean up the mosaic.  
+    virtual void transaction_failed(int32 transaction_id) {
+      m_index->transaction_failed(transaction_id);
     }
 
     virtual int32 transaction_cursor() {
@@ -370,8 +378,39 @@ namespace platefile {
     
     // ----------------------- UTILITIES --------------------------
 
-    void map(boost::shared_ptr<TreeMapFunc> func) {
-      m_index->map(func);
+    /// Returns a list of valid tiles that match this level, region, and
+    /// range of transaction_id's.  Returns a list of TileHeaders with
+    /// col/row/level and transaction_id of the most recent tile at each
+    /// valid location.  Note: there may be other tiles in the transaction
+    /// range at this col/row/level, but valid_tiles() only returns the
+    /// first one.
+    std::list<TileHeader> search_by_region(int level, vw::BBox2i const& region,
+                                           int start_transaction_id, 
+                                           int end_transaction_id, 
+                                           int min_num_matches, 
+                                           bool fetch_one_additional_entry = false) const {
+      return m_index->search_by_region(level, region, 
+                                  start_transaction_id, end_transaction_id,
+                                  min_num_matches, fetch_one_additional_entry);
+    }
+
+    /// Read one ore more images at a specified location in the
+    /// platefile by specifying a range of transaction ids of
+    /// interest.  This range is inclusive of the first entry, but not
+    /// the last entry: [ begin_transaction_id, end_transaction_id )
+    ///
+    /// This is mostly useful when compositing tiles during mipmapping.
+    ///
+    /// If you want to return all tiles at the give [col, row, level],
+    /// then you can supply a begin_transaction_id of -1 and
+    /// end_transaction_id of -1.
+    ///
+    std::list<TileHeader> search_by_location(int col, int row, int level, 
+                                             int begin_transaction_id, int end_transaction_id,
+                                             bool fetch_one_additional_entry = false) {
+      return m_index->search_by_location(col, row, level, 
+                                         begin_transaction_id, end_transaction_id,
+                                         fetch_one_additional_entry);
     }
 
   };

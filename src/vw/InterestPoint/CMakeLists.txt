@@ -2,12 +2,16 @@ vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 set( HEADERS 
   ${EXPORT_H}
+  BoxFilter.h
   Descriptor.h
   Detector.h
   Extrema.h
   ImageOctave.h
   ImageOctaveHistory.h
+  IntegralDescriptor.h
+  IntegralDetector.h
   IntegralImage.h
+  IntegralInterestOperator.h
   InterestData.h
   InterestOperator.h
   InterestTraits.h
@@ -19,7 +23,10 @@ set( HEADERS
   WeightedHistogram.h
 )
 
-set( SOURCES 
+set( SOURCES
+  Descriptor.cc
+  IntegralDetector.cc
+  IntegralInterestOperator.cc
   InterestData.cc
 )
 

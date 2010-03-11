@@ -13,11 +13,11 @@ set( HEADERS
   ProgressCallback.h
   Settings.h
   Stopwatch.h
-  TerminationHandler.h
   Thread.h
   ThreadPool.h
   TypeDeduction.h
   VarArray.h
+  ThreadQueue.h
 )
 
 set( SOURCES
@@ -29,7 +29,6 @@ set( SOURCES
   ProgressCallback.cc
   Settings.cc
   Stopwatch.cc
-  TerminationHandler.cc
   Thread.cc
 )
 

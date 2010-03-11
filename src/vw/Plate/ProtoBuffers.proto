@@ -23,12 +23,12 @@ message BlobRecord {
 
 // The TileRecord store metadata about the tile itself as well as the
 // information needed to place the tile back into the index tree.  The
-// [col, row, depth, transaction_id] info can be used to reconstruct the index
+// [col, row, level, transaction_id] info can be used to reconstruct the index
 // by reading TileRecords in the blob files.
 message TileHeader {
   required int32 col = 5;
   required int32 row = 6;
-  required int32 depth = 7;
+  required int32 level = 7;
   optional uint64 transaction_id = 8 [ default = 0 ];
   optional string filetype = 10 [ default = 'jpg' ];
 }
@@ -36,13 +36,6 @@ message TileHeader {
 // ----------------------------------------------------------------------
 //                      Index Data Structures
 // ----------------------------------------------------------------------
-
-enum IndexRecordStatusType {
-  INDEX_RECORD_EMPTY = 1;
-  INDEX_RECORD_STALE = 2;
-  INDEX_RECORD_VALID = 3;
-  INDEX_RECORD_PRIMED = 4;
-}
 
 // The IndexHeader store basic metadata for the platefile, such as the
 // default tile size, file type, and map projection information.
@@ -60,6 +53,7 @@ message IndexHeader {
   optional int32 channel_type = 5;   // see vw/Image/PixelTypeInfo.h
   optional string type = 6;          // platefile type [ toast, kml, or gigapan ]
   optional string description = 7;   // textual description
+  optional int32 num_levels = 8;     // number of pyramid levels
 
   // Privately Managed Metadata
   //
@@ -68,9 +62,8 @@ message IndexHeader {
   //
   required int32 platefile_id = 1;   // a unique number that identifies this platefile
   optional int32 version = 10 [default = 1];  
-  optional int32 transaction_read_cursor = 11 [default = 0];
+  optional int32 transaction_read_cursor = 11 [default = 1];
   optional int32 transaction_write_cursor = 12 [default = 1];
-  repeated int32 complete_transaction_ids = 13 [packed = true];
 
 }
 
@@ -83,9 +76,7 @@ message IndexHeader {
 message IndexRecord {
   optional int32 blob_id = 1 [default = -1];
   optional uint64 blob_offset = 2 [default = 0];
-  optional IndexRecordStatusType status = 3 [ default = INDEX_RECORD_EMPTY ];
 }
-
 
 // ----------------------------------------------------------------------
 //             Remote Procedure Calls (RPC) for Index Server
@@ -116,32 +107,69 @@ message IndexInfoRequest {
   required int32 platefile_id = 1;
 }
 
+message IndexLogRequest {
+  required int32 platefile_id = 1;
+  required string message = 2;
+}
+
 message IndexReadRequest {
   required int32 platefile_id = 1;
   required int32 col = 3;
   required int32 row = 4;
-  required int32 depth = 5;
+  required int32 level = 5;
   required int32 transaction_id = 6;
+  required bool exact_transaction_match = 7;
 }
+
+message IndexPageRequest {
+  required int32 platefile_id = 1;
+  required int32 col = 3;
+  required int32 row = 4;
+  required int32 level = 5;
+}
+
+// message IndexMultiReadRequest {
+//   required int32 platefile_id = 1;
+//   required int32 col = 3;
+//   required int32 row = 4;
+//   required int32 level = 5;
+//   required int32 begin_transaction_id = 6;
+//   required int32 end_transaction_id = 7;
+// }
 
 message IndexWriteRequest {
   required int32 platefile_id = 1;
-  required int32 size = 3;
 }
 
-message IndexWriteComplete {
+message IndexWriteUpdate {
   required int32 platefile_id = 1;
   required TileHeader header = 3;
   required IndexRecord record = 4;
 }
 
+message IndexMultiWriteUpdate {
+  repeated IndexWriteUpdate write_updates = 2;
+}
+
+message IndexWriteComplete {
+  required int32 platefile_id = 1;
+  required int32 blob_id = 2;
+  required uint64 blob_offset = 3;
+}
+
 message IndexTransactionRequest {
   required int32 platefile_id = 1;
   required string description = 2;
-  repeated TileHeader tile_headers = 3;
+  required int32 transaction_id_override = 3; 
 }
 
 message IndexTransactionComplete {
+  required int32 platefile_id = 1;
+  required int32 transaction_id = 2;
+  required bool update_read_cursor = 3;
+}
+
+message IndexTransactionFailed {
   required int32 platefile_id = 1;
   required int32 transaction_id = 2;
 }
@@ -150,8 +178,24 @@ message IndexTransactionCursorRequest {
   required int32 platefile_id = 1;
 }
 
-message IndexDepthRequest {
+// message IndexValidTilesRequest {
+//   required int32 platefile_id = 1;
+//   required int32 level = 2;
+//   required int32 region_col = 3;
+//   required int32 region_row = 4;
+//   required int32 region_width = 5;
+//   required int32 region_height = 6;
+//   required int32 begin_transaction_id = 7;
+//   required int32 end_transaction_id = 8;
+//   required int32 min_num_matches = 9;
+// }
+
+message IndexNumLevelsRequest {
   required int32 platefile_id = 1;
+}
+
+message IndexTestRequest {
+  required int64 value = 1;
 }
 
 // ----------------------------------
@@ -179,6 +223,10 @@ message IndexListReply {
   repeated string platefile_names = 1;
 }
 
+message IndexPageReply {
+  required bytes page_bytes = 1;
+}
+
 message IndexReadReply {
   required IndexRecord index_record = 1;
 }
@@ -189,6 +237,7 @@ message IndexSuccess {
 
 message IndexWriteReply {
   required int32 blob_id = 1;
+  required int32 size = 2;
 }
 
 message IndexTransactionReply {
@@ -199,8 +248,12 @@ message IndexTransactionCursorReply {
   required int32 transaction_id = 1;
 }
 
-message IndexDepthReply {
-  required int32 depth = 1;
+message IndexNumLevelsReply {
+  required int32 num_levels = 1;
+}
+
+message IndexTestReply {
+  required int64 value = 1;
 }
 
 // ---------------------------------
@@ -217,31 +270,45 @@ message RpcNullMessage {
 }
 
 message RpcRequestWrapper {
-  required string requestor = 1;
-  required string method = 2;
-  required bytes payload = 3;
+  required uint32 sequence_number = 1;
+  required string requestor = 2;
+  required string method = 3;
+  required bytes payload = 4;
 }
 
 message RpcResponseWrapper {
-  optional bytes payload = 1;
-  required bool error = 2 [ default = false ];
-  optional RpcErrorInfo error_info = 3;
+  required uint32 sequence_number = 1;
+  optional bytes payload = 2;
+  required bool error = 3 [ default = false ];
+  optional RpcErrorInfo error_info = 4;
 }
 
 service IndexService {
+  
+  // Basic Platefile Management
   rpc OpenRequest (IndexOpenRequest) returns (IndexOpenReply);
   rpc CreateRequest (IndexCreateRequest) returns (IndexOpenReply);
   rpc InfoRequest (IndexInfoRequest) returns (IndexInfoReply);
+
+  // Platefile I/O
+  rpc PageRequest (IndexPageRequest) returns (IndexPageReply);
   rpc ReadRequest (IndexReadRequest) returns (IndexReadReply);
   rpc WriteRequest (IndexWriteRequest) returns (IndexWriteReply);
+  rpc WriteUpdate (IndexWriteUpdate) returns (RpcNullMessage);
+  rpc MultiWriteUpdate (IndexMultiWriteUpdate) returns (RpcNullMessage);
   rpc WriteComplete (IndexWriteComplete) returns (RpcNullMessage);
+
+
+  // Transaction Management
   rpc TransactionRequest (IndexTransactionRequest) returns (IndexTransactionReply);
   rpc TransactionComplete (IndexTransactionComplete) returns (RpcNullMessage);
+  rpc TransactionFailed (IndexTransactionFailed) returns (RpcNullMessage);
   rpc TransactionCursor (IndexTransactionCursorRequest) returns (IndexTransactionCursorReply);
-  rpc DepthRequest (IndexDepthRequest) returns (IndexDepthReply);
-  rpc ListRequest (IndexListRequest) returns (IndexListReply);
-}
 
-service IndexManagerService {
+  // Misc.
+  rpc NumLevelsRequest (IndexNumLevelsRequest) returns (IndexNumLevelsReply);
   rpc ListRequest (IndexListRequest) returns (IndexListReply);
+  rpc TestRequest (IndexTestRequest) returns (IndexTestReply);
+  rpc LogRequest (IndexLogRequest) returns (RpcNullMessage);
+
 }

@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -15,14 +15,14 @@
 //    you want with it, and include it software that is licensed under
 //    the GNU or the BSD license, or whatever other licence you chose,
 //    including proprietary closed source licenses.  Although not part
-//    of the license, I do expect common courtesy, please. 
+//    of the license, I do expect common courtesy, please.
 //
 //    -Matthias Wandel
-// 
+//
 
 #include <vw/Camera/Exif.h>
 
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 
@@ -110,33 +110,33 @@ vw::camera::ExifDateTime vw::camera::ExifView::get_digitization_time() const {
 // Camera settings
 double vw::camera::ExifView::get_f_number() const {
   double value;
-  try { 
-    query_by_tag(EXIF_FNumber, value); 
+  try {
+    query_by_tag(EXIF_FNumber, value);
     return value;
   } catch (ExifErr &/*e*/) {
-    query_by_tag(EXIF_ApertureValue, value); 
+    query_by_tag(EXIF_ApertureValue, value);
     return pow(2.0, value * 0.5);
   }
 }
 
 double vw::camera::ExifView::get_exposure_time() const {
   double value;
-  try { 
-    query_by_tag(EXIF_ExposureTime, value); 
+  try {
+    query_by_tag(EXIF_ExposureTime, value);
     return value;
   } catch (ExifErr &/*e*/) {
-    query_by_tag(EXIF_ShutterSpeedValue, value); 
+    query_by_tag(EXIF_ShutterSpeedValue, value);
     return pow(2.0, -value);
   }
 }
 
 double vw::camera::ExifView::get_iso() const {
   double value;
-  try { 
-    query_by_tag(EXIF_ISOSpeedRatings, value); 
+  try {
+    query_by_tag(EXIF_ISOSpeedRatings, value);
     return value;
   } catch (ExifErr &/*e*/) {
-    query_by_tag(EXIF_ExposureIndex, value); 
+    query_by_tag(EXIF_ExposureIndex, value);
     return value;
   }
   // otherwise probably have to dig through MakerNote
@@ -145,7 +145,7 @@ double vw::camera::ExifView::get_iso() const {
 // Returns focal length of camera in mm, as if image sensor were 36mm x 24mm
 double vw::camera::ExifView::get_focal_length_35mm_equiv() const {
   double value;
-  try { 
+  try {
     query_by_tag(EXIF_FocalLengthIn35mmFilm, value); // 0 if unknown
     if (value > 0) return value;
   } catch (ExifErr &/*e*/) {}
@@ -183,25 +183,60 @@ double vw::camera::ExifView::get_focal_length_35mm_equiv() const {
   return focal_length * sqrt(36.*36.+24.*24.) / sensor_diagonal_in_mm;
 }
 
+// Returns the x & y focal lengths in pixels (good for working with vw::camera)
+vw::Vector2 vw::camera::ExifView::get_focal_length_pix() const {
+  double focal_length; // mm
+  vw::Vector2 focal_plane_res;
+  query_by_tag(EXIF_FocalLength, focal_length);
+  query_by_tag(EXIF_FocalPlaneXResolution, focal_plane_res[0]);
+  query_by_tag(EXIF_FocalPlaneYResolution, focal_plane_res[1]);
+  if ( focal_plane_res[0] <= 0 )
+    vw_throw(ExifErr() << "Illegal value for FocalPlaneXResolution");
+  if ( focal_plane_res[1] <= 0 )
+    vw_throw(ExifErr() << "Illegal value for FocalPlaneYResolution");
+  int focal_plane_resolution_unit = 2;
+  try { query_by_tag(EXIF_FocalPlaneResolutionUnit, focal_plane_resolution_unit); } catch (ExifErr) {}
+  double focal_plane_resolution_unit_in_mm = 0;
+  switch (focal_plane_resolution_unit) {
+  case 2: // inch
+    focal_plane_resolution_unit_in_mm = 25.4;
+    break;
+  case 3: // cm
+    focal_plane_resolution_unit_in_mm = 10.;
+    break;
+  default:
+    vw_throw(ExifErr() << "Illegal value for FocalPlaneResolutionUnit");
+  }
+  return focal_plane_res*focal_length/focal_plane_resolution_unit_in_mm;
+}
+
+// Returns image size, useful if the image is never really opened.
+vw::Vector2i vw::camera::ExifView::get_image_size() const {
+  vw::Vector2i image_size;
+  query_by_tag(EXIF_PixelXDimension, image_size[0]);
+  query_by_tag(EXIF_PixelYDimension, image_size[1]);
+  return image_size;
+}
+
 // FIXME: report in some logical way when value doesn't exist
 double vw::camera::ExifView::get_aperture_value() const {
   double value;
-  try { 
-    query_by_tag(EXIF_ApertureValue, value); 
+  try {
+    query_by_tag(EXIF_ApertureValue, value);
     return value;
   } catch (ExifErr &/*e*/) {
-    query_by_tag(EXIF_FNumber, value); 
+    query_by_tag(EXIF_FNumber, value);
     return 2 * log(value)/log(2.);  // log2(value) = log(value)/log(2)
   }
 }
 
 double vw::camera::ExifView::get_time_value() const {
   double value;
-  try { 
-    query_by_tag(EXIF_ShutterSpeedValue, value); 
+  try {
+    query_by_tag(EXIF_ShutterSpeedValue, value);
     return value;
   } catch (ExifErr &/*e*/) {
-    query_by_tag(EXIF_ExposureTime, value); 
+    query_by_tag(EXIF_ExposureTime, value);
     return log(1/value)/log(2.); // log2(value) = log(value)/log(2)
   }
 }
@@ -211,7 +246,7 @@ double vw::camera::ExifView::get_exposure_value() const {
 }
 
 // Film speed value is log_2(N * iso)
-// 
+//
 // N is a constant that establishes the relationship between the ASA
 // arithmetic film speed and the ASA speed value. The value of N
 // 1/3.125, as defined by the EXIF 2.2 spec.  The constant K is the
@@ -221,7 +256,7 @@ double vw::camera::ExifView::get_exposure_value() const {
 double vw::camera::ExifView::get_film_speed_value() const {
   double iso = (double)get_iso();
   const double N = 1/3.125;
-  //  const double K = 12.5; 
+  //  const double K = 12.5;
   return log(iso * N)/log(2.); // log2(value) = log(value)/log(2)
 }
 
@@ -230,7 +265,7 @@ double vw::camera::ExifView::get_luminance_value() const {
   try{
     query_by_tag(EXIF_BrightnessValue, Bv);
     return Bv;
-  } catch (ExifErr &/*e*/) { 
+  } catch (ExifErr &/*e*/) {
     try {
       double Av = get_aperture_value();
       double Tv = get_time_value();
@@ -244,7 +279,7 @@ double vw::camera::ExifView::get_luminance_value() const {
 }
 
 // Film speed value is log_2(N * iso)
-// 
+//
 // N is a constant that establishes the relationship between the ASA
 // arithmetic film speed and the ASA speed value. The value of N
 // 1/3.125, as defined by the EXIF 2.2 spec.  The constant K is the
@@ -253,7 +288,7 @@ double vw::camera::ExifView::get_luminance_value() const {
 //
 double vw::camera::ExifView::get_average_luminance() const {
   // const double N = 1/3.125;
-  const double K = 12.5; 
+  const double K = 12.5;
 
   try {
     double A = get_f_number();

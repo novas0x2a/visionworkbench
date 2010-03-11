@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -40,14 +40,14 @@ struct TestLogTask {
                         tick("Tick " + vw::stringify(Thread::id()) + "\n"),
                         stop("Stop " + vw::stringify(Thread::id()) + "\n");
 
-    m_log(0,m_ns) << start;
+    m_log(InfoMessage,m_ns) << start;
 
     while( !m_terminate ) {
       Thread::sleep_ms(100);
-      m_log(0,m_ns) << tick;
+      m_log(InfoMessage,m_ns) << tick;
     }
 
-    m_log(0,m_ns) << stop;
+    m_log(InfoMessage,m_ns) << stop;
   }
 
   void kill() { m_terminate = true; }
@@ -87,6 +87,9 @@ TEST(Log, MultiStream) {
 
 TEST(Log, RuleSet) {
   LogRuleSet rs;
+  // LogRuleSet comes with a default rule for "console"
+  rs.clear();
+
   rs.add_rule(vw::InfoMessage, "console");
   rs.add_rule(vw::VerboseDebugMessage, "foo");
   rs.add_rule(vw::EveryMessage, "Bar");
@@ -102,10 +105,10 @@ TEST(Log, RuleSet) {
 TEST(Log, BasicLogging) {
 
   LogInstance stdout_log(std::cout);
-  stdout_log(0,"log test") << "Testing logging to stdout" << std::endl;
+  stdout_log(InfoMessage,"log test") << "Testing logging to stdout" << std::endl;
 
   LogInstance stderr_log(std::cerr);
-  stderr_log(0,"log test") << "Testing logging to stderr" << std::endl;
+  stderr_log(InfoMessage,"log test") << "Testing logging to stderr" << std::endl;
 }
 
 TEST(Log, MultiThreadLog) {
@@ -119,7 +122,7 @@ TEST(Log, MultiThreadLog) {
   std::vector<std::pair<TheTask, TheThread> > threads(100);
 
   for (size_t i = 0; i < threads.size(); ++i) {
-      TheTask task(   new TestLogTask(log,"log test") );
+    TheTask task(   new TestLogTask(log,"log test") );
     TheThread thread( new Thread(task) );
     threads[i] = std::make_pair(task, thread);
   }
@@ -180,16 +183,16 @@ TEST(Log, SystemLog) {
 
   vw_log().console_log().rule_set().add_rule(vw::EveryMessage, "test");
 
-  vw_out(0) << "\tTesting system log (first call)\n";
-  vw_out(0,"test") << "\tTesting system log (second call)\n";
+  vw_out() << "\tTesting system log (first call)\n";
+  vw_out(InfoMessage,"test") << "\tTesting system log (second call)\n";
 
   boost::shared_ptr<LogInstance> new_log(new LogInstance(sstr));
   new_log->rule_set().add_rule(vw::EveryMessage, "test");
   vw_log().add(new_log);
-  vw_out(0,"test") << "\tYou should see this message twice; once with the logging prefix and once without.\n";
+  vw_out(InfoMessage,"test") << "\tYou should see this message twice; once with the logging prefix and once without.\n";
 
   vw_log().clear();
-  vw_out(0,"test") << "\tYou should see this message once.\n";
+  vw_out(InfoMessage,"test") << "\tYou should see this message once.\n";
 
   const std::string &out = sstr.str();
   std::vector<std::string> lines;
@@ -213,8 +216,7 @@ TEST(Log, ProgressCallback) {
   raii fix(boost::bind(&vw::set_output_stream, boost::ref(sstr)),
            boost::bind(&vw::set_output_stream, boost::ref(std::cout)));
 
-  vw_out(0) << "\nTesting Logging with a progress callback\n";
-  TerminalProgressCallback pc(vw::InfoMessage, "\tTesting: ");
+  TerminalProgressCallback pc( "test", "\tTesting: ");
   for (double i = 0; i < 1.0; i+=0.01) {
     pc.report_progress(i);
     Thread::sleep_ms(0);
@@ -223,7 +225,10 @@ TEST(Log, ProgressCallback) {
 
   const std::string &out = sstr.str();
   EXPECT_GT(out.size(), 0u);
-  EXPECT_TRUE(boost::iends_with(out, std::string("\r\tTesting: [************************************************************] Complete!\n")));
+  size_t last_line_idx = out.rfind("\r");
+  EXPECT_EQ( 80u, out.size()-last_line_idx-2 );
+  EXPECT_TRUE(boost::iends_with(out, std::string("***] Complete!\n")));
+  EXPECT_THROW(TerminalProgressCallback("monkey","monkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkey"), vw::ArgumentErr );
 }
 
 TEST(Log, HiresProgressCallback) {
@@ -232,8 +237,7 @@ TEST(Log, HiresProgressCallback) {
   raii fix(boost::bind(&vw::set_output_stream, boost::ref(sstr)),
            boost::bind(&vw::set_output_stream, boost::ref(std::cout)));
 
-  vw_out(0) << "\nTesting Logging with a progress callback\n";
-  TerminalProgressCallback pc(vw::InfoMessage, "\tTesting: ", 2);
+  TerminalProgressCallback pc( "test", "\tTesting: ", vw::InfoMessage, 2);
   for (int i = 0; i < 10000; ++i) {
     pc.report_progress(i/10000.0);
     if (i % 50 == 0)
@@ -243,7 +247,36 @@ TEST(Log, HiresProgressCallback) {
 
   const std::string &out = sstr.str();
   EXPECT_GT(out.size(), 0u);
-  EXPECT_TRUE(boost::iends_with(out, std::string("\r\tTesting: [************************************************************] Complete!\n")));
+  size_t last_line_idx = out.rfind("\r");
+  EXPECT_EQ( 80u, out.size()-last_line_idx-2 );
+  EXPECT_TRUE(boost::iends_with(out, std::string("***] Complete!\n")));
+  EXPECT_THROW(TerminalProgressCallback("monkey","monkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkey"), vw::ArgumentErr );
+}
+
+TEST(Log, ProgressHide) {
+
+  std::ostringstream sstr;
+
+  raii fix(boost::bind(&vw::set_output_stream, boost::ref(sstr)),
+           boost::bind(&vw::set_output_stream, boost::ref(std::cout)));
+
+  // Progress bars hidden
+  vw_log().console_log().rule_set().add_rule(0, "*.progress");
+
+  // Can't see progress bar
+  TerminalProgressCallback pc( "test", "Rawr:" );
+  pc.report_progress(.1);
+  pc.report_progress(.2);
+
+  EXPECT_EQ( sstr.str().size(), 0u );
+
+  vw_log().console_log().rule_set().clear();
+
+  // Can see progress bar
+  pc.report_progress(.5);
+  pc.report_finished();
+
+  EXPECT_GT( sstr.str().size(), 0u );
 }
 
 TEST(Log, FlushAndNewline) {
@@ -262,29 +295,29 @@ TEST(Log, FlushAndNewline) {
               s6("Finished.\n");
 
   // Make sure a newline flushes
-  log(0) << s1;
+  log(InfoMessage) << s1;
   EXPECT_EQ(s1, stream.str());
 
   // Make sure no newline does not flush
-  log(0) << s2;
+  log(InfoMessage) << s2;
   EXPECT_EQ(s1, stream.str());
 
   // Explicit flush
-  log(0) << std::flush;
+  log(InfoMessage) << std::flush;
   EXPECT_EQ(s1 + s2, stream.str());
 
   // Another newline
-  log(0) << s3;
+  log(InfoMessage) << s3;
   EXPECT_EQ(s1 + s2 + s3, stream.str());
 
   // No newline again
-  log(0) << s4;
+  log(InfoMessage) << s4;
   EXPECT_EQ(s1 + s2 + s3, stream.str());
 
   // And try to flush with endl
-  log(0) << std::endl;
+  log(InfoMessage) << std::endl;
   EXPECT_EQ(s1 + s2 + s3 + s4 + s5, stream.str());
 
-  log(0) << s6;
+  log(InfoMessage) << s6;
   EXPECT_EQ(s1 + s2 + s3 + s4 + s5 + s6, stream.str());
 }

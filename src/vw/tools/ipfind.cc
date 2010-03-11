@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -52,7 +52,7 @@ void draw_line( ImageViewBase<ImageT>& image,
 static void write_debug_image( std::string out_file_name,
                                std::string input_file_name,
                                InterestPointList const& ip ) {
-  vw_out(0) << "Writing debug image: " << out_file_name << "\n";
+  vw_out() << "Writing debug image: " << out_file_name << "\n";
   DiskImageView<PixelGray<uint8> > image( input_file_name );
 
   vw_out(InfoMessage,"interest_point") << "\t > Gathering statistics:\n";
@@ -100,36 +100,40 @@ static void write_debug_image( std::string out_file_name,
   DiskImageResource *rsrc = DiskImageResource::create(out_file_name,
                                                       oimage.format() );
   vw_out(InfoMessage,"interest_point") << "\t > Writing out image:\n";
-  block_write_image( *rsrc, oimage, TerminalProgressCallback(InfoMessage, "\t : "));
+  block_write_image( *rsrc, oimage,
+                     TerminalProgressCallback( "tools.ipfind","\t : ") );
 
 }
 
 int main(int argc, char** argv) {
   std::vector<std::string> input_file_names;
   std::string interest_operator, descriptor_generator;
-  float harris_threshold, log_threshold/*, surf_threshold*/;
-  int max_points;
+  float ip_gain;
+  uint32 max_points;
   int tile_size;
   int num_threads;
   ImageView<double> integral;
+
+  const float IDEAL_LOG_THRESHOLD = .03;
+  const float IDEAL_OBALOG_THRESHOLD = .07;
+  const float IDEAL_HARRIS_THRESHOLD = 1.2e-5;
 
   po::options_description general_options("Options");
   general_options.add_options()
     ("help,h", "Display this help message")
     ("num-threads", po::value<int>(&num_threads)->default_value(0), "Set the number of threads for interest point detection.  Setting the num_threads to zero causes ipfind to use the visionworkbench default number of threads.")
-    ("tile-size,t", po::value<int>(&tile_size)->default_value(2048), "Specify the tile size for processing interest points. (Useful when working with large images)")
+    ("tile-size,t", po::value<int>(&tile_size), "Specify the tile size for processing interest points. (Useful when working with large images). VW usually picks 1024 px.")
     ("lowe,l", "Save the interest points in an ASCII data format that is compatible with the Lowe-SIFT toolchain.")
     ("debug-image,d", "Write out debug images.")
 
     // Interest point detector options
-    ("interest-operator", po::value<std::string>(&interest_operator)->default_value("LoG"), "Choose an interest point metric from [LoG, Harris]")
-    ("log-threshold", po::value<float>(&log_threshold)->default_value(0.03), "Sets the threshold for the Laplacian of Gaussian interest operator")
-    ("harris-threshold", po::value<float>(&harris_threshold)->default_value(1e-5), "Sets the threshold for the Harris interest operator")
-    ("max-points", po::value<int>(&max_points)->default_value(0), "Set the maximum number of interest points you want returned.  The most \"interesting\" points are selected.")
+    ("interest-operator", po::value<std::string>(&interest_operator)->default_value("LoG"), "Choose an interest point metric from [LoG, Harris, OBALoG]")
+    ("gain,g", po::value<float>(&ip_gain)->default_value(1.0), "Increasing this number will increase that gain at which interest points are detected.")
+    ("max-points", po::value<uint32>(&max_points)->default_value(0), "Set the maximum number of interest points you want returned.  The most \"interesting\" points are selected.")
     ("single-scale", "Turn off scale-invariant interest point detection.  This option only searches for interest points in the first octave of the scale space.")
 
     // Descriptor generator options
-    ("descriptor-generator", po::value<std::string>(&descriptor_generator)->default_value("patch"), "Choose a descriptor generator from [patch,pca]");
+    ("descriptor-generator", po::value<std::string>(&descriptor_generator)->default_value("patch"), "Choose a descriptor generator from [patch,pca,sgrad,sgrad2]");
 
   po::options_description hidden_options("");
   hidden_options.add_options()
@@ -141,22 +145,29 @@ int main(int argc, char** argv) {
   po::positional_options_description p;
   p.add("input-files", -1);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-  po::notify( vm );
-
   std::ostringstream usage;
   usage << "Usage: " << argv[0] << " [options] <filenames>..." << std::endl << std::endl;
   usage << general_options << std::endl;
 
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e ) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
+
   if( vm.count("help") ) {
-    vw_out(0) << usage.str();
+    vw_out() << usage.str();
     return 1;
   }
 
   if( input_file_names.size() < 1 ) {
-    vw_out(0) << "Error: Must specify at least one input file!" << std::endl << std::endl;
-    vw_out(0) << usage.str();
+    vw_out() << "Error: Must specify at least one input file!" << std::endl << std::endl;
+    vw_out() << usage.str();
     return 1;
   }
 
@@ -170,23 +181,26 @@ int main(int argc, char** argv) {
   boost::to_lower( descriptor_generator );
   // Determine if interest_operator is legitimate
   if ( !( interest_operator == "harris" ||
-          interest_operator == "log" ) ) {
-    vw_out(0) << "Unknown interest operator: " << interest_operator
-              << ". Options are : [ Harris, LoG ]\n";
+          interest_operator == "log" ||
+          interest_operator == "obalog" ) ) {
+    vw_out() << "Unknown interest operator: " << interest_operator
+              << ". Options are : [ Harris, LoG, OBALoG ]\n";
     exit(0);
   }
   // Determine if descriptor_generator is legitimate
   if ( !( descriptor_generator == "patch" ||
-          descriptor_generator == "pca" ) ) {
-    vw_out(0) << "Unkown descriptor generator: " << descriptor_generator
-              << ". Options are : [ Patch, PCA ]\n";
+          descriptor_generator == "pca"   ||
+          descriptor_generator == "sgrad" ||
+          descriptor_generator == "sgrad2" ) ) {
+    vw_out() << "Unkown descriptor generator: " << descriptor_generator
+              << ". Options are : [ Patch, PCA, SGrad, SGrad2 ]\n";
     exit(0);
   }
 
   // Iterate over the input files and find interest points in each.
   for (unsigned i = 0; i < input_file_names.size(); ++i) {
 
-    vw_out(0) << "Finding interest points in \"" << input_file_names[i] << "\".\n";
+    vw_out() << "Finding interest points in \"" << input_file_names[i] << "\".\n";
     std::string file_prefix = prefix_from_filename(input_file_names[i]);
     DiskImageResource *image_rsrc = DiskImageResource::open( input_file_names[i] );
     DiskImageView<PixelGray<float> > image(image_rsrc);
@@ -202,7 +216,7 @@ int main(int argc, char** argv) {
     // tiles).
     int number_tiles = (image.cols()/vw_settings().default_tile_size()+1) *
       (image.rows()/vw_settings().default_tile_size()+1);
-    int tile_max_points = (float(max_points)/float(number_tiles))*2; // A little over shoot
+    uint32 tile_max_points = uint32(float(max_points)/float(number_tiles))*2; // A little over shoot
                                                                      // incase the tile is empty
     if ( max_points == 0 ) tile_max_points = 0; // No culling
     else if ( tile_max_points < 50 ) tile_max_points = 50;
@@ -210,7 +224,8 @@ int main(int argc, char** argv) {
     // Detecting Interest Points
     InterestPointList ip;
     if ( interest_operator == "harris" ) {
-      HarrisInterestOperator interest_operator(harris_threshold);
+      // Harris threshold is inversely proportional to gain.
+      HarrisInterestOperator interest_operator(IDEAL_HARRIS_THRESHOLD/ip_gain);
       if (!vm.count("single-scale")) {
         ScaledInterestPointDetector<HarrisInterestOperator> detector(interest_operator,
                                                                      tile_max_points);
@@ -223,7 +238,8 @@ int main(int argc, char** argv) {
     } else if ( interest_operator == "log") {
       // Use a scale-space Laplacian of Gaussian feature detector. The
       // associated threshold is abs(interest) > interest_threshold.
-      LogInterestOperator interest_operator(log_threshold);
+      // LoG threshold is inversely proportional to gain..
+      LogInterestOperator interest_operator(IDEAL_LOG_THRESHOLD/ip_gain);
       if (!vm.count("single-scale")) {
         ScaledInterestPointDetector<LogInterestOperator> detector(interest_operator,
                                                                   tile_max_points);
@@ -233,6 +249,12 @@ int main(int argc, char** argv) {
                                                             tile_max_points);
         ip = detect_interest_points(image, detector);
       }
+    } else if ( interest_operator == "obalog") {
+      // OBALoG threshold is inversely proportional to gain ..
+      OBALoGInterestOperator interest_operator(IDEAL_OBALOG_THRESHOLD/ip_gain);
+      IntegralInterestPointDetector<OBALoGInterestOperator> detector( interest_operator,
+                                                                      tile_max_points );
+      ip = detect_interest_points(image, detector);
     }
 
     // Removing Interest Points on nodata or within 1/px
@@ -270,13 +292,13 @@ int main(int argc, char** argv) {
       vw_out(InfoMessage,"interest_point") << "Removed " << before_size-ip.size() << " points close to nodata.\n";
     }
 
-    vw_out(0) << "\t Found " << ip.size() << " points.\n";
+    vw_out() << "\t Found " << ip.size() << " points.\n";
 
     // Additional Culling for the entire image
     ip.sort();
     if ( (max_points > 0) && (ip.size() > max_points) ) {
       ip.resize(max_points);
-      vw_out(0) << "\t Culled to " << ip.size() << " points.\n";
+      vw_out() << "\t Culled to " << ip.size() << " points.\n";
     }
 
     // Generate descriptors for interest points.
@@ -286,6 +308,12 @@ int main(int argc, char** argv) {
       descriptor(image, ip);
     } else if (descriptor_generator == "pca") {
       PCASIFTDescriptorGenerator descriptor("pca_basis.exr", "pca_avg.exr");
+      descriptor(image, ip);
+    } else if (descriptor_generator == "sgrad") {
+      SGradDescriptorGenerator descriptor;
+      descriptor(image, ip);
+    } else if (descriptor_generator == "sgrad2") {
+      SGrad2DescriptorGenerator descriptor;
       descriptor(image, ip);
     }
 
@@ -299,7 +327,7 @@ int main(int argc, char** argv) {
     // Write Debug image
     if (vm.count("debug-image")) {
       std::string output_file_name =
-        prefix_from_filename(input_file_names[i]) + "_debug.png";
+        prefix_from_filename(input_file_names[i]) + "_debug.jpg";
       write_debug_image( output_file_name,
                          input_file_names[i],
                          ip );

@@ -1,5 +1,5 @@
 # __BEGIN_LICENSE__
-# Copyright (C) 2006-2009 United States Government as represented by
+# Copyright (C) 2006-2010 United States Government as represented by
 # the Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # __END_LICENSE__
@@ -13,14 +13,14 @@ if MAKE_MODULE_MATH
 
 if HAVE_PKG_LAPACK
 lapack_headers = LinearAlgebra.h LevenbergMarquardt.h Geometry.h        \
-	PoseEstimation.h LapackExports.h
+	PoseEstimation.h LapackExports.h FundamentalMatrix.h
 endif
 
 include_HEADERS = Vector.h Matrix.h BBox.h Functions.h Functors.h	\
                   Quaternion.h EulerAngles.h ConjugateGradient.h	\
                   NelderMead.h Statistics.h DisjointSet.h		\
                   MinimumSpanningTree.h KDTree.h ParticleSwarmOptimization.h \
-                  RANSAC.h SparseSkylineMatrix.h $(lapack_headers)
+                  RANSAC.h MatrixSparseSkyline.h $(lapack_headers)
 
 libvwMath_la_SOURCES = MinimumSpanningTree.cc
 libvwMath_la_LIBADD = @MODULE_MATH_LIBS@

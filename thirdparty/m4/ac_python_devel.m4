@@ -79,7 +79,7 @@
 AC_DEFUN([AC_PYTHON_DEVEL],[
     AC_REQUIRE([AM_PATH_PYTHON])
 
-    if test x"$PYTHON" == x":"; then
+    if test x"$PYTHON" = x":"; then
         PYTHON_VERSION=""
         m4_default([$2], [AC_MSG_ERROR([No python found])])
     else
@@ -121,7 +121,7 @@ AC_DEFUN([AC_PYTHON_DEVEL],[
                 py_version=`$PYTHON -c "from distutils.sysconfig import *; \
                     from string import join; \
                     print join(get_config_vars('VERSION'))"`
-                if test "$py_version" == "[None]"; then
+                if test "$py_version" = "[None]"; then
                     if test -n "$PYTHON_VERSION"; then
                         py_version=$PYTHON_VERSION
                     else
@@ -178,9 +178,14 @@ AC_DEFUN([AC_PYTHON_DEVEL],[
             #
             AC_MSG_CHECKING([consistency of all components of python development environment])
             AC_LANG_PUSH([C])
+
             # save current global flags
+            ac_save_LIBS="$LIBS"
+            ac_save_CPPFLAGS="$CPPFLAGS"
+
             LIBS="$ac_save_LIBS $PYTHON_LDFLAGS"
             CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
+
             AC_TRY_LINK([
                 #include <Python.h>
             ],[
@@ -196,8 +201,8 @@ AC_DEFUN([AC_PYTHON_DEVEL],[
             fi
             AC_LANG_POP([C])
             # turn back to default flags
-            CPPFLAGS="$ac_save_CPPFLAGS"
             LIBS="$ac_save_LIBS"
+            CPPFLAGS="$ac_save_CPPFLAGS"
         fi
     fi
 ])

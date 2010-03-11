@@ -1,7 +1,12 @@
+// __BEGIN_LICENSE__
+// Copyright (C) 2006-2010 United States Government as represented by
+// the Administrator of the National Aeronautics and Space Administration.
+// All Rights Reserved.
+// __END_LICENSE__
+
 
 //// Vision Workbench
 #include <vw/Plate/IndexService.h>
-#include <vw/Plate/IndexManagerService.h>
 #include <vw/Plate/RpcServices.h>
 #include <vw/Plate/common.h>
 
@@ -9,7 +14,9 @@
 #include <boost/foreach.hpp>
 
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
 using namespace vw;
 using namespace vw::platefile;
@@ -53,62 +60,34 @@ const boost::shared_ptr<Blob> PlateModule::get_blob(const std::string& plate_fil
     return *name ## _ptr; \
   }
 
-#define VW_DEFINE_SINGLETON_FUNC(name, klass, func) \
-  namespace { \
-    vw::RunOnce name ## _once = VW_RUNONCE_INIT; \
-    boost::shared_ptr<klass> name ## _ptr; \
-    void init_ ## name() { \
-      name ## _ptr = func(); \
-    } \
-    void kill_ ## name() { \
-      init_ ## name(); \
-    } \
-  } \
-  const klass& name() { \
-    name ## _once.run( init_ ## name ); \
-    return *name ## _ptr; \
-  } \
-  klass& name ## _mutable() { \
-    name ## _once.run( init_ ## name ); \
-    return *name ## _ptr; \
-  }
-
 std::string queue_name() {
   return AmqpRpcClient::UniqueQueueName("index_client");
 }
 
-boost::shared_ptr<IndexService> create_idx() {
-  return boost::shared_ptr<IndexService>(
-      new IndexService::Stub(
-        new AmqpRpcChannel(INDEX_EXCHANGE, "index", queue_name()),
-        google::protobuf::Service::STUB_OWNS_CHANNEL) );
-}
+struct RPC {
+  boost::shared_ptr<AmqpRpcClient> client;
+  boost::shared_ptr<IndexService>  service;
+  RPC() {
+    boost::shared_ptr<AmqpConnection> conn(new AmqpConnection());
+    client.reset(  new AmqpRpcClient(conn, DEV_INDEX, queue_name(), "index") );
+    service.reset( new IndexService::Stub(client.get() ) );
+    client->bind_service(service, queue_name());
+  }
+};
 
-boost::shared_ptr<IndexManagerService> create_mgr() {
-  return boost::shared_ptr<IndexManagerService>(
-      new IndexManagerService::Stub(
-        new AmqpRpcChannel(INDEX_MGR_EXCHANGE, "index_mgr", queue_name()),
-        google::protobuf::Service::STUB_OWNS_CHANNEL) );
-}
-
-
-
-VW_DEFINE_SINGLETON(client, AmqpRpcClient);
-VW_DEFINE_SINGLETON_FUNC(index, IndexService,        create_idx);
-VW_DEFINE_SINGLETON_FUNC(mgr,   IndexManagerService, create_mgr);
-
+VW_DEFINE_SINGLETON(rpc, RPC);
 
 void PlateInfo(const std::string& name) {
 
   boost::shared_ptr<Index> index = Index::construct_open(std::string("pf://index/") + name);
   const IndexHeader& hdr = index->index_header();
 
-  vw_out(0) << "Platefile: "
-            << "ID["          << hdr.platefile_id()      << "] "
-            << "Name["        << fs::path(name).leaf()   << "] "
-            << "Filename["    << index->platefile_name() << "] "
-            << "Description[" << (hdr.has_description() ? hdr.description() : "No Description") << "]"
-            << std::endl;
+  vw_out() << "Platefile: "
+           << "ID["          << hdr.platefile_id()      << "] "
+           << "Name["        << fs::path(name).leaf()   << "] "
+           << "Filename["    << index->platefile_name() << "] "
+           << "Description[" << (hdr.has_description() ? hdr.description() : "No Description") << "]"
+           << std::endl;
 }
 
 void ListPlates() {
@@ -116,11 +95,11 @@ void ListPlates() {
   IndexListRequest request;
   IndexListReply   reply;
 
-  mgr_mutable().ListRequest(&client_mutable(), &request, &reply, google::protobuf::NewCallback(&null_closure));
+  rpc_mutable().service->ListRequest(rpc_mutable().client.get(), &request, &reply, google::protobuf::NewCallback(&null_closure));
 
-  vw_out(0) << "Got Plates:" << std::endl;
-  std::copy(reply.platefile_names().begin(), reply.platefile_names().end(), std::ostream_iterator<std::string>(vw_out(0), " "));
-  vw_out(0) << std::endl;
+  vw_out() << "Got Plates:" << std::endl;
+  std::copy(reply.platefile_names().begin(), reply.platefile_names().end(), std::ostream_iterator<std::string>(vw_out(), " "));
+  vw_out() << std::endl;
 
   std::for_each(reply.platefile_names().begin(), reply.platefile_names().end(), boost::bind(&PlateInfo, _1));
 }

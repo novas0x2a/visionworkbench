@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -136,12 +136,13 @@ void check_gl_errors( void )
 //               GlPreviewWidget Public Methods
 // --------------------------------------------------------------
 
-GlPreviewWidget::GlPreviewWidget(QWidget *parent, std::string filename, QGLFormat const& frmt) : 
+GlPreviewWidget::GlPreviewWidget(QWidget *parent, std::string filename, QGLFormat const& frmt,
+                                 int transaction_id) : 
   QGLWidget(frmt, parent) {
   
   // Verify that our OpenGL formatting options stuck
   if (!QGLFormat::hasOpenGL()) {
-    vw::vw_out(0) << "This system has no OpenGL support.\nExiting\n\n";
+    vw::vw_out() << "This system has no OpenGL support.\nExiting\n\n";
     exit(1);
   }
   if (!format().sampleBuffers())
@@ -156,7 +157,6 @@ GlPreviewWidget::GlPreviewWidget(QWidget *parent, std::string filename, QGLForma
   m_image_max = 1.0;
 
   // Set some reasonable defaults
-  m_draw_texture = true;
   m_show_legend = false;
   m_bilinear_filter = true;
   m_use_colormap = false;
@@ -164,12 +164,14 @@ GlPreviewWidget::GlPreviewWidget(QWidget *parent, std::string filename, QGLForma
   m_display_channel = DisplayRGBA;
   m_colorize_display = false;
   m_hillshade_display = false;
+  m_show_tile_boundaries = false;
   
   // Set up shader parameters
   m_gain = 1.0;
   m_offset = 0.0;
   m_gamma = 1.0;
-  m_current_transaction_id = -1;
+  m_current_transaction_id = transaction_id;
+  m_exact_transaction_id_match = false;
   
   // Set mouse tracking
   this->setMouseTracking(true);
@@ -208,22 +210,23 @@ void GlPreviewWidget::size_to_fit() {
   update();
 }
 
+namespace {
+vw::Vector2i makeVector(const QPoint& qpt) {
+  return vw::Vector2i(qpt.x(), qpt.y());
+}
+}
+
 void GlPreviewWidget::zoom(float scale) {
-  float mid_x = currentImagePos.x();
-  float mid_y = currentImagePos.y();
-  
+  m_show_legend = false;
+
   // Check to make sure we haven't hit our zoom limits...
-  if (m_current_viewport.width()/scale > 1.0 && 
+  if (m_current_viewport.width()/scale > 1.0 &&
       m_current_viewport.height()/scale > 1.0 &&
-      m_current_viewport.width()/scale < 4*m_tile_generator->cols() && 
-      m_current_viewport.height()/scale < 4*m_tile_generator->rows()) {
-    m_current_viewport.min().x() = (m_current_viewport.min().x() - mid_x) / scale + mid_x;
-    m_current_viewport.max().x() = (m_current_viewport.max().x() - mid_x) / scale + mid_x;
-    m_current_viewport.min().y() = (m_current_viewport.min().y() - mid_y) / scale + mid_y;
-    m_current_viewport.max().y() = (m_current_viewport.max().y() - mid_y) / scale + mid_y;
+      m_current_viewport.width()/scale < 20*m_tile_generator->cols() &&
+      m_current_viewport.height()/scale < 20*m_tile_generator->rows()) {
+    m_current_viewport = (m_current_viewport - makeVector(currentImagePos)) / scale + makeVector(currentImagePos);
     update();
   }
-  m_show_legend = false;
 }
 
 // --------------------------------------------------------------
@@ -241,6 +244,9 @@ GLuint GlPreviewWidget::allocate_texture(boost::shared_ptr<ViewImageResource> ti
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); 
+
+  vw_out(VerboseDebugMessage, "gui") << "Allocating texture for " 
+                                     << tile->cols() << "x" << tile->rows() << " sized tile.\n";
   
   // std::cout << "This image has " << tile->channels() << " channels\n";
   // std::cout << "           ond " << tile->channel_type() << " channel type\n";
@@ -383,6 +389,7 @@ void GlPreviewWidget::drawImage() {
   
   // Set the background color and viewport.
   qglClearColor(QColor(0, 25, 50)); // Bluish-green background
+  //qglClearColor(QColor(0, 0, 0)); // Black background
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glViewport(0,0,m_viewport_width,m_viewport_height);
     
@@ -412,13 +419,13 @@ void GlPreviewWidget::drawImage() {
   Vector2i tile_size = m_tile_generator->tile_size();
   BBox2i image_bbox(0,0,m_tile_generator->cols(),m_tile_generator->rows());
 
-  int max_level = m_tile_generator->num_levels();
+  int max_level = m_tile_generator->num_levels()-1;
   int level = max_level - log(float(m_current_viewport.width()) / m_viewport_width) / log(2.0)+1;
   if (level < 0) level = 0;
   if (level > max_level) level = max_level;
   m_current_level = level;
 
-  std::list<TileLocator> tiles = bbox_to_tiles(tile_size, m_current_viewport, level, max_level, m_current_transaction_id);
+  std::list<TileLocator> tiles = bbox_to_tiles(tile_size, m_current_viewport, level, max_level, m_current_transaction_id, m_exact_transaction_id_match);
   std::list<TileLocator>::iterator tile_iter = tiles.begin();
 
   while (tile_iter != tiles.end()) {
@@ -467,6 +474,25 @@ void GlPreviewWidget::drawImage() {
         // Clean up
         glDisable( GL_TEXTURE_2D );
         glUseProgram(0);
+
+        // Optional: draw a border around the texture
+        if (m_show_tile_boundaries) {
+          qglColor(Qt::blue);
+          glBegin(GL_LINES);
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.min().y()) );
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.max().y()) );
+
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.max().y()) );
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.max().y()) );
+
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.max().y()) );
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.min().y()) );
+
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.min().y()) );
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.min().y()) );
+          glEnd();
+        }          
+
         
       } else {
         // If no texture is (yet) available, we draw a dark blue quad.
@@ -477,6 +503,25 @@ void GlPreviewWidget::drawImage() {
         glVertex2d( texture_bbox.max().x() , -(texture_bbox.max().y()) );
         glVertex2d( texture_bbox.max().x() , -(texture_bbox.min().y()) );
         glEnd();
+
+        // Optional: draw a border around the texture
+        if (m_show_tile_boundaries) {
+          qglColor(Qt::red);
+          glBegin(GL_LINES);
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.min().y()) );
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.max().y()) );
+
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.max().y()) );
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.max().y()) );
+
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.max().y()) );
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.min().y()) );
+
+          glVertex2d( texture_bbox.max().x() , -(texture_bbox.min().y()) );
+          glVertex2d( texture_bbox.min().x() , -(texture_bbox.min().y()) );
+          glEnd();
+        }          
+
       }
     }
 
@@ -500,17 +545,31 @@ void GlPreviewWidget::drawLegend(QPainter* painter) {
   if (currentImagePos.x() >= 0 && currentImagePos.x() < m_tile_generator->cols() &&
       currentImagePos.y() >= 0 && currentImagePos.y() < m_tile_generator->rows()) {
 
+
+    // Note: we sample directly from the OpenGL texture buffer for
+    // now, but eventually we would prefer to sample the actual value
+    // from the tile_generator itself.
     float raw_pixels[4];
     glReadPixels(lastPos.x(),m_viewport_height-lastPos.y(),
                  1,1,GL_RGBA,GL_FLOAT,&raw_pixels);
     PixelRGBA<float32> pix_value(raw_pixels[0], raw_pixels[1], raw_pixels[2], raw_pixels[3]);
+    //    PixelRGBA<float32> pix_value = m_last_pixel_sample;
     
     const char* pixel_name = vw::pixel_format_name(m_tile_generator->pixel_format());
     const char* channel_name = vw::channel_type_name(m_tile_generator->channel_type());
     int num_channels = vw::num_channels(m_tile_generator->pixel_format());
 
+    // Compute the tile location
+    int tile_x = currentImagePos.x() / 
+      pow(2,(m_tile_generator->num_levels()-1) - m_current_level) / 
+      m_tile_generator->tile_size()[0];
+    int tile_y = currentImagePos.y() / 
+      pow(2,(m_tile_generator->num_levels()-1) - m_current_level) /
+      m_tile_generator->tile_size()[1];
+
     std::ostringstream pix_value_ostr;
-    pix_value_ostr << "Pos: ( " << currentImagePos.x() << " " << currentImagePos.y() << " ) --> Val: [ ";
+    pix_value_ostr << "Pos: ( " << currentImagePos.x() << " " << currentImagePos.y() << " )"
+                   << "[ " << tile_x << " " << tile_y << " ] --> Val: [ ";
 
     // The following code is very messy and should be replaced and/or
     // simplified once we have better control over whether automatic
@@ -596,6 +655,7 @@ void GlPreviewWidget::drawLegend(QPainter* painter) {
       else
         pix_value_ostr << (pix_value[i] * scale_factor) << " ";
     }
+
 
     // We don't print out the channel value for the alpha channel for
     // those pixel types that have alpha.  This is messy too, and
@@ -709,18 +769,25 @@ void GlPreviewWidget::mouseMoveEvent(QMouseEvent *event) {
   update();
 }
 
-void GlPreviewWidget::mouseDoubleClickEvent(QMouseEvent * /*event*/) {
-  m_draw_texture = !m_draw_texture;
+void GlPreviewWidget::mouseDoubleClickEvent(QMouseEvent *event) {
+  lastPos = event->pos();
+  updateCurrentMousePosition();
+  m_last_pixel_sample = m_tile_generator->sample(currentImagePos.x(), currentImagePos.y(),
+                                                 m_current_level, m_current_transaction_id);
   update();
 }
 
 void GlPreviewWidget::wheelEvent(QWheelEvent *event) {
   int num_degrees = event->delta();
   float num_ticks = float(num_degrees) / 360;
-  
-  // 100.0 chosen arbitrarily here as a reasonable scale factor giving
-  // good sensitivy of the mousewheel.
-  float mag = fabs(num_ticks/100.0);  
+
+  // 100.0 chosen arbitrarily here as a reasonable scale factor giving good
+  // sensitivy of the mousewheel. Shift zooms 10 times faster.
+  double scale_factor = 100;
+  if (event->modifiers() & Qt::ShiftModifier)
+    scale_factor /= 50;
+
+  float mag = fabs(num_ticks/scale_factor);
   float scale = 1;
   if (num_ticks > 0) 
     scale = 1+mag;
@@ -760,10 +827,15 @@ void GlPreviewWidget::keyPressEvent(QKeyEvent *event) {
     m_gl_texture_cache->clear();
     update();
     break;
+  case Qt::Key_E:  // Toggle exact transaction id match
+    m_exact_transaction_id_match = !m_exact_transaction_id_match;
+    m_gl_texture_cache->clear();
+    update();
+    break;
   case Qt::Key_F:  // Size to fit
     size_to_fit();
     break;
-  case Qt::Key_N:  // Toggle bilinear/nearest neighbor interp
+  case Qt::Key_I:  // Toggle bilinear/nearest neighbor interp
     m_bilinear_filter = !m_bilinear_filter;
     update();
     break;
@@ -771,7 +843,15 @@ void GlPreviewWidget::keyPressEvent(QKeyEvent *event) {
     m_use_colormap = !m_use_colormap;
     update();
     break;
-  case Qt::Key_R:  // Normalize the image
+  case Qt::Key_T:  // Activate tile boundaries
+    m_show_tile_boundaries = !m_show_tile_boundaries;
+    update();
+    break;
+  case Qt::Key_R: // Reload the image
+    m_gl_texture_cache->clear();
+    update();
+    break;
+  case Qt::Key_N:  // Normalize the image
     this->normalize();
     update();
     break;

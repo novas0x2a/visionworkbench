@@ -9,7 +9,7 @@ if( LAPACK_FOUND )
     LinescanModel.h 
     OrbitingPushbroomModel.h 
     PinholeModelCalibrate.h 
-    PinholeModel.h 
+    CameraGeometry.h 
   )
   set( LSM_SOURCES
     PinholeModel.cc 
@@ -48,6 +48,7 @@ set( HEADERS
   ControlNetwork.h
   ExifData.h 
   Exif.h 
+  PinholeModel.h
 )
 
 set( SOURCES 

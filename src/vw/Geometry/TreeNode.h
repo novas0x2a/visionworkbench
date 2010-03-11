@@ -1,3 +1,10 @@
+// __BEGIN_LICENSE__
+// Copyright (C) 2006-2010 United States Government as represented by
+// the Administrator of the National Aeronautics and Space Administration.
+// All Rights Reserved.
+// __END_LICENSE__
+
+
 // -*- C++ -*-
 #ifndef vw_geometry_TreeNode_h
 #define vw_geometry_TreeNode_h
@@ -347,7 +354,7 @@ namespace vw
        * Returns NULL if the nodes are not connected.  If either node is
        * a direct ancestor of the other, that node is returned.
        *
-       * The algorithm is of complecity O(n * log(n)) with respect to the
+       * The algorithm is of complexity O(n * log(n)) with respect to the
        * depth of the tree.
        */
       TreeNode * last_common_ancestor(TreeNode const * node) const {

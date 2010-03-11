@@ -1,5 +1,5 @@
 # __BEGIN_LICENSE__
-# Copyright (C) 2006-2009 United States Government as represented by
+# Copyright (C) 2006-2010 United States Government as represented by
 # the Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # __END_LICENSE__
@@ -39,10 +39,13 @@ slopemap_LDADD = @PKG_CARTOGRAPHY_LIBS@ $(COMMON_LIBS)
 # Adds or adjusts an image's georeferencing information
 georef_SOURCES = georef.cc
 georef_LDADD = @PKG_CARTOGRAPHY_LIBS@ $(COMMON_LIBS)
+# Fades an image's alpha channel for blending
+grassfirealpha_SOURCES = grassfirealpha.cc
+grassfirealpha_LDADD = @PKG_CARTOGRAPHY_LIBS@ $(COMMON_LIBS)
 if HAVE_PKG_GDAL
 cart_gdal_progs = georef hillshade
 endif
-cartography_progs = colormap $(cart_gdal_progs) slopemap
+cartography_progs = colormap $(cart_gdal_progs) slopemap grassfirealpha
 endif
 
 # Command-line tools based on the HDR module
@@ -127,7 +130,7 @@ batest_progs = ba_test make_ba_test_data
 ba_test_SOURCES = ba_test.cc
 ba_test_LDADD = @PKG_CAMERA_LIBS@ @PKG_STEREO_LIBS@ $(COMMON_LIBS)
 make_ba_test_data_SOURCES = make_ba_test_data.cc
-make_ba_test_data_LDADD = @PKG_CAMERA_LIBS@ $(COMMON_LIBS)
+make_ba_test_data_LDADD = @PKG_CAMERA_LIBS@ @PKG_STEREO_LIBS@ $(COMMON_LIBS)
 endif
 endif
 

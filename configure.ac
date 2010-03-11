@@ -1,8 +1,9 @@
 dnl __BEGIN_LICENSE__
-dnl Copyright (C) 2006, 2007 United States Government as represented by
+dnl Copyright (C) 2006-2010 United States Government as represented by
 dnl the Administrator of the National Aeronautics and Space Administration.
 dnl All Rights Reserved.
 dnl __END_LICENSE__
+
 
 m4_pattern_forbid([^AX_])
 m4_pattern_allow([^AX_CFLAGS$])
@@ -23,12 +24,13 @@ m4_pattern_allow([^PKG_ARBITRARY_QT_NEEDED_HEADERS$])
 # A few starting bits
 ##################################################
 
+AC_PREREQ([2.59])
 dnl TODO BEFORE/AFTER RELEASE: update package version
 AC_INIT([NASA Vision Workbench], [2.0_beta5_pre], [vision-workbench@lists.nasa.gov], [VisionWorkbench])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_HOST
-AM_INIT_AUTOMAKE([nostdinc])
+AM_INIT_AUTOMAKE([nostdinc 1.8.5])
 AX_CONFIG_HEADER_PREFIX([src/vw/config.h], [VW_])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -49,20 +51,15 @@ dnl LIBTOOL_VERSION=current:revision:age
 LIBTOOL_VERSION=4:0:0
 AC_SUBST(LIBTOOL_VERSION)
 
+m4_divert_text([INIT_PREPARE], [dnl
 # load the config.options
 if test -f ./config.options; then
   AX_LOG([using config.options << EOF])
   AX_LOG([`cat ./config.options`])
   AX_LOG([EOF])
-  source ./config.options
+  . ./config.options
 fi
-
-dnl Process all the --with and --enable options here, so the variables are
-dnl available later
-m4_define(AX_DIVERSION_PROCESS_OPTIONS, 42)
-m4_undivert(AX_DIVERSION_PROCESS_OPTIONS)
-
-
+])
 
 ##################################################
 # Find the necessary programs
@@ -87,15 +84,16 @@ AC_PROG_MAKE_SET
 AC_LANG(C++)
 AX_COMMON_OPTIONS
 
-# Does the compiler support introspection?
-AX_CHECK_INTROSPECTION
-
 # Does the compiler support noreturn?
 AX_CHECK_FUNCTION_ATTRIBUTE([noreturn])
+AX_CHECK_FUNCTION_ATTRIBUTE([deprecated])
 
 # Looking for posix headers
 AC_CHECK_HEADERS([unistd.h pwd.h])
 AC_CHECK_FUNCS([getpwuid getpid])
+
+# Find some functions
+AC_CHECK_FUNCS([fabsl llabs exp2 log2 tgamma])
 
 # Look for the python stuff
 AM_PATH_PYTHON([2.4], [HAVE_PYTHON=yes], [HAVE_PYTHON=no])
@@ -119,17 +117,24 @@ AC_CHECK_PROGS(GENHTML, genhtml, false)
 # Check for the Apache Extension Tool
 AC_CHECK_PROGS(APXS, apxs2 apxs, false)
 if test "$APXS" != "false"; then
-   APXS_CFLAGS="`$APXS -q CFLAGS` -I`$APXS -q INCLUDEDIR`"
-   APXS_LDFLAGS="`$APXS -q LDFLAGS`"
-   APR_CONFIG=`$APXS -q APR_CONFIG`
-   APU_CONFIG=`$APXS -q APU_CONFIG`
-   APXS_CFLAGS="$APXS_CFLAGS `$APR_CONFIG --cppflags --includes` `$APU_CONFIG --includes`"
-   APXS_LDFLAGS="$APXS_CFLAGS `$APR_CONFIG --ldflags --libs` `$APU_CONFIG --ldflags --libs`"
+  APXS_CFLAGS="`$APXS -q CFLAGS` -I`$APXS -q INCLUDEDIR`"
+  APXS_LDFLAGS="`$APXS -q LDFLAGS`"
+  APR_CONFIG=`$APXS -q APR_CONFIG`
+  APU_CONFIG=`$APXS -q APU_CONFIG`
+  APXS_CFLAGS="$APXS_CFLAGS `$APR_CONFIG --cppflags --includes` `$APU_CONFIG --includes`"
+  APXS_LDFLAGS="$APXS_CFLAGS `$APR_CONFIG --ldflags --libs` `$APU_CONFIG --ldflags --libs`"
+  APXS_DEFAULT_INSTALLDIR="`$APXS -q LIBEXECDIR`"
 
-   AC_SUBST(APXS_CFLAGS)
-   AC_SUBST(APXS_LDFLAGS)
-fi
-AM_CONDITIONAL(MAKE_MODPLATE, [test "APXS" != "false"])
+  AX_ARG_WITH(apxs_installdir, [], [mk], [Set apache module install dir])
+
+  if test -z "$APXS_INSTALLDIR"; then
+    APXS_INSTALLDIR="$APXS_DEFAULT_INSTALLDIR"
+  fi
+
+  AC_SUBST(APXS_CFLAGS)
+  AC_SUBST(APXS_LDFLAGS)
+  fi
+AM_CONDITIONAL(MAKE_MODPLATE, [test "$APXS" != "false"])
 
 
 ##################################################
@@ -197,19 +202,28 @@ AM_CONDITIONAL(DIST_REMOVE_MODULES, [test ! -z "$DIST_REMOVE_MODULES"])
 
 AX_PKG_PTHREADS
 
-AX_PKG_BOOST
-if test x"$HAVE_PKG_BOOST" == "xyes"; then
-  AX_PKG_BOOST_CHECK_VERSION([VW_])
-  AC_MSG_NOTICE([VW will be built using Boost version $BOOST_VERSION])
+AX_PKG_BOOST([BOOST_PROGRAM_OPTIONS BOOST_FILESYSTEM BOOST_THREAD BOOST_GRAPH],
+  BOOST_PROGRAM_OPTIONS,
+    [AX_PKG_BOOST_LIB(PROGRAM_OPTIONS, [-lboost_program_options], [boost/program_options.hpp], [boost::program_options::options_description("Rawr");])],
+  BOOST_SYSTEM,
+    [AX_PKG_BOOST_LIB(SYSTEM,          [-lboost_system],          [boost/system/error_code.hpp], [boost::system::error_code();])],
+  BOOST_FILESYSTEM,
+    [AX_PKG_BOOST_LIB(FILESYSTEM,      [-lboost_filesystem],      [boost/filesystem/path.hpp], [boost::filesystem::path();], [$PKG_BOOST_SYSTEM_LIBS])],
+  BOOST_REGEX,
+    [AX_PKG_BOOST_LIB(REGEX,           [-lboost_regex],           [boost/regex.hpp], [boost::regex(".*");])],
+  BOOST_DATETIME,
+    [AX_PKG_BOOST_LIB(DATETIME,        [-lboost_date_time],       [boost/date_time/gregorian/gregorian_types.hpp])],
+  BOOST_THREAD,
+    [AX_PKG_BOOST_LIB(THREAD,          [-lboost_thread],          [boost/thread/thread.hpp], [boost::mutex();], [$PKG_BOOST_DATETIME_LIBS], [boost/thread/condition.hpp])],
+  BOOST_IOSTREAMS,
+    [AX_PKG_BOOST_LIB(IOSTREAMS,       [-lboost_iostreams],       [boost/iostreams/device/mapped_file.hpp], [boost::iostreams::mapped_file_source();])],
+  BOOST_GRAPH,
+    [AX_PKG_BOOST_LIB(GRAPH,           [],                        [boost/graph/adjacency_list.hpp])]
+)
 
-  AX_PKG_BOOST_LIB(PROGRAM_OPTIONS, [-lboost_program_options], [boost/program_options.hpp])
-  AX_PKG_BOOST_LIB(SYSTEM,          [-lboost_system],          [boost/system/error_code.hpp])
-  AX_PKG_BOOST_LIB(FILESYSTEM,      [-lboost_filesystem],      [boost/filesystem/path.hpp], [$PKG_BOOST_SYSTEM_LIBS])
-  AX_PKG_BOOST_LIB(REGEX,           [-lboost_regex],           [boost/regex.hpp])
-  AX_PKG_BOOST_LIB(DATETIME,        [-lboost_date_time],       [boost/date_time/gregorian/gregorian_types.hpp])
-  AX_PKG_BOOST_LIB(THREAD,          [-lboost_thread],          [boost/thread/thread.hpp],   [$PKG_BOOST_DATETIME_LIBS], [boost/thread/condition.hpp])
-  AX_PKG_BOOST_LIB(IOSTREAMS,       [-lboost_iostreams],       [boost/iostreams/stream_buffer.hpp])
-  AX_PKG_BOOST_LIB(GRAPH,           [],                        [boost/graph/adjacency_list.hpp])
+if test x"$HAVE_PKG_BOOST" = "xyes"; then
+  AX_PKG_BOOST_CHECK_VERSION([VW_])
+  AC_MSG_NOTICE([Using Boost header version $BOOST_VERSION, library suffix $PKG_BOOST_SAME_SUFFIX])
 fi
 
 # This provides an easy way for users to override the threads options
@@ -269,7 +283,7 @@ AX_PKG(CG, [GL], [-lCg -lCgGL], [Cg/cg.h])
 AX_PKG(GDAL, [], [-lgdal], [gdal.h])
 
 # GDAL requires tiff support, but it can be internal or external.
-PKG_CHECK_FUNCTION(GDAL, [TiffScanlineSize], [External_LibTIFF])
+PKG_CHECK_FUNCTION(GDAL, [TIFFScanlineSize], [External_LibTIFF])
 
 if test x"$HAVE_PKG_GDAL" = "xyes"; then
   HAVE_PKG_TIFF="no:gdal has tiff support"
@@ -306,7 +320,7 @@ if test "$ENABLE_QT_QMAKE" = no; then
   AX_GROUP_PKG([QT_QMAKE])
 else
   # Qt with AutoTroll.
-  AT_WITH_QT([+gui +sql +opengl], [], [], [HAVE_PKG_QT_QMAKE="no:missing QT"], [])
+  AT_WITH_QT([+gui +sql +opengl +network], [], [], [HAVE_PKG_QT_QMAKE="no:missing QT"], [])
 
   if test x"$HAVE_PKG_QT_QMAKE" != x"no:missing QT"; then
       AT_REQUIRE_QT_VERSION([4.0], [HAVE_PKG_QT_QMAKE="no:wrong QT version"], [])
@@ -334,15 +348,17 @@ AX_PKG_ONE_OF(QT,
      [AX_PKG(QT_QMAKE_OPENGL, [QT_QMAKE], [], [QtOpenGL])
       AX_PKG(QT_QMAKE_GUI,    [QT_QMAKE], [], [QLabel])
       AX_PKG(QT_QMAKE_SQL,    [QT_QMAKE], [], [QtSql])
-      AX_GROUP_PKG(LINUX_QMAKE_QT, [QT_QMAKE QT_QMAKE_GUI QT_QMAKE_OPENGL QT_QMAKE_SQL])],
+      AX_PKG(QT_QMAKE_NETWORK,    [QT_QMAKE], [], [QtNetwork])
+      AX_GROUP_PKG(LINUX_QMAKE_QT, [QT_QMAKE QT_QMAKE_GUI QT_QMAKE_OPENGL QT_QMAKE_SQL QT_QMAKE_NETWORK])],
     GUESS_QT,
      [PKG_QT_GUESS_BASE_CPPFLAGS="$PKG_QT_GUESS_BASE_CPPFLAGS -DQT_SHARED"
       AX_PKG(QT_GUESS_BASE,   [],                           [],           [QtCore/qstring.h])
       AX_PKG(QT_GUESS_CORE,   [QT_GUESS_BASE],              [-lQtCore],   [QtCore],   [QtCore])
       AX_PKG(QT_GUESS_GUI,    [QT_GUESS_CORE],              [-lQtGui],    [QtGui],    [QtGui])
       AX_PKG(QT_GUESS_SQL,    [QT_GUESS_CORE],              [-lQtSql],    [QtSql],    [QtSql])
+      AX_PKG(QT_GUESS_NETWORK,[QT_GUESS_CORE],              [-lQtNetwork],[QtNetwork],[QtNetwork])
       AX_PKG(QT_GUESS_OPENGL, [QT_GUESS_CORE QT_GUESS_GUI], [-lQtOpenGL], [QtOpenGL], [QtOpenGL])
-      AX_GROUP_PKG(GUESS_QT,  [QT_GUESS_BASE QT_GUESS_CORE QT_GUESS_GUI QT_GUESS_SQL QT_GUESS_OPENGL])])
+      AX_GROUP_PKG(GUESS_QT,  [QT_GUESS_BASE QT_GUESS_CORE QT_GUESS_GUI QT_GUESS_SQL QT_GUESS_NETWORK QT_GUESS_OPENGL])])
 
 PKG_CHECK_MODULES([CAIROMM], [cairomm-1.0], [
   PKG_CAIROMM_CPPFLAGS="$PKG_CAIROMM_CPPFLAGS $CAIROMM_CFLAGS"
@@ -351,7 +367,6 @@ AX_PKG(CAIROMM, [], [$CAIROMM_LIBS], [cairomm/cairomm.h])
 
 AX_PKG(RABBITMQ_C, [], [-lrabbitmq], [stdlib.h stdint.h amqp.h])
 AX_PKG(PROTOBUF, [PTHREADS], [-lprotobuf], [google/protobuf/stubs/common.h])
-AX_PKG(TCMALLOC, [], [-ltcmalloc], [])
 
 # These are here (instead of inside the PKG macro where they belong)
 # for backwards compatability with older versions of automake.
@@ -404,7 +419,7 @@ if test $host_vendor = apple; then
 else
   AX_MODULE(GPU,         [src/vw/GPU],           [libvwGPU.la],           no,  [VW],        [GL GLEW],          [CG])
 fi
-AX_MODULE(PLATE, [src/vw/Plate], [libvwPlate.la], no, [VW], [RABBITMQ_C PROTOBUF BOOST_FILESYSTEM BOOST_REGEX BOOST_IOSTREAMS BOOST_PROGRAM_OPTIONS THREADS], [TCMALLOC])
+AX_MODULE(PLATE, [src/vw/Plate], [libvwPlate.la], no, [VW], [RABBITMQ_C PROTOBUF BOOST_FILESYSTEM BOOST_REGEX BOOST_IOSTREAMS BOOST_PROGRAM_OPTIONS THREADS])
 
 AX_MODULE(TOOLS, [src/vw/tools], [], yes, [VW], [BOOST_FILESYSTEM BOOST_PROGRAM_OPTIONS THREADS])
 AX_MODULE(GUI,   [src/vw/gui],   [], no, [PLATE VW], [QT BOOST_PROGRAM_OPTIONS GL])
@@ -470,6 +485,8 @@ AC_CONFIG_FILES([                       \
   src/vw/gui/Makefile                   \
   src/vw/Plate/Makefile                 \
   src/vw/Plate/tests/Makefile           \
+  src/vw/Plate/google/Makefile          \
+  src/vw/Plate/google/sparsehash/Makefile \
   src/vw/Core/Makefile                  \
   src/vw/Core/tests/Makefile            \
   src/vw/Math/Makefile                  \

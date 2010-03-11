@@ -1,5 +1,5 @@
 # __BEGIN_LICENSE__
-# Copyright (C) 2006-2009 United States Government as represented by
+# Copyright (C) 2006-2010 United States Government as represented by
 # the Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # __END_LICENSE__
@@ -13,8 +13,9 @@ if MAKE_MODULE_INTERESTPOINT
 
 TestMatcher_SOURCES  = TestMatcher.oldtest
 TestIntegral_SOURCES = TestIntegral.oldtest
+TestBoxFilter_SOURCES = TestBoxFilter.oldtest
 
-TESTS = TestMatcher TestIntegral
+TESTS = TestMatcher TestIntegral TestBoxFilter
 
 include $(top_srcdir)/config/instantiate.am
 

@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -7,8 +7,8 @@
 
 #include <vw/Image/PixelTypeInfo.h>
 #include <vw/Plate/Index.h>
-#include <vw/Plate/LocalIndex.h>
 #include <vw/Plate/RemoteIndex.h>
+#include <vw/Plate/LocalIndex.h>
 using namespace vw::platefile;
 using namespace vw;
 

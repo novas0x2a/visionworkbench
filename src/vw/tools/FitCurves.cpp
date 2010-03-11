@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -19,9 +19,8 @@ from "Graphics Gems", Academic Press, 1990
 
 #include "contour.h"
 //#include "GraphicsGems.h"					
-#include <stdio.h>
-#include <malloc.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 
 //typedef struct Point2Struct {	/* 2d point */
 struct Point2 {	/* 2d point */

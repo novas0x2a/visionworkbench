@@ -35,7 +35,7 @@ if( VW_HAVE_PKG_CARTOGRAPHY )
   
   # XXX FIXME : slopemap has ambiguous 'algorithm' symbol (clashes with boost::algorithm)
   #set( PROGS colormap slopemap ) 
-  set( PROGS colormap ) 
+  set( PROGS colormap grassfirealpha ) 
   
   include_directories( ${PROJ4_INCLUDE_DIR} )
   

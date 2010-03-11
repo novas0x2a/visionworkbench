@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -153,13 +153,20 @@ int main(int argc, char** argv) {
   po::positional_options_description p;
   p.add("input-file", -1);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-  po::notify( vm );
-
   std::ostringstream usage;
   usage << "Usage: " << argv[0] << " [options] <filename>..." << std::endl << std::endl;
   usage << general_options << std::endl;
+
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << usage.str();
@@ -219,7 +226,7 @@ int main(int argc, char** argv) {
     std::cout << "Unknown interest operator: " << interest_operator << ".  Options are : [ Harris, LoG ]\n";
     exit(0);
   }
-  vw_out(0) << "\t Found " << ip1.size() << " and " << ip2.size() << " points in the left and right image respectively.\n";
+  vw_out() << "\t Found " << ip1.size() << " and " << ip2.size() << " points in the left and right image respectively.\n";
 
   // Write out images with interest points marked
   std::string prefix = prefix_from_filename(output_file_name);
@@ -256,7 +263,8 @@ int main(int argc, char** argv) {
 
   DefaultMatcher matcher(matcher_threshold);
   std::vector<InterestPoint> matched_ip1, matched_ip2;
-  matcher(ip1_copy, ip2_copy, matched_ip1, matched_ip2, false, TerminalProgressCallback());
+  matcher(ip1_copy, ip2_copy, matched_ip1, matched_ip2, false,
+          TerminalProgressCallback( "tools.ipalign", "Writing:"));
   vw_out(InfoMessage) << "\tFound " << matched_ip1.size() << " putative matches.\n";
 
   // Write out the putative point correspondence image

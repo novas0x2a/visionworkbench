@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -11,15 +11,13 @@
 #pragma warning(disable:4996)
 #endif
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <iostream> 
+#include <iostream>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
-
-#define VW_DEBUG_LEVEL 2
 
 #include <vw/Core/Cache.h>
 #include <vw/Core/ProgressCallback.h>
@@ -43,7 +41,6 @@ int main( int argc, char *argv[] ) {
   double east_lon=180.0, west_lon=-180.0;
   double proj_lat=0, proj_lon=0, proj_scale=1;
   unsigned utm_zone;
-  unsigned cache_size;
   double nudge_x=0, nudge_y=0;
 
   po::options_description general_options("General Options");
@@ -51,7 +48,6 @@ int main( int argc, char *argv[] ) {
     ("output-file,o", po::value<std::string>(&output_filename)->default_value("output.tif"), "Specify the base output filename")
     ("quiet,q", "Quiet output")
     ("verbose,v", "Verbose output")
-    ("cache", po::value<unsigned>(&cache_size)->default_value(1024), "Cache size, in megabytes")
     ("help,h", "Display this help message");
 
   po::options_description projection_options("Projection Options");
@@ -86,15 +82,22 @@ int main( int argc, char *argv[] ) {
   po::positional_options_description p;
   p.add("input-file", -1);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-  po::notify( vm );
-
   std::ostringstream usage;
   usage << "Description: Specify planetary coordinates for an image" << std::endl << std::endl;
   usage << "Usage: " << argv[0] << " [options] <filename>..." << std::endl << std::endl;
   usage << general_options << std::endl;
   usage << projection_options << std::endl;
+
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+    po::notify( vm );
+  } catch(po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << usage.str();
@@ -114,8 +117,6 @@ int main( int argc, char *argv[] ) {
     set_debug_level(WarningMessage);
   }
 
-  vw_system_cache().resize( cache_size*1024*1024 );
-
   GeoReference output_georef;
   output_georef.set_well_known_geogcs("WGS84");
 
@@ -126,22 +127,22 @@ int main( int argc, char *argv[] ) {
   GeoReference georef;
   if( vm.count("copy") ) {
     read_georeference( georef, copy_filename );
-  }
-  else {
+  } else {
     read_georeference( georef, file_resource );
   }
 
   if ( georef.proj4_str() == "" ) georef.set_well_known_geogcs("WGS84");
   if( manual || georef.transform() == identity_matrix<3>() ) {
     if( manual ) {
-      vw_out(InfoMessage) << "Using manual Plate Carree coordinates: ";
+      vw_out() << "Using manual Plate Carree coordinates: ";
       georef = GeoReference(georef.datum());
     } else {
-      vw_out(InfoMessage) << "No georeferencing info found.  Assuming Plate Carree WGS84: ";
+      vw_out() << "No georeferencing info found.  Assuming Plate Carree WGS84: ";
       georef = GeoReference();
       georef.set_well_known_geogcs("WGS84");
     }
-    vw_out(InfoMessage) << east_lon << " to " << west_lon << " E, " << south_lat << " to " << north_lat << " N." << std::endl;
+    vw_out() << east_lon << " E to " << west_lon << " W, "
+             << south_lat << " S to " << north_lat << " N." << std::endl;
 
     Matrix3x3 m;
     m(0,0) = (east_lon - west_lon) / file_resource.cols();
@@ -172,7 +173,7 @@ int main( int argc, char *argv[] ) {
     georef.set_transform( m );
   }
 
-  vw_out(0) << "Writing file with Proj4 String: " << georef.proj4_str() << "\n";
+  vw_out() << "Writing file with Proj4 String: " << georef.proj4_str() << "\n";
 
   // Our file readers do a better job that GDAL's of coping with large 
   // image files in some cases, so we make a fresh DiskImageView rather 
@@ -193,32 +194,33 @@ int main( int argc, char *argv[] ) {
     }
     tfw_file.close();
   } else {
+    TerminalProgressCallback bar( "tools.georef", "Writing:" );
     switch( file_resource.channel_type() ) {
     case VW_CHANNEL_INT16:
       switch( file_resource.pixel_format() ) {
       case VW_PIXEL_SCALAR: {
         DiskImageView<int16> input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAY: {
         DiskImageView<PixelGray<int16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAYA: {
         DiskImageView<PixelGrayA<int16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGB: {
         DiskImageView<PixelRGB<int16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGBA: {
         DiskImageView<PixelRGBA<int16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       default: {
@@ -231,27 +233,27 @@ int main( int argc, char *argv[] ) {
       switch( file_resource.pixel_format() ) {
       case VW_PIXEL_SCALAR: {
         DiskImageView<uint16> input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAY: {
         DiskImageView<PixelGray<uint16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAYA: {
         DiskImageView<PixelGrayA<uint16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGB: {
         DiskImageView<PixelRGB<uint16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGBA: {
         DiskImageView<PixelRGBA<uint16> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       default: {
@@ -264,27 +266,27 @@ int main( int argc, char *argv[] ) {
       switch( file_resource.pixel_format() ) {
       case VW_PIXEL_SCALAR: {
         DiskImageView<float32> input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAY: {
         DiskImageView<PixelGray<float32> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAYA: {
         DiskImageView<PixelGrayA<float32> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGB: {
         DiskImageView<PixelRGB<float32> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGBA: {
         DiskImageView<PixelRGBA<float32> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       default: {
@@ -297,27 +299,27 @@ int main( int argc, char *argv[] ) {
       switch( file_resource.pixel_format() ) {
       case VW_PIXEL_SCALAR: {
         DiskImageView<uint8> input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAY: {
         DiskImageView<PixelGray<uint8> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_GRAYA: {
         DiskImageView<PixelGrayA<uint8> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGB: {
         DiskImageView<PixelRGB<uint8> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       case VW_PIXEL_RGBA: {
         DiskImageView<PixelRGBA<uint8> > input_image( input_filename );
-        write_georeferenced_image( output_filename, input_image, georef, TerminalProgressCallback() );
+        write_georeferenced_image( output_filename, input_image, georef, bar );
         break;
       }
       default: {

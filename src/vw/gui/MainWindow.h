@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -38,7 +38,7 @@ namespace gui {
     po::variables_map const& m_vm;
 
   public:
-    MainWindow(std::string filename, float nodata_value, bool do_normalize, po::variables_map const& vm);
+    MainWindow(std::string filename, float nodata_value, int transaction_id, bool do_normalize, po::variables_map const& vm);
     virtual ~MainWindow() {}
 
   private slots:

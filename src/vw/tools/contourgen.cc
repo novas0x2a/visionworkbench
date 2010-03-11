@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -9,13 +9,12 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <assert.h>
+#include <cassert>
 #include <list>
 #include <map>
 #include <algorithm>
 #include <utility>
 
-#include <cairomm/cairommconfig.h>
 #include <cairomm/context.h>
 #include <cairomm/surface.h>
 
@@ -27,7 +26,7 @@
 #include <vw/Image.h>
 #include <vw/FileIO.h>
 
-#include <math.h>
+#include <cmath>
 
 #include "contour.h"
 
@@ -366,7 +365,7 @@ int main(int argc, char *argv[])
     // done parsing options
 
     vw::ImageView<float> dem;
-    //TerminalProgressCallback tpc(vw::InfoMessage);
+    //TerminalProgressCallback tpc();
     PointContourSet cset;
     SegmentList segment_list;
     int rows, cols;

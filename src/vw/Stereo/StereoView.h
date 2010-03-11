@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -11,6 +11,7 @@
 #include <vw/Image/ImageViewBase.h>
 #include <vw/Stereo/StereoModel.h>
 #include <vw/Camera/CameraModel.h>
+#include <limits>
 
 #ifdef __APPLE__
 #include <float.h>                         // for DBL_MAX
@@ -120,7 +121,7 @@ namespace stereo {
     boost::shared_ptr<UniverseRadiusState> m_state;
 
   public:
-    UniverseRadiusFunc(Vector3 universe_origin, double near_radius = 0, double far_radius = DBL_MAX):
+    UniverseRadiusFunc(Vector3 universe_origin, double near_radius = 0, double far_radius = std::numeric_limits<double>::max()):
       m_origin(universe_origin), m_near_radius(near_radius), m_far_radius(far_radius),
       m_state( new UniverseRadiusState() ) {
       VW_ASSERT(m_near_radius >= 0 && m_far_radius >= 0,

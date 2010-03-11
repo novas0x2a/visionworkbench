@@ -1,19 +1,18 @@
-set(TARGET wvw)
+set(TARGET vwv)
 
 set( MOC_HEADERS
   GlPreviewWidget.h
   MainWindow.h
+  TileGenerator.h
 )
 
 set(HEADERS
   ${MOC_HEADERS}
   TextureCache.h
-  TileGenerator.h
 )
 
 set(SOURCES 
   TextureCache.cc
-  TileGenerator.cc
   vwv.cc
 )
 

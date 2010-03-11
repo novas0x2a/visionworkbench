@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -95,7 +95,10 @@ vw::int32 vw::num_channels( vw::PixelFormatEnum format ) {
   case VW_PIXEL_GENERIC_4_CHANNEL:
     return 4;
   case VW_PIXEL_RGBA_MASKED:
+  case VW_PIXEL_GENERIC_5_CHANNEL:
     return 5;
+  case VW_PIXEL_GENERIC_6_CHANNEL:
+    return 6;
   default:
     vw_throw( ArgumentErr() << "Unrecognized or unsupported pixel format (" << format << ")." );
     return 0; // never reached
@@ -127,6 +130,8 @@ const char *vw::pixel_format_name( vw::PixelFormatEnum format ) {
   case VW_PIXEL_GENERIC_2_CHANNEL: return "VW_PIXEL_GENERIC_2_CHANNEL";
   case VW_PIXEL_GENERIC_3_CHANNEL: return "VW_PIXEL_GENERIC_3_CHANNEL";
   case VW_PIXEL_GENERIC_4_CHANNEL: return "VW_PIXEL_GENERIC_4_CHANNEL";
+  case VW_PIXEL_GENERIC_5_CHANNEL: return "VW_PIXEL_GENERIC_5_CHANNEL";
+  case VW_PIXEL_GENERIC_6_CHANNEL: return "VW_PIXEL_GENERIC_6_CHANNEL";
   default: return "UNKNOWN";
   }
 }

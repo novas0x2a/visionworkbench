@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -58,24 +58,22 @@ namespace platefile {
   
     std::string m_blob_filename;
     boost::shared_ptr<std::fstream> m_fstream;
+    uint64 m_end_of_file_ptr;
+    uint64 m_write_count;
 
-    BlobRecord read_blob_record(uint16 &blob_record_size) const {
-      // Read the blob record
-      m_fstream->read((char*)(&blob_record_size), sizeof(blob_record_size));
-      boost::shared_array<uint8> blob_rec_data(new uint8[blob_record_size]);
-      m_fstream->read((char*)(blob_rec_data.get()), blob_record_size);
-      BlobRecord blob_record;
-      bool worked = blob_record.ParseFromArray(blob_rec_data.get(),  blob_record_size);
-      if (!worked)
-        vw_throw(IOErr() << "Blob::read_blob_record() -- an error occurred while deserializing the header "
-                 << "from the blob file.\n");
-      return blob_record;
-    }
+    /// Returns the metadata (i.e. BlobRecord) for a blob entry.
+    BlobRecord read_blob_record(uint16 &blob_record_size) const;
+
+    /// Returns the binary data for an entry starting at base_offset.
+    boost::shared_array<uint8> read_data(vw::uint64 base_offset);
+
+    // End-of-file point manipulation.
+    void write_end_of_file_ptr(uint64 ptr);
+    uint64 read_end_of_file_ptr() const;
 
     // Enforce uncopyable semantics
     Blob( Blob const& );
-    Blob& operator=( Blob const& );
-    
+    Blob& operator=( Blob const& );    
 
   public:
 
@@ -134,7 +132,6 @@ namespace platefile {
     
     // -----------------------------------------------------------------------
 
-
     /// Constructor
     Blob(std::string filename, bool readonly = false);
 
@@ -142,40 +139,32 @@ namespace platefile {
     /// closes the blob and journal files.
     ~Blob();
 
-    uint64 size() const { 
-      
-      // Seek to the requested offset and read the header and data offset
-      m_fstream->seekg(0, std::ios_base::end);
-      uint64 size = m_fstream->tellg();
-      return size;
-    }
+    /// Returns the size of the blob in bytes.  Note: only counts
+    /// valid entries.  (Invalid data may exist beyond the end of the
+    /// end_of_file_ptr)
+    uint64 size() const { return m_end_of_file_ptr; }
 
     /// Returns an iterator pointing to the first TileHeader in the blob.
-    iterator begin() { return iterator(*this, uint64(0) ); } // uint64(0) is the very first byte in the file.
+    ///
+    /// 3*sizeof(uint64) is the very first byte in the file after the
+    /// end-of-file pointer.  (See the *_end_of_file_ptr() routines
+    /// above for more info...)
+    iterator begin() { return iterator(*this, 3*sizeof(uint64) ); } 
 
     /// Returns an iterator pointing one past the last TileHeader in the blob.
-    iterator end() { return iterator(*this, this->size() ); }
+    iterator end() { return iterator(*this, m_end_of_file_ptr ); }
 
-    uint64 next_base_offset(uint64 current_base_offset) {
-
-      // Seek to the requested offset and read the header and data offset
-      m_fstream->seekg(current_base_offset, std::ios_base::beg);
-      
-      // Read the blob record
-      uint16 blob_record_size;
-      BlobRecord blob_record = this->read_blob_record(blob_record_size);
-
-      uint32 blob_offset_metadata = sizeof(blob_record_size) + blob_record_size;
-      uint64 next_offset = current_base_offset + blob_offset_metadata + blob_record.data_offset() + blob_record.data_size();
-
-      return next_offset;
-    }
-
+    /// Seek to the next base offset given the current base offset.
+    uint64 next_base_offset(uint64 current_base_offset);
 
     /// Returns binary index record (a serialized protobuffer) for an
     /// entry starting at base_offset.
     template <class ProtoBufT>
     ProtoBufT read_header(vw::uint64 base_offset) {
+
+      vw_out(VerboseDebugMessage, "platefile::blob") << "Entering read_header() -- "
+                                                     <<" base_offset: " 
+                                                     <<  base_offset << "\n";
 
       // Seek to the requested offset and read the header and data offset
       m_fstream->seekg(base_offset, std::ios_base::beg);
@@ -194,6 +183,10 @@ namespace platefile {
       
       // Allocate an array of the appropriate size to read the data.
       boost::shared_array<uint8> data(new uint8[size]);
+
+      vw_out(VerboseDebugMessage, "platefile::blob") << "         read_header() -- "
+                                                     << " data offset: " << offset 
+                                                     << " size: " << size << "\n";
       
       m_fstream->seekg(offset, std::ios_base::beg);
       m_fstream->read((char*)(data.get()), size);
@@ -212,29 +205,17 @@ namespace platefile {
         vw_throw(IOErr() << "Blob::read() -- an error occurred while deserializing the header "
                  << "from the blob file.\n");
       
-      vw::vw_out(vw::VerboseDebugMessage, "plate::blob") << "Blob::read() -- read " 
+      vw::vw_out(vw::VerboseDebugMessage, "platefile::blob") << "         read_header() -- read " 
                                                          << size << " bytes at " << offset
                                                          << " from " << m_blob_filename << "\n";
       return header;
     }
 
-    /// Returns the binary data for an entry starting at base_offset.
-    boost::shared_array<uint8> read_data(vw::uint64 base_offset);
-
     /// Returns the parameters necessary to call sendfile(2)
     void read_sendfile(vw::uint64 base_offset, std::string& filename, vw::uint64& offset, vw::uint64& size);
 
     /// Returns the data size
-    uint32 data_size(uint64 base_offset) const {
-
-      // Seek to the requested offset and read the header and data offset
-      m_fstream->seekg(base_offset, std::ios_base::beg);
-
-      // Read the blob record
-      uint16 blob_record_size;
-      BlobRecord blob_record = this->read_blob_record(blob_record_size);
-      return blob_record.data_size();
-    }
+    uint32 data_size(uint64 base_offset) const;
 
     /// Write a tile to the blob file. You must supply the header
     /// (e.g. a serialized TileHeader protobuffer) and the data as
@@ -245,8 +226,8 @@ namespace platefile {
 
       // Store the current offset of the end of the file.  We'll
       // return that at the end of this function.
-      m_fstream->seekp(0, std::ios_base::end);
-      vw::int64 base_offset = m_fstream->tellp();
+      vw::uint64 base_offset = m_end_of_file_ptr;
+      m_fstream->seekp(base_offset, std::ios_base::beg);
 
       // Create the blob record and write it to the blob file.
       BlobRecord blob_record;
@@ -269,8 +250,24 @@ namespace platefile {
   
       // Write the data at the end of the file and return the offset
       // of the beginning of this data file.
-      vw::vw_out(vw::VerboseDebugMessage, "plate::blob") << "Blob::write() -- writing " << data_size
-                                                         << " bytes to " << m_blob_filename << "\n";
+      vw::vw_out(vw::VerboseDebugMessage, "platefile::blob") << "Blob::write() -- writing " 
+                                                         << data_size
+                                                         << " bytes to "
+                                                         << m_blob_filename << "\n";
+
+      // Update the in-memory copy of the end-of-file pointer
+      m_end_of_file_ptr = m_fstream->tellg();
+
+      // The write_count is used to keep track of when we last wrote
+      // the end_of_file_ptr to disk.  We don't want to write this too
+      // often since this will slow down IO, so we only write it every
+      // 10 writes (or when the blob is deconstructed...).
+      ++m_write_count;
+      if (m_write_count % 10 == 0) {
+        this->write_end_of_file_ptr(m_end_of_file_ptr); 
+      }
+
+      // Return the base_offset
       return base_offset;
     }
 
@@ -288,7 +285,6 @@ namespace platefile {
       
       if (!istr.is_open())
         vw_throw(IOErr() << "Blob::write_from_file() -- could not open source file for reading.");
-      
 
       // Seek to the end and allocate the proper number of bytes of
       // memory, and then seek back to the beginning.

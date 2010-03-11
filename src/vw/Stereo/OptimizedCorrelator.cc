@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -83,8 +83,10 @@ ImageView<float> NormXCorrCost::calculate(int dx, int dy) {
   // invalid (empty) regions of the image (which would normally
   // evaluate to zero) end up evaluating to 1.0, and areas that
   // are highly correlated are closer to zero.
-  return 1-abs(pow(left_right_mean - left_mean_window * right_mean_window, 2) /
-               left_variance_window / right_variance_window);
+  //return 1-abs(pow(left_right_mean - left_mean_window * right_mean_window, 2) /
+  //             left_variance_window / right_variance_window);
+  left_right_mean = left_right_mean -left_mean_window * right_mean_window;
+  return 1-abs(left_right_mean*left_right_mean / left_variance_window / right_variance_window);
 }
 
 

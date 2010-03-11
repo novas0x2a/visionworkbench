@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -74,7 +74,7 @@ namespace gui {
     public:
 
     // Constructors/Destructor
-    GlPreviewWidget(QWidget *parent, std::string filename, QGLFormat const& frmt);
+    GlPreviewWidget(QWidget *parent, std::string filename, QGLFormat const& frmt, int transaction_id);
     virtual ~GlPreviewWidget();
 
     virtual GLuint allocate_texture(boost::shared_ptr<ViewImageResource> tile);
@@ -141,10 +141,10 @@ namespace gui {
   
     // Image & OpenGL
     GLuint m_glsl_program;
-    bool m_draw_texture;
     bool m_show_legend;
     bool m_bilinear_filter;
     bool m_use_colormap;
+    bool m_show_tile_boundaries;
 
     // Timers and updates
     QTimer *m_timer;
@@ -152,6 +152,7 @@ namespace gui {
     // Image tiles and the texture cache
     boost::shared_ptr<TileGenerator> m_tile_generator;
     boost::shared_ptr<GlTextureCache> m_gl_texture_cache;
+    PixelRGBA<float> m_last_pixel_sample;
 
     // Adjustment mode
     enum AdjustmentMode { TransformAdjustment, GainAdjustment, 
@@ -177,12 +178,13 @@ namespace gui {
     float m_offset;
     float m_gamma;
     int m_current_transaction_id;
+    bool m_exact_transaction_id_match;
     int m_current_level;
 
     enum DisplayChannel { DisplayRGBA = 0, DisplayR, DisplayG, DisplayB, DisplayA };
     int m_display_channel;
-    int m_colorize_display;;
-    int m_hillshade_display;;
+    int m_colorize_display;
+    int m_hillshade_display;
   };
 
 }} // namespace vw::gui

@@ -1,11 +1,11 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
 
 
-/// \file ipfind.cc
+/// \file ipmatch.cc
 ///
 /// Finds the interest points in an image and outputs them an Binary
 /// (default) or ASCII format.  The ASCII format is compatible with
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
   po::options_description general_options("Options");
   general_options.add_options()
     ("help,h", "Display this help message")
-    ("matcher-threshold,t", po::value<double>(&matcher_threshold)->default_value(0.8), "Threshold for the interest point matcher.")
+    ("matcher-threshold,t", po::value<double>(&matcher_threshold)->default_value(0.6), "Threshold for the interest point matcher.")
     ("non-kdtree", "Use an implementation of the interest matcher that is not reliant on a KDTree algorithm")
     ("ransac-constraint,r", po::value<std::string>(&ransac_constraint)->default_value("similarity"), "RANSAC constraint type.  Choose one of: [similarity, homography, or none].")
     ("inlier-threshold,i", po::value<int>(&inlier_threshold)->default_value(10), "RANSAC inlier threshold.")
@@ -118,22 +118,29 @@ int main(int argc, char** argv) {
   po::positional_options_description p;
   p.add("input-files", -1);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-  po::notify( vm );
-
   std::ostringstream usage;
   usage << "Usage: " << argv[0] << " [options] <filenames>..." << std::endl << std::endl;
   usage << general_options << std::endl;
 
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
+
   if( vm.count("help") ) {
-    vw_out(0) << usage.str();
+    vw_out() << usage.str();
     return 1;
   }
 
   if( input_file_names.size() < 2 ) {
-    vw_out(0) << "Error: Must specify at least two input files!" << std::endl << std::endl;
-    vw_out(0) << usage.str();
+    vw_out() << "Error: Must specify at least two input files!" << std::endl << std::endl;
+    vw_out() << usage.str();
     return 1;
   }
 
@@ -145,22 +152,24 @@ int main(int argc, char** argv) {
       std::vector<InterestPoint> ip1, ip2;
       ip1 = read_binary_ip_file(prefix_from_filename(input_file_names[i])+".vwip");
       ip2 = read_binary_ip_file(prefix_from_filename(input_file_names[j])+".vwip");
-      vw_out(0) << "Matching between " << input_file_names[i] << " (" << ip1.size() << " points) and " << input_file_names[j] << " (" << ip2.size() << " points).\n";
+      vw_out() << "Matching between " << input_file_names[i] << " (" << ip1.size() << " points) and " << input_file_names[j] << " (" << ip2.size() << " points).\n";
 
       std::vector<InterestPoint> matched_ip1, matched_ip2;
 
       if ( !vm.count("non-kdtree") ) {
         // Run interest point matcher that uses KDTree algorithm.
         InterestPointMatcher<L2NormMetric,NullConstraint> matcher(matcher_threshold);
-        matcher(ip1, ip2, matched_ip1, matched_ip2, false, TerminalProgressCallback());
+        matcher(ip1, ip2, matched_ip1, matched_ip2, false,
+                TerminalProgressCallback( "tools.ipmatch","Matching:"));
       } else {
         // Run interest point matcher that does not use KDTree algorithm.
         InterestPointMatcherSimple<L2NormMetric,NullConstraint> matcher(matcher_threshold);
-        matcher(ip1, ip2, matched_ip1, matched_ip2, false, TerminalProgressCallback());
+        matcher(ip1, ip2, matched_ip1, matched_ip2, false,
+                TerminalProgressCallback( "tools.ipmatch","Matching:"));
       }
 
       remove_duplicates(matched_ip1, matched_ip2);
-      vw_out(InfoMessage) << "Found " << matched_ip1.size() << " putative matches.\n";
+      vw_out() << "Found " << matched_ip1.size() << " putative matches.\n";
 
       std::vector<Vector3> ransac_ip1 = iplist_to_vectorlist(matched_ip1);
       std::vector<Vector3> ransac_ip2 = iplist_to_vectorlist(matched_ip2);
@@ -194,7 +203,7 @@ int main(int argc, char** argv) {
         std::cout << "RANSAC Failed: " << e.what() << "\n";
         continue;
       }
-      vw_out(InfoMessage) << "Found " << indices.size() << " final matches.\n";
+      vw_out() << "Found " << indices.size() << " final matches.\n";
 
       std::vector<InterestPoint> final_ip1, final_ip2;
       for (unsigned idx=0; idx < indices.size(); ++idx) {

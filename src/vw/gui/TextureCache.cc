@@ -1,8 +1,9 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
+
 
 #include <vw/gui/TextureCache.h>
 using namespace vw;
@@ -151,7 +152,7 @@ vw::gui::GlTextureCache::GlTextureCache(boost::shared_ptr<TileGenerator> tile_ge
 
   // Create the texture record tree for storing cache handles and
   // other useful texture-related metadata.
-  m_texture_records.reset( new platefile::TreeNode<boost::shared_ptr<TextureRecord> >() );
+  m_texture_records.reset( new gui::TreeNode<boost::shared_ptr<TextureRecord> >() );
   m_previous_level = 0;
 }
 
@@ -171,7 +172,7 @@ void vw::gui::GlTextureCache::clear() {
   m_requests.clear();
 
   // Delete all of the existing texture records
-  m_texture_records.reset( new platefile::TreeNode<boost::shared_ptr<TextureRecord> >() );
+  m_texture_records.reset( new gui::TreeNode<boost::shared_ptr<TextureRecord> >() );
   m_previous_level = 0;
 }
 
@@ -196,15 +197,16 @@ GLuint vw::gui::GlTextureCache::get_texture_id(vw::gui::TileLocator const& tile_
     boost::shared_ptr<TextureRecord> rec = m_texture_records->search(tile_info.col, 
                                                                      tile_info.row, 
                                                                      tile_info.level,
-                                                                     tile_info.transaction_id);
+                                                                     tile_info.transaction_id, 
+                                                                     false);
 
     // If the shared pointer for this record is empty, then this node
     // was generated as part of a branch that supports a leaf node,
     // but this node does not itself contain any data yet.  To
     // populate it with data, we throw an exception to run the code
     // below.
-    if ( !rec )
-      vw_throw(platefile::TileNotFoundErr() << "invalid record. regenerating...");
+    if ( !rec ) 
+      vw_throw(gui::TileNotFoundErr() << "invalid record. regenerating...");
 
     // If the texture_id of this record is 0, then we need to send a
     // request to regenerate the texture.  It will get rendered in the
@@ -219,7 +221,7 @@ GLuint vw::gui::GlTextureCache::get_texture_id(vw::gui::TileLocator const& tile_
     // the texture_id to satisfy the request.
     return rec->texture_id;
 
-  } catch (platefile::TileNotFoundErr &e) {
+  } catch (gui::TileNotFoundErr &e) {
 
     // If the tile isn't found or hasn't been properly initialized
     // yet, we need to add an entry to the cache and then cause the

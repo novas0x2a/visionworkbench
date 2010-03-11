@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -16,7 +16,7 @@
 #include <vw/Image/Filter.h>
 #include <vector>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
 #define INTEREST_POINT_MODE_THRESHOLD (0.8)
 #define INTEREST_POINT_MODE_LIMIT (5)

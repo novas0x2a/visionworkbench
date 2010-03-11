@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -578,7 +578,7 @@ void DiskImageResourcePNG::open( std::string const& filename ) {
   m_ctx = boost::shared_ptr<vw_png_context>( new vw_png_read_context( const_cast<DiskImageResourcePNG *>(this) ) );
   
   // Block reading is supported, we only use it in the event of really large images.
-  if ( cols()*rows()*4*3 > vw_settings().system_cache_size() )
+  if ( uint(cols()*rows()*4*3) > vw_settings().system_cache_size() )
     m_block_size = Vector2i( cols(), 128 ); // 128 seems like a good number.
   else
     m_block_size = Vector2i( cols(), rows() );

@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -36,7 +36,6 @@ using namespace vw;
 
 std::string mosaic_name;
 std::string file_type;
-unsigned int cache_size;
 int tile_size;
 bool draft;
 bool qtree;
@@ -97,8 +96,6 @@ int main( int argc, char *argv[] ) {
        "Output file type")
       ("tile-size", po::value<int>(&tile_size)->default_value(256), 
        "Tile size, in pixels")
-      ("cache", po::value<unsigned>(&cache_size)->default_value(1024), 
-       "Cache size, in megabytes")
       ("draft", "Draft mode (no blending)")
       ("qtree", "Output in quadtree format")
       ("grayscale", "Process in grayscale only")
@@ -107,8 +104,15 @@ int main( int argc, char *argv[] ) {
     p.add("input-dir", 1);
 
     po::variables_map vm;
-    po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
-    po::notify( vm );
+    try {
+      po::store( po::command_line_parser( argc, argv ).options(desc).positional(p).run(), vm );
+      po::notify( vm );
+    } catch ( po::error &e ) {
+      std::cout << "An error occured while parsing command line arguments.\n";
+      std::cout << "\t" << e.what() << "\n\n";
+      std::cout << desc << std::endl;
+      return 1;
+    }
 
     if( vm.count("help") ) {
       std::cout << desc << std::endl;
@@ -134,8 +138,6 @@ int main( int argc, char *argv[] ) {
       std::cout << desc << std::endl;
       return 1;
     }
-
-    vw_system_cache().resize( cache_size*1024*1024 );
 
     if( vm.count("grayscale") ) {
       do_blend<PixelGrayA<float> >();

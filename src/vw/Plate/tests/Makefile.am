@@ -1,5 +1,5 @@
 # __BEGIN_LICENSE__
-# Copyright (C) 2006-2009 United States Government as represented by
+# Copyright (C) 2006-2010 United States Government as represented by
 # the Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # __END_LICENSE__
@@ -11,14 +11,16 @@
 
 if MAKE_MODULE_PLATE
 
+TestBlobManager_SOURCES  = TestBlobManager.oldtest
 TestBlobIO_SOURCES       = TestBlobIO.oldtest
 TestBlobIterator_SOURCES = TestBlobIterator.oldtest
-TestIndex_SOURCES        = TestIndex.oldtest
+TestIndexPage_SOURCES        = TestIndexPage.oldtest
+TestLocalIndex_SOURCES        = TestLocalIndex.oldtest
 TestAmqp_SOURCES        = TestAmqp.oldtest
-TestTree_SOURCES        = TestTree.oldtest
-TestPlateIndexServer_SOURCES        = TestPlateIndexServer.oldtest
+#TestPlateIndexServer_SOURCES        = TestPlateIndexServer.oldtest
 
-TESTS = TestBlobIO TestBlobIterator TestIndex TestAmqp TestTree TestPlateIndexServer
+TESTS = TestBlobManager TestBlobIO TestBlobIterator TestLocalIndex	\
+	TestIndexPage TestAmqp
 
 #include $(top_srcdir)/config/instantiate.am
 

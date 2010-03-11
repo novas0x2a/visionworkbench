@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -47,6 +47,8 @@ namespace vw {
     }
 #else
     if (use_cpu_time) {
+      // XXX: This provides no useful information. On any linux system after
+      // 2003 or so, the clock rate is not a constant.
       return ((long long)clock() * 1000000 / CLOCKS_PER_SEC); 
     } else {
       struct timeval tv;

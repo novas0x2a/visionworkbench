@@ -1,3 +1,10 @@
+// __BEGIN_LICENSE__
+// Copyright (C) 2006-2010 United States Government as represented by
+// the Administrator of the National Aeronautics and Space Administration.
+// All Rights Reserved.
+// __END_LICENSE__
+
+
 // -*- C++ -*-
 #ifndef vw_Math_Frame_h
 #define vw_Math_Frame_h
@@ -78,7 +85,7 @@ namespace vw
       }
       /** Mutable access to transform field. */
       Transform& transform() throw() {
-        return m_trans;
+		  return m_trans;
       }
       /** Set transform field. */
       void set_transform(Transform const& trans) {

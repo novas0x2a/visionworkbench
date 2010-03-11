@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -61,7 +61,6 @@ int utm_zone;
 int tile_size;
 float jpeg_quality;
 int png_compression;
-unsigned cache_size;
 std::string palette_file;
 std::string channel_type_str;
 float palette_scale=1.0, palette_offset=0.0;
@@ -151,7 +150,6 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
 
   DiskImageResourceJPEG::set_default_quality( jpeg_quality );
   DiskImageResourcePNG::set_default_compression_level( png_compression );
-  vw_system_cache().resize( cache_size*1024*1024 );
 
   // Read in georeference info and compute total resolution.
   GeoReference output_georef;
@@ -169,7 +167,7 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
 
     if(vm.count("force-lunar-datum")) {
       const double LUNAR_RADIUS = 1737400;
-      vw_out(0) << "\t--> Using standard lunar spherical datum: " 
+      vw_out() << "\t--> Using standard lunar spherical datum: "
                 << LUNAR_RADIUS << "\n";
       cartography::Datum datum("D_MOON",
                                "MOON",
@@ -180,7 +178,7 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
       input_georef.set_datum(datum);
     } else if(vm.count("force-mars-datum")) {
       const double MOLA_PEDR_EQUATORIAL_RADIUS = 3396000.0;
-      std::cout << "\t--> Using standard MOLA spherical datum: " 
+      vw_out() << "\t--> Using standard MOLA spherical datum: "
                 << MOLA_PEDR_EQUATORIAL_RADIUS << "\n";
       cartography::Datum datum("D_MARS",
                                "MARS",
@@ -204,8 +202,9 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
     bool manual = vm.count("north") || vm.count("south") || vm.count("east") || vm.count("west");
     if( manual || input_georef.transform() == identity_matrix<3>() ) {
       if( image_files.size() == 1 ) {
-        vw_out(InfoMessage) << "No georeferencing info found.  Assuming Plate Carree WGS84: " 
-                            << east_lon << " to " << west_lon << " E, " << south_lat << " to " << north_lat << " N." << std::endl;
+        vw_out() << "No georeferencing info found.  Assuming Plate Carree WGS84: "
+                 << east_lon << " to " << west_lon << " E, " << south_lat
+                 << " to " << north_lat << " N." << std::endl;
         input_georef = GeoReference();
         input_georef.set_well_known_geogcs("WGS84");
         Matrix3x3 m;
@@ -309,7 +308,7 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
 
     BBox2i bbox = geotx.forward_bbox( BBox2i(0,0,source.cols(),source.rows()) );
     if (global) {
-      vw_out(0) << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
+      vw_out() << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
       source = crop( transform( source, geotx, source.cols(), source.rows(), CylindricalEdgeExtension() ), bbox );
     }
     else
@@ -434,7 +433,7 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
   quadtree.set_file_type(output_file_type);
 
   // Generate the composite.
-  vw_out(InfoMessage) << "Generating " << output_metadata << " overlay..." << std::endl;
+  vw_out() << "Generating " << output_metadata << " overlay..." << std::endl;
   quadtree.generate(*progress);
 
   // This should really get moved into a metadata function for 
@@ -501,7 +500,6 @@ int main(int argc, char **argv) {
     ("output-name,o", po::value<std::string>(&output_file_name), "Specify the base output directory")
     ("quiet,q", "Quiet output")
     ("verbose,v", "Verbose output")
-    ("cache", po::value<unsigned>(&cache_size)->default_value(1024), "Cache size, in megabytes")
     ("help,h", "Display this help message");
 
   po::options_description input_options("Input Options");
@@ -564,22 +562,23 @@ int main(int argc, char **argv) {
   po::positional_options_description p;
   p.add("input-file", -1);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-  po::notify( vm );
-
-  std::ostringstream command_line;
-  for(int i=0; i < argc; i++) {
-    command_line << argv[i];
-    if(i < argc-1) command_line << ' ';
-  }
-
   std::ostringstream usage;
   usage << "Usage: image2qtree [options] <filename>..." <<std::endl << std::endl;
   usage << general_options << std::endl;
   usage << input_options << std::endl;
   usage << output_options << std::endl;
   usage << projection_options << std::endl;
+
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << usage.str();
@@ -607,7 +606,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  TerminalProgressCallback tpc;
+  TerminalProgressCallback tpc( "tools.image2qtree", "");
   const ProgressCallback *progress = &tpc;
 
   // Set a few booleans based on input values.

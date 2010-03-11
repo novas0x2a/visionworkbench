@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -470,6 +470,8 @@ namespace vw {
     VW_PIXEL_GENERIC_2_CHANNEL = 91,
     VW_PIXEL_GENERIC_3_CHANNEL = 92,
     VW_PIXEL_GENERIC_4_CHANNEL = 93,
+    VW_PIXEL_GENERIC_5_CHANNEL = 94,
+    VW_PIXEL_GENERIC_6_CHANNEL = 95,
     VW_PIXEL_USER = 100
   };
 

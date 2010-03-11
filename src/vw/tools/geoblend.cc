@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -42,7 +42,6 @@ std::vector<std::string> image_files;
 std::string mosaic_name;
 std::string output_file_type;
 std::string channel_type_str;
-unsigned cache_size;
 bool draft;
 unsigned int tilesize;
 bool tile_output = false;
@@ -83,7 +82,8 @@ public:
 
 template <class ViewT>
 vw::UnaryPerPixelView<ViewT, NodataToMaskFunctor<typename ViewT::pixel_type> > 
-nodata_to_mask(vw::ImageViewBase<ViewT> const& view, float nodata_value = 0 ) {
+nodata_to_mask(vw::ImageViewBase<ViewT> const& view, 
+	       typename PixelChannelType<typename ViewT::pixel_type>::type const& nodata_value = 0 ) {
   return vw::per_pixel_filter(view.impl(), NodataToMaskFunctor<typename ViewT::pixel_type>(nodata_value));
 }
 
@@ -118,7 +118,7 @@ void do_blend() {
   typedef typename AlphaTypeFromPixelType<PixelT>::type alpha_pixel_type;
   typedef typename PixelChannelCast<alpha_pixel_type,float32>::type float_pixel_type;
 
-  TerminalProgressCallback tpc( vw::InfoMessage );
+  TerminalProgressCallback tpc( "tools.geoblend", "");
 
   vw::mosaic::ImageComposite<float_pixel_type> composite;
   if( draft ) composite.set_draft_mode( true );
@@ -203,7 +203,7 @@ void do_blend() {
     // strategy for intepolating and filtering in the presence of
     // missing pixels in DEMs. -mbroxton 
     if (has_nodata_value) {
-      ImageViewRef<alpha_pixel_type> masked_source = crop( transform( nodata_to_mask(source_disk_image, nodata_value), trans, ZeroEdgeExtension(), NearestPixelInterpolation() ), output_bbox );
+      ImageViewRef<alpha_pixel_type> masked_source = crop( transform( nodata_to_mask(source_disk_image, (typename PixelChannelType<PixelT>::type)(nodata_value) ), trans, ZeroEdgeExtension(), NearestPixelInterpolation() ), output_bbox );
       composite.insert( channel_cast_rescale<float32>(masked_source), (int)output_bbox.min().x(), (int)output_bbox.min().y() );
     } else {
      ImageViewRef<alpha_pixel_type> masked_source = crop( transform( pixel_cast<alpha_pixel_type>(source_disk_image), trans, ZeroEdgeExtension(), NearestPixelInterpolation() ), output_bbox );
@@ -297,7 +297,6 @@ int main( int argc, char *argv[] ) {
       ("tiled-tiff", po::value<unsigned int>(&tilesize)->default_value(0), "Output a tiled TIFF image, with given tile size (0 disables, TIFF only)")
       ("patch-size", po::value<unsigned int>(&patch_size)->default_value(256), "Patch size for tiled output, in pixels")
       ("patch-overlap", po::value<unsigned int>(&patch_overlap)->default_value(0), "Patch overlap for tiled output, in pixels")
-      ("cache", po::value<unsigned>(&cache_size)->default_value(1024), "Cache size, in megabytes")
       ("draft", "Draft mode (no blending)")
       ("ignore-alpha", "Ignore the alpha channel of the input images, and don't write an alpha channel in output.")
       ("nodata-value", po::value<float>(&nodata_value), "Pixel value to use for nodata in input and output (when there's no alpha channel)")
@@ -314,14 +313,21 @@ int main( int argc, char *argv[] ) {
     po::positional_options_description p;
     p.add("input-files", -1);
 
-    po::variables_map vm;
-    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-    po::notify( vm );
-
     std::ostringstream usage;
     usage << "Description: merges several DEMs" << std::endl << std::endl;
     usage << "Usage: geoblend [options] <filename1> <filename2> ..." << std::endl << std::endl;
     usage << general_options << std::endl;
+
+    po::variables_map vm;
+    try {
+      po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+      po::notify( vm );
+    } catch(po::error &e) {
+      std::cout << "An error occured while parsing command line arguments.\n";
+      std::cout << "\t" << e.what() << "\n\n";
+      std::cout << usage.str();
+      return 1;
+    }
 
     if( vm.count("help") ) {
       std::cerr << usage.str() << std::endl;
@@ -371,8 +377,6 @@ int main( int argc, char *argv[] ) {
     }
 
     if(vm.count("nodata-value")) has_nodata_value = true;
-
-    vw_settings().set_system_cache_size( cache_size*1024*1024 );
 
     DiskImageResource *first_resource = DiskImageResource::open(image_files[0]);
     ChannelTypeEnum channel_type = first_resource->channel_type();

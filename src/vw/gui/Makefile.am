@@ -1,5 +1,5 @@
 # __BEGIN_LICENSE__
-# Copyright (C) 2006-2009 United States Government as represented by
+# Copyright (C) 2006-2010 United States Government as represented by
 # the Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # __END_LICENSE__
@@ -16,12 +16,13 @@ CLEANFILES = *.moc.cc
 if ENABLE_EXCEPTIONS
 
 # Graphical tools based on the core modules
-vwv_SOURCES = vwv.cc MainWindow.cc GlPreviewWidget.cc	\
-	      MainWindow.h GlPreviewWidget.h		\
-	      TextureCache.cc TileGenerator.cc
+vwv_SOURCES = vwv.cc MainWindow.cc GlPreviewWidget.cc MainWindow.h	\
+	      GlPreviewWidget.h TileGenerator.h TextureCache.cc	\
+	      TileGenerator.cc
 
 # These are automatically-generated sources?
-nodist_vwv_SOURCES = MainWindow.moc.cc  GlPreviewWidget.moc.cc
+nodist_vwv_SOURCES = MainWindow.moc.cc GlPreviewWidget.moc.cc	\
+		TileGenerator.moc.cc
 
 vwv_LDADD    = @PKG_GUI_LIBS@ @PKG_PLATE_LIBS@
 

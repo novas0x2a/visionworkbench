@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -92,7 +92,12 @@
 
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
+
+#if (BOOST_VERSION >= 104000)
+#include <boost/property_map/property_map.hpp>
+#else
 #include <boost/property_map.hpp>
+#endif
 
 // Std C++
 #include <iostream>

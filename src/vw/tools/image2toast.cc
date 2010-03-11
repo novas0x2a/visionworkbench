@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -40,7 +40,6 @@ int main(int argc, char **argv) {
   int tile_size;
   float jpeg_quality;
   int png_compression;
-  unsigned cache_size;
   std::vector<std::string> image_files;
 
   po::options_description general_options("Turns georeferenced image(s) into a TOAST quadtree.\n\nGeneral Options");
@@ -50,7 +49,6 @@ int main(int argc, char **argv) {
     ("tile-size", po::value<int>(&tile_size)->default_value(256), "Tile size, in pixels")
     ("jpeg-quality", po::value<float>(&jpeg_quality)->default_value(0.75), "JPEG quality factor (0.0 to 1.0)")
     ("png-compression", po::value<int>(&png_compression)->default_value(3), "PNG compression level (0 to 9)")
-    ("cache", po::value<unsigned>(&cache_size)->default_value(1024), "Soure data cache size, in megabytes")
     ("help,h", "Display this help message");
 
   po::options_description hidden_options("");
@@ -63,13 +61,20 @@ int main(int argc, char **argv) {
   po::positional_options_description p;
   p.add("input-file", -1);
 
-  po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
-  po::notify( vm );
-
   std::ostringstream usage;
   usage << "Usage: toast [options] <filename>..." <<std::endl << std::endl;
   usage << general_options << std::endl;
+
+  po::variables_map vm;
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).positional(p).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    std::cout << "An error occured while parsing command line arguments.\n";
+    std::cout << "\t" << e.what() << "\n\n";
+    std::cout << usage.str();
+    return 1;
+  }
 
   if( vm.count("help") ) {
     std::cout << usage.str();
@@ -93,13 +98,12 @@ int main(int argc, char **argv) {
 
   DiskImageResourceJPEG::set_default_quality( jpeg_quality );
   DiskImageResourcePNG::set_default_compression_level( png_compression );
-  vw_system_cache().resize( cache_size*1024*1024 );
 
   std::vector<DiskImageView<PixelRGBA<uint8> > > images;
   std::vector<GeoReference> georefs;
   int max_level = 0;
 
-  std::cout << "Scanning input files...." << std::endl;
+  vw_out() << "Scanning input files...." << std::endl;
   for( unsigned i=0; i<image_files.size(); ++i ) {
     DiskImageView<PixelRGBA<uint8> > image(image_files[i]);
     images.push_back(image);
@@ -145,7 +149,7 @@ int main(int argc, char **argv) {
     ImageViewRef<PixelRGBA<uint8> > toast_image;
 
     if( global ) {
-      vw_out(0) << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
+      vw_out() << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
       composite.insert(transform(image,toast_tx,resolution,resolution,CylindricalEdgeExtension(),BicubicInterpolation()), 0, 0);
     }
     else {
@@ -154,14 +158,14 @@ int main(int argc, char **argv) {
   }
 
   composite.prepare();
-  std::cout << "Composite dimensions: " << composite.cols() << " x " << composite.rows() << "\n";
+  vw_out() << "Composite dimensions: " << composite.cols() << " x " << composite.rows() << "\n";
 
-  std::cout << "Generating tile set at " << output_file_name << "." << std::endl;
+  vw_out() << "Generating tile set at " << output_file_name << "." << std::endl;
   QuadTreeGenerator qtree( composite, output_file_name );
   ToastQuadTreeConfig tqtc;
   tqtc.configure( qtree, composite );
   qtree.set_file_type( output_file_type );
-  qtree.generate( TerminalProgressCallback() );
+  qtree.generate( TerminalProgressCallback( "tools.image2toast","") );
 
   return 0;
 }

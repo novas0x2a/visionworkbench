@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -14,7 +14,7 @@
 #include <iostream>
 #include <limits>
 #include <vector>
-#include <math.h>
+#include <cmath>
 
 #include <boost/static_assert.hpp>
 
@@ -136,9 +136,9 @@ namespace math {
       else {
         for (unsigned i = 0; i < m_min.size(); ++i) {
           if (point.impl()[i] > m_max[i])
-            m_max[i] = point.impl()[i];
+            m_max[i] = RealT(point.impl()[i]);
           if (point.impl()[i] < m_min[i])
-            m_min[i] = point.impl()[i];
+            m_min[i] = RealT(point.impl()[i]);
         }
       }
     }
@@ -520,6 +520,7 @@ namespace math {
       VW_ASSERT(this->min().size() >= 3, LogicErr() << "BBox must be of dimension >= 3 to get depth.");
       return this->max()[2] - this->min()[2];
     }
+
   };
 
 } // namespace math

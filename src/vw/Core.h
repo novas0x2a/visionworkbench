@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -21,7 +21,7 @@
 #include <vw/Core/CompoundTypes.h>
 #include <vw/Core/Functors.h>
 #include <vw/Core/Cache.h>
-#include <vw/Core/TerminationHandler.h>
 #include <vw/Core/ConfigParser.h>
+#include <vw/Core/ThreadQueue.h>
 
 #endif // __VW_CORE_H__

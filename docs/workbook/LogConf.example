@@ -11,6 +11,7 @@
 #    InfoMessage = 20
 #    DebugMessage = 30
 #    VerboseDebugMessage = 40
+#    EveryMessage = 100
 #
 # You can create a new log file or adjust the settings 
 # for the console log:
@@ -33,13 +34,14 @@
 
 [general]
 default_num_threads = 8
-system_cache_size = 2048
+system_cache_size = 2000000000 # ~ 2 GB
 
 [logfile console]
 20 = thread
 * = cache
-20 = stereo
 VerboseDebugMessage = *
+# This turns off all progress bars to the console.
+0 = *.progress
 
 # Turn on DebugMessage logging for both subsystems  
 # to a file on disk.

@@ -1,5 +1,5 @@
 // __BEGIN_LICENSE__
-// Copyright (C) 2006-2009 United States Government as represented by
+// Copyright (C) 2006-2010 United States Government as represented by
 // the Administrator of the National Aeronautics and Space Administration.
 // All Rights Reserved.
 // __END_LICENSE__
@@ -24,7 +24,8 @@ using namespace vw::gui;
 #include <sstream>
 
 MainWindow::MainWindow(std::string input_filename, 
-                       float nodata_value, 
+                       float nodata_value,
+                       int transaction_id,
                        bool do_normalize, 
                        po::variables_map const& vm) :
   m_filename(input_filename), m_nodata_value(nodata_value), m_vm(vm) {
@@ -41,12 +42,11 @@ MainWindow::MainWindow(std::string input_filename,
   // Set up OpenGL context parameters
   QGLFormat gl_frmt = QGLFormat::defaultFormat();
   gl_frmt.setSampleBuffers(true);
-  gl_frmt.setSamples(16);
   gl_frmt.setDoubleBuffer(true);
   gl_frmt.setSwapInterval(1);
 
   // Set up GlPreviewWidget
-  m_preview_widget = new GlPreviewWidget(this, input_filename, gl_frmt);
+  m_preview_widget = new GlPreviewWidget(this, input_filename, gl_frmt, transaction_id);
   setCentralWidget(m_preview_widget);
 
   // // Set the nodata value
