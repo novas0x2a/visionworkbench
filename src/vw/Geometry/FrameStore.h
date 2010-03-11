@@ -9,11 +9,10 @@
 #ifndef vw_geometry_FrameStore_h
 #define vw_geometry_FrameStore_h
 
-#include "FrameHandle.h"
-#include "FrameTreeNode.h"
-#include "GeometryExport.h"
-
-#include "vw/Core/Thread.h"
+#include <vw/Geometry/FrameHandle.h>
+#include <vw/Geometry/FrameTreeNode.h>
+#include <vw/Geometry/GeometryExport.h>
+#include <vw/Core/Thread.h>
 
 
 namespace vw
@@ -147,7 +146,7 @@ namespace geometry
      * a NULL-pointer will delete the stored extras object.
      */
     void set_extras(FrameHandle frame, Frame::Extras * extras);
-    
+
     /**
      * @return list of fully qualified names of all frames.
      */
@@ -350,4 +349,3 @@ namespace geometry
 
 
 #endif // vw_geometry_FrameStore_h
-

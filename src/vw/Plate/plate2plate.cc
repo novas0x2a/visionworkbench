@@ -57,8 +57,8 @@ struct Identity : public FilterBase<Identity> {
     lookup(channel_type, ChannelTypeEnum);
 #   undef lookup
 
-  inline void init(PlateFile& output, const PlateFile& input, int transaction_id) { output.write_request(); }
-  inline void fini(PlateFile& output, const PlateFile& input, int transaction_id) { output.write_complete(); }
+  inline void init(PlateFile& output, const PlateFile& /*input*/, int /*transaction_id*/) { output.write_request(); }
+  inline void fini(PlateFile& output, const PlateFile& /*input*/, int /*transaction_id*/) { output.write_complete(); }
 
   inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 transaction_id) {
     ImageView<PixelRGBA<double> > tile;
@@ -90,7 +90,7 @@ struct ToastDem : public FilterBase<ToastDem> {
     }
   }
 
-  inline void fini(PlateFile& output, const PlateFile& input, int transaction_id) {
+  inline void fini(PlateFile& output, const PlateFile& /*input*/, int /*transaction_id*/) {
     output.write_complete();
   }
 
@@ -139,8 +139,13 @@ void handle_arguments(int argc, char *argv[], Options& opt) {
     ("help,h",           "Display this help message.");
 
   po::variables_map vm;
-  po::store( po::command_line_parser( argc, argv ).options(options).run(), vm );
-  po::notify( vm );
+  try {
+    po::store( po::command_line_parser( argc, argv ).options(options).run(), vm );
+    po::notify( vm );
+  } catch (po::error &e) {
+    vw_throw(Usage() << "Error parsing input:\n\t"
+             << e.what() << "\n" << options );
+  }
 
   if (opt.output_name.empty() || opt.input_name.empty() || opt.filter.empty())
     vw_throw(Usage() << options);
@@ -183,11 +188,16 @@ void run(Options& opt, FilterBase<FilterT>& filter) {
     std::list<BBox2i> boxes1 = bbox_tiles(full_region, subdivided_region_size, subdivided_region_size);
 
     BOOST_FOREACH( const BBox2i& region1, boxes1 ) {
+      //      vw_out() << "\t--> " << region1 << "\n";
       std::list<TileHeader> tiles = input.search_by_region(level, region1, 0, std::numeric_limits<int>::max(), 1);
       BOOST_FOREACH( const TileHeader& tile, tiles ) {
+        // vw_out() << "\t--> " << "[" << tile.transaction_id() << "]  " 
+        //         << tile.col() << " " << tile.row() << " @ " << tile.level() << "\n";
         filter(output, input, tile.col(), tile.row(), tile.level(), transaction_id);
       }
     }
+
+    output.sync();
   }
 
   filter.fini(output, input, transaction_id);
@@ -201,6 +211,7 @@ int main(int argc, char *argv[])
   Options opt;
   try {
     handle_arguments(argc, argv, opt);
+    boost::to_lower(opt.filter);
     if (opt.filter == "identity") {
       Identity f;
       run(opt, f);

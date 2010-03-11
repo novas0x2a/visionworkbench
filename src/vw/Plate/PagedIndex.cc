@@ -76,13 +76,27 @@ vw::platefile::IndexLevel::~IndexLevel() {
 }
 
 void vw::platefile::IndexLevel::sync() {
-   Mutex::Lock lock(m_cache_mutex);
-
+  Mutex::Lock lock(m_cache_mutex);
+  
   // Write the index page to disk by calling it's sync() method.
+  //
+  // Note: the size of m_cache_handles and m_cache_generators does not
+  // change once it's set in the constructor of IndexLevel, so it's
+  // safe here to place m_cache_mutex _inside_ the loop.  This allows
+  // synchronization operations to be interleaved with fetch()
+  // operations, thus preventing the index_server from blocking when
+  // it periodically syncs the cache to disk.
+  //
   for (unsigned i = 0; i < m_cache_handles.size(); ++i) {
     if (m_cache_generators[i]) {
-      boost::shared_ptr<IndexPage> page = m_cache_handles[i];
-      page->sync();
+      
+      if (m_cache_handles[i].valid()) {
+        //        std::cout << "Handle " << i << " was VALID...\n";
+        boost::shared_ptr<IndexPage> page = m_cache_handles[i];
+        page->sync();
+      } else {
+        //        std::cout << "Handle " << i << " was INVALID...\n";
+      }
     }
   }
 
@@ -215,7 +229,7 @@ vw::platefile::IndexLevel::search_by_location(int32 col, int32 row,
 
 /// Create a new, empty index.
 vw::platefile::PagedIndex::PagedIndex(boost::shared_ptr<PageGeneratorFactory> page_gen_factory,
-                                      IndexHeader new_index_info,
+                                      IndexHeader /*new_index_info*/,
                                       int page_width, int page_height, int default_cache_size) :
   m_page_gen_factory(page_gen_factory),
   m_page_width(page_width), m_page_height(page_height), 

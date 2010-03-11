@@ -9,10 +9,9 @@
 #ifndef vw_geometry_FrameTreeNode_h
 #define vw_geometry_FrameTreeNode_h
 
-#include "GeometryExport.h"
-
-#include "TreeNode.h"
-#include "Frame.h"
+#include <vw/Geometry/GeometryExport.h>
+#include <vw/Geometry/TreeNode.h>
+#include <vw/Geometry/Frame.h>
 
 namespace vw
 {
@@ -68,7 +67,7 @@ namespace vw
     inline
     Frame::Transform
     get_transform_of(FrameTreeNode const * target, FrameTreeNode const * source,
-		     Frame::Transform const& trans)
+                     Frame::Transform const& trans)
     {
       return get_transform(target, source) * trans;
     }
@@ -76,7 +75,7 @@ namespace vw
     inline
     void
     set_transform(FrameTreeNode * frame, FrameTreeNode const * source,
-		  Frame::Transform const& trans)
+                  Frame::Transform const& trans)
     {
       if (frame != NULL) {
         if (source == NULL) {

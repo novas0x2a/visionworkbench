@@ -1,7 +1,6 @@
-#include "FrameStore.h"
-
-#include "vw/Core/Exception.h"
-#include "vw/Math/EulerAngles.h"
+#include <vw/Geometry/FrameStore.h>
+#include <vw/Core/Exception.h>
+#include <vw/Math/EulerAngles.h>
 
 #include <algorithm>
 #include <memory>
@@ -102,7 +101,7 @@ namespace vw
 
 
       return (frame.node->data().extras() != NULL)?
-	frame.node->data().extras()->clone() : 0;
+        frame.node->data().extras()->clone() : 0;
     }
 
     void
@@ -112,7 +111,7 @@ namespace vw
 
       VW_ASSERT (frame.node != NULL,
                  vw::LogicErr("NULL handle not allowed as parameter."));
-    
+
       frame.node->data().set_extras(extras);
     }
 
@@ -333,15 +332,15 @@ namespace vw
 
       // if root node, delete there
       FrameTreeNodeVector::iterator node =
-	find(m_root_nodes.begin(), m_root_nodes.end(), frame.node);
+        find(m_root_nodes.begin(), m_root_nodes.end(), frame.node);
       if (node != m_root_nodes.end()) {
-	m_root_nodes.erase(node);
+        m_root_nodes.erase(node);
       }
 
       frame.node->set_parent(parent.node);
 
       if (parent.node == 0) {
-	m_root_nodes.push_back(frame.node);
+        m_root_nodes.push_back(frame.node);
       }
     }
 
@@ -445,11 +444,11 @@ namespace vw
     {
       VW_ASSERT (!is_member(tree),
                  vw::LogicErr("Merged tree must not yet be member of the FrameStore."));
-      
+
       // if a start node is given for mergin
       if (start_frame != NULL_HANDLE) {
-	VW_ASSERT (tree->data().name() == start_frame.node->data().name(),
-		   vw::LogicErr("Tree root node does not match start node."));
+        VW_ASSERT (tree->data().name() == start_frame.node->data().name(),
+                   vw::LogicErr("Tree root node does not match start node."));
         vw::geometry::merge_frame_trees(tree, start_frame.node);
         tree->recursive_delete();
         return true;
@@ -470,7 +469,7 @@ namespace vw
       return false;
     }
 
-    void 
+    void
     FrameStore::get_frame_transforms(FrameHandleVector const& frames, TransformVector& transforms) const
     {
       transforms.clear();
@@ -479,21 +478,21 @@ namespace vw
       RecursiveMutex::Lock lock(m_mutex);
       FrameHandleVector::const_iterator first, last = frames.end();
       for (first = frames.begin(); first != last; ++first) {
-	transforms.push_back(first->node->data().transform());
+        transforms.push_back(first->node->data().transform());
       }
     }
 
     void
     FrameStore::set_frame_transforms(FrameHandleVector const& frames, TransformVector const& transforms)
     {
-      VW_ASSERT(frames.size() == transforms.size(), 
-		vw::LogicErr("Parameter vectors not of same size."));
+      VW_ASSERT(frames.size() == transforms.size(),
+                vw::LogicErr("Parameter vectors not of same size."));
 
       RecursiveMutex::Lock lock(m_mutex);
       FrameHandleVector::const_iterator first, last = frames.end();
       TransformVector::const_iterator trans = transforms.begin();
       for (first = frames.begin(); first != last; ++first, ++trans) {
-	first->node->data().set_transform(*trans);
+        first->node->data().set_transform(*trans);
       }
     }
 

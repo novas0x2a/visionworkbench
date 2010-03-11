@@ -90,7 +90,7 @@ namespace vw {
     virtual double nodata_value() const { return 0.0; }
 
     /// Set the preferred block size/alignment for partial reads or writes.
-    virtual void set_nodata_value( double value ) { 
+    virtual void set_nodata_value( double /*value*/ ) { 
       vw_throw(NoImplErr() << "This ImageResource does not support set_nodata_value()."); 
     };
 
@@ -148,12 +148,20 @@ namespace vw {
     ImageFormat format;
     ptrdiff_t cstride, rstride, pstride;
     bool unpremultiplied;
-    
+
     /// Default constructor; constructs an undefined buffer
     ImageBuffer()
       : data(0), format(),
         cstride(0), rstride(0), pstride(0),
         unpremultiplied(false)
+    {}
+
+    /// Populates stride information from format
+    explicit ImageBuffer(ImageFormat format, void *data, bool unpremultiplied = false)
+      : data(data), format(format),
+        cstride(channel_size(format.channel_type) * num_channels(format.pixel_format)),
+        rstride(cstride * format.cols), pstride(rstride * format.rows),
+        unpremultiplied(unpremultiplied)
     {}
 
     virtual ~ImageBuffer() {}

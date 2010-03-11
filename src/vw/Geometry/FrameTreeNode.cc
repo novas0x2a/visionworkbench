@@ -5,8 +5,7 @@
 // __END_LICENSE__
 
 
-#include "FrameTreeNode.h"
-
+#include <vw/Geometry/FrameTreeNode.h>
 #include <algorithm>
 #include <iterator>
 

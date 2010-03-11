@@ -11,6 +11,11 @@
 ///
 #include <vw/InterestPoint/Descriptor.h>
 
-const uint vw::ip::SGradDescriptorGenerator::box_strt[5] = {17,15,9,6,0};
-const uint vw::ip::SGradDescriptorGenerator::box_size[5] = {2,4,8,10,14};
-const uint vw::ip::SGradDescriptorGenerator::box_half[5] = {1,2,4,5,7};
+namespace vw {
+namespace ip {
+
+  const uint32 SGradDescriptorGenerator::box_strt[5] = {17,15,9,6,0};
+  const uint32 SGradDescriptorGenerator::box_size[5] = {2,4,8,10,14};
+  const uint32 SGradDescriptorGenerator::box_half[5] = {1,2,4,5,7};
+
+}} // namespace vw::ip

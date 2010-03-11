@@ -279,17 +279,34 @@ vw::BBox2i vw::cartography::ToastTransform::forward_bbox( vw::BBox2i const& bbox
   // If the source bounding box contains the south pole, then the dest
   // bounding box is the entire TOAST projection space, since the
   // south pole is mapped to the four corners of TOAST.
-  if( bbox.contains(m_georef.lonlat_to_pixel(Vector2i(0,-90))) ) {
-    return BBox2i(0,0,m_resolution,m_resolution);
+
+  Vector2 south_pole_pixel;
+  try {
+    south_pole_pixel = m_georef.lonlat_to_pixel(Vector2i(0,-90));
+  } catch (const ProjectionErr& e) {
+    // We asked for a point not defined in the projection, most likely.  Assume
+    // the point represents a notch discontinuity, and ask for a cross through it.
+    // The center of that cross will hopefully be the correct point.
+    Vector2 a,b,c,d;
+
+    a = m_georef.lonlat_to_pixel(Vector2i(  0, -89.9));
+    b = m_georef.lonlat_to_pixel(Vector2i( 90, -89.9));
+    c = m_georef.lonlat_to_pixel(Vector2i(180, -89.9));
+    d = m_georef.lonlat_to_pixel(Vector2i(270, -89.9));
+
+    south_pole_pixel = (a + b + c + d)/4.;
   }
-  
+
+  if( bbox.contains(south_pole_pixel) )
+    return BBox2i(0,0,m_resolution,m_resolution);
+
   BBox2 src_bbox = TransformHelper<ToastTransform,ContinuousFunction,ContinuousFunction>::forward_bbox(bbox);
   return grow_bbox_to_int(src_bbox);
 }
 
 
 // We override reverse_bbox so it understands to check if the image
-// crosses the poles or not.  The 
+// crosses the poles or not.
 vw::BBox2i vw::cartography::ToastTransform::reverse_bbox( vw::BBox2i const& bbox, bool approximate ) const {
 
   BBox2 src_bbox;
@@ -312,37 +329,17 @@ vw::BBox2i vw::cartography::ToastTransform::reverse_bbox( vw::BBox2i const& bbox
 // destiation (TOAST) pixel space.
 void vw::cartography::ToastTransform::reverse_bbox_poles(vw::BBox2 const& dst_bbox, vw::BBox2 & src_bbox) const {
   if( dst_bbox.contains( Vector2(m_resolution/2, m_resolution/2) ) ) {
-
-    // XXX - This code band-aids the fact that we return Vector(-1,-1)
-    // of lonlat_to_point if proj.4 throws an error.  This is bad.  We
-    // should throw an exception (and catch it here instead).  
-    //
-    // When proj.4 returns an error in lonlat_to_point, that usually
-    // indicates that this pole is invalid in the map projection of
-    // interest.  The best thing to do here is to create a bounding
-    // box with zero size off to the side that will not intersect with
-    // the input image at all.
-    Vector2 pole_point = m_georef.lonlat_to_point(Vector2(-180,90));
-    if (pole_point[0] = -1 && pole_point[1] == -1) {
-      src_bbox = BBox2i(-1,-1,0,0);
-    } else {
-      src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(-180,90)) );
-      src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(0,90)) );
-      src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(180,90)) );
-    }
+    src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(-180,90)) );
+    src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(0,90)) );
+    src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(180,90)) );
   }
   if( dst_bbox.contains( Vector2(0,0) ) ||
       dst_bbox.contains( Vector2(m_resolution-1,0) ) ||
       dst_bbox.contains( Vector2(0,m_resolution-1) ) ||
       dst_bbox.contains( Vector2(m_resolution-1, m_resolution-1) ) ) {
-    Vector2 pole_point = m_georef.lonlat_to_point(Vector2(-180,-90));
-    if (pole_point[0] = -1 && pole_point[1] == -1) {
-      src_bbox = BBox2i(-1,-1,0,0);
-    } else {
-      src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(-180,-90)) );
-      src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(0,-90)) );
-      src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(180,-90)) );
-    }
+    src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(-180,-90)) );
+    src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(0,-90)) );
+    src_bbox.grow( m_georef.lonlat_to_pixel(Vector2(180,-90)) );
   }
 }
 
