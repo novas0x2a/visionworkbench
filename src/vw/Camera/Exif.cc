@@ -213,8 +213,11 @@ vw::Vector2 vw::camera::ExifView::get_focal_length_pix() const {
 // Returns image size, useful if the image is never really opened.
 vw::Vector2i vw::camera::ExifView::get_image_size() const {
   vw::Vector2i image_size;
-  query_by_tag(EXIF_PixelXDimension, image_size[0]);
-  query_by_tag(EXIF_PixelYDimension, image_size[1]);
+  int tmp[2]; 
+  query_by_tag(EXIF_PixelXDimension, tmp[0]);
+  query_by_tag(EXIF_PixelYDimension, tmp[1]);
+  image_size[0] = static_cast<vw::int32>(tmp[0]);
+  image_size[1] = static_cast<vw::int32>(tmp[1]);
   return image_size;
 }
 
