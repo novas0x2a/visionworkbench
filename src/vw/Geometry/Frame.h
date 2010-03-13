@@ -63,6 +63,7 @@ namespace vw
         if (&rhs != this) {
           m_name = rhs.m_name;
           m_trans = rhs.m_trans;
+	  delete m_extras;
           m_extras = (rhs.m_extras == NULL)? NULL : rhs.m_extras->clone();
         }
         return *this;
@@ -84,7 +85,7 @@ namespace vw
       }
       /** Mutable access to transform field. */
       Transform& transform() throw() {
-                  return m_trans;
+	return m_trans;
       }
       /** Set transform field. */
       void set_transform(Transform const& trans) {
