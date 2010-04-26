@@ -164,5 +164,5 @@ print_build_switches()
 
 ## test what CPack can do
 ##################################################
-include( CMakePack.txt )
+include( CPackLists.txt )
 
