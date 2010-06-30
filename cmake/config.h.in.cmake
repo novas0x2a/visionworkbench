@@ -92,7 +92,7 @@
 #cmakedefine VW_HAVE_PKG_PLATE 1
 #cmakedefine VW_HAVE_PKG_PYTHON 1
 #cmakedefine VW_HAVE_PKG_STEREO 1
-#cmakedefine VW_HAVE_PKG_TOOLS 1
+//cmakedefine VW_HAVE_PKG_TOOLS 1 disabled so we can turn on/off w/o requiring full rebuild
 #cmakedefine VW_HAVE_PKG_VW 1
 
 //-- VW Configuration
