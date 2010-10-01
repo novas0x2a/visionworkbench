@@ -25,6 +25,7 @@
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem/path.hpp>
 namespace po = boost::program_options;
 
 #include <vw/Core/Cache.h>
@@ -40,7 +41,6 @@ namespace po = boost::program_options;
 #include <vw/FileIO/DiskImageView.h>
 #include <vw/Cartography/GeoReference.h>
 #include <vw/Cartography/GeoTransform.h>
-#include <vw/Cartography/FileIO.h>
 #include <vw/Mosaic.h>
 using namespace vw;
 using namespace vw::math;
@@ -54,8 +54,8 @@ std::string output_file_type;
 std::string output_metadata;
 std::string module_name;
 double nudge_x=0, nudge_y=0;
-double north_lat=90.0, south_lat=-90.0;
-double east_lon=180.0, west_lon=-180.0;
+double north=90.0, south=-90.0;
+double east=180.0, west=-180.0;
 double proj_lat=0, proj_lon=0, proj_scale=1;
 int utm_zone;
 int tile_size;
@@ -71,6 +71,8 @@ double lcc_parallel1, lcc_parallel2;
 int aspect_ratio=1;
 int global_resolution=0;
 bool terrain=false;
+float nodata=0;
+float user_spherical_datum=0;
 
 // For image stretching.
 float lo_value = ScalarTypeLimits<float>::highest();
@@ -78,15 +80,6 @@ float hi_value = ScalarTypeLimits<float>::lowest();
 
 // Function pointers for computing resolution.
 std::map<std::string, vw::int32 (*)(const GeoTransform&, const Vector2&)> str_to_resolution_fn_map;
-
-// Erases a file suffix if one exists and returns the base string
-static std::string prefix_from_filename(std::string const& filename) {
-  std::string result = filename;
-  int index = result.rfind(".");
-  if (index != -1) 
-    result.erase(index, result.size());
-  return result;
-}
 
 // Fill the maps for converting input strings to function pointers.
 static void fill_input_maps() {
@@ -163,75 +156,66 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
     if( vm.count("normalize") ) get_normalize_vals(image_files[i], file_resource);
 
     GeoReference input_georef;
-    read_georeference( input_georef, file_resource );
+    bool fail_read_georef = false;
+    try {
+      fail_read_georef = !read_georeference( input_georef, file_resource );
+    } catch ( InputErr const& e ) {
+      vw_out(ErrorMessage) << "Input " << image_files[i]
+                           << " has malformed georeferencing information.\n";
+      fail_read_georef = true;
+    }
 
+    // Handling Manual Datum
     if(vm.count("force-lunar-datum")) {
-      const double LUNAR_RADIUS = 1737400;
-      vw_out() << "\t--> Using standard lunar spherical datum: "
-                << LUNAR_RADIUS << "\n";
-      cartography::Datum datum("D_MOON",
-                               "MOON",
-                               "Reference Meridian",
-                               LUNAR_RADIUS,
-                               LUNAR_RADIUS,
-                               0.0);
-      input_georef.set_datum(datum);
+      vw_out() << "\t--> Using Lunar Datum\n";
+      input_georef.set_well_known_geogcs("D_MOON");
     } else if(vm.count("force-mars-datum")) {
-      const double MOLA_PEDR_EQUATORIAL_RADIUS = 3396000.0;
-      vw_out() << "\t--> Using standard MOLA spherical datum: "
-                << MOLA_PEDR_EQUATORIAL_RADIUS << "\n";
-      cartography::Datum datum("D_MARS",
-                               "MARS",
+      vw_out() << "\t--> Using Mars Datum\n";
+      input_georef.set_well_known_geogcs("D_MARS");
+    } else if(vm.count("force-spherical-datum")) {
+      vw_out() << "\t--> Using user-supplied spherical datum: "
+                << user_spherical_datum << "\n";
+      cartography::Datum datum("USER SUPPLIED DATUM",
+                               "SPHERICAL DATUM",
                                "Reference Meridian",
-                               MOLA_PEDR_EQUATORIAL_RADIUS,
-                               MOLA_PEDR_EQUATORIAL_RADIUS,
+                               user_spherical_datum,
+                               user_spherical_datum,
                                0.0);
       input_georef.set_datum(datum);
+    } else if(vm.count("force-wgs84") > 0 || input_georef.proj4_str().empty() ) {
+      vw_out() << "\t--> Using WGS84 Datum\n";
+      input_georef.set_well_known_geogcs("WGS84");
     }
 
-    if(vm.count("force-wgs84")) {
-      input_georef.set_well_known_geogcs("WGS84");
-    }
-    if(input_georef.proj4_str() == "") {
-      input_georef.set_well_known_geogcs("WGS84");
-    }
     if(i==0) {
       output_georef.set_datum( input_georef.datum() );
     }
 
-    bool manual = vm.count("north") || vm.count("south") || vm.count("east") || vm.count("west");
-    if( manual || input_georef.transform() == identity_matrix<3>() ) {
-      if( image_files.size() == 1 ) {
-        vw_out() << "No georeferencing info found.  Assuming Plate Carree WGS84: "
-                 << east_lon << " to " << west_lon << " E, " << south_lat
-                 << " to " << north_lat << " N." << std::endl;
-        input_georef = GeoReference();
-        input_georef.set_well_known_geogcs("WGS84");
-        Matrix3x3 m;
-        m(0,0) = (east_lon - west_lon) / file_resource.cols();
-        m(0,2) = west_lon;
-        m(1,1) = (south_lat - north_lat) / file_resource.rows();
-        m(1,2) = north_lat;
-        m(2,2) = 1;
-        input_georef.set_transform( m );
-        manual = true;
-      }
-      else {
-        vw_out(ErrorMessage) << "Error: No georeferencing info found for input file \"" << image_files[i] << "\"!" << std::endl;
-        vw_out(ErrorMessage) << "(Manually-specified bounds are only allowed for single image files.)" << std::endl;
-        exit(1);
-      }
+    // Handling Manual Transform
+    bool manual = vm.count("north") && vm.count("south") && vm.count("east") && vm.count("west");
+    if( manual ) {
+      Matrix3x3 m;
+      m(0,0) = (east - west) / file_resource.cols();
+      m(0,2) = west;
+      m(1,1) = (south - north) / file_resource.rows();
+      m(1,2) = north;
+      m(2,2) = 1;
+      input_georef.set_transform( m );
+    } else if ( fail_read_georef ) {
+      vw_out(ErrorMessage) << "Missing input georeference. Please provide --north --south --east and --west.\n";
+      exit(1);
     }
-    else if( vm.count("sinusoidal") ) input_georef.set_sinusoidal(proj_lon);
+
+    // Handling Manual Projection
+    if ( vm.count("sinusoidal") ) input_georef.set_sinusoidal(proj_lon);
     else if( vm.count("mercator") ) input_georef.set_mercator(proj_lat,proj_lon,proj_scale);
     else if( vm.count("transverse-mercator") ) input_georef.set_transverse_mercator(proj_lat,proj_lon,proj_scale);
     else if( vm.count("orthographic") ) input_georef.set_orthographic(proj_lat,proj_lon);
     else if( vm.count("stereographic") ) input_georef.set_stereographic(proj_lat,proj_lon,proj_scale);
     else if( vm.count("lambert-azimuthal") ) input_georef.set_lambert_azimuthal(proj_lat,proj_lon);
     else if( vm.count("lambert-conformal-conic") ) input_georef.set_lambert_azimuthal(lcc_parallel1, lcc_parallel2, proj_lat, proj_lon);
-    else if( vm.count("utm") ) {
-      input_georef.set_UTM( abs(utm_zone), utm_zone > 0 );
-    }
+    else if( vm.count("utm") ) input_georef.set_UTM( abs(utm_zone), utm_zone > 0 );
+    else if( vm.count("plate-carree") ) input_georef.set_geographic();
 
     if( vm.count("nudge-x") || vm.count("nudge-y") ) {
       Matrix3x3 m = input_georef.transform();
@@ -283,6 +267,9 @@ void do_mosaic(po::variables_map const& vm, const ProgressCallback *progress)
   for(unsigned i=0; i < image_files.size(); i++) {
     GeoTransform geotx( georeferences[i], output_georef );
     ImageViewRef<PixelT> source = DiskImageView<PixelT>( image_files[i] );
+
+    if( vm.count("nodata") )
+      source = mask_to_alpha(create_mask(pixel_cast<typename PixelWithoutAlpha<PixelT>::type >(source),ChannelT(nodata)));
 
     bool global = boost::trim_copy(georeferences[i].proj4_str())=="+proj=longlat" &&
       fabs(georeferences[i].lonlat_to_pixel(Vector2(-180,0)).x()) < 1 &&
@@ -498,8 +485,6 @@ int main(int argc, char **argv) {
   po::options_description general_options("Description: Turns georeferenced image(s) into a quadtree with geographical metadata\n\nGeneral Options");
   general_options.add_options()
     ("output-name,o", po::value<std::string>(&output_file_name), "Specify the base output directory")
-    ("quiet,q", "Quiet output")
-    ("verbose,v", "Verbose output")
     ("help,h", "Display this help message");
 
   po::options_description input_options("Input Options");
@@ -507,9 +492,11 @@ int main(int argc, char **argv) {
     ("force-wgs84", "Use WGS84 as the input images' geographic coordinate systems, even if they're not (old behavior)")
     ("force-lunar-datum", "Use the lunar spherical datum for the input images' geographic coordinate systems, even if they are not encoded to do so.")
     ("force-mars-datum", "Use the Mars spherical datum for the input images' geographic coordinate systems, even if they are not encoded to do so.")
+    ("force-spherical-datum", po::value<float>(&user_spherical_datum), "Choose an arbitrary input spherical datum to use for input images', overriding the existing datum.")
     ("pixel-scale", po::value<float>(&pixel_scale)->default_value(1.0), "Scale factor to apply to pixels")
     ("pixel-offset", po::value<float>(&pixel_offset)->default_value(0.0), "Offset to apply to pixels")
-    ("normalize", "Normalize input images so that their full dynamic range falls in between [0,255].");
+    ("normalize", "Normalize input images so that their full dynamic range falls in between [0,255].")
+    ("nodata",po::value<float>(&nodata),"Set the input's nodata value so that it will be transparent in output");
 
   po::options_description output_options("Output Options");
   output_options.add_options()
@@ -532,10 +519,10 @@ int main(int argc, char **argv) {
 
   po::options_description projection_options("Projection Options");
   projection_options.add_options()
-    ("north", po::value<double>(&north_lat), "The northernmost latitude in degrees")
-    ("south", po::value<double>(&south_lat), "The southernmost latitude in degrees")
-    ("east", po::value<double>(&east_lon), "The easternmost longitude in degrees")
-    ("west", po::value<double>(&west_lon), "The westernmost longitude in degrees")
+    ("north", po::value<double>(&north), "The northernmost latitude in projection units")
+    ("south", po::value<double>(&south), "The southernmost latitude in projection units")
+    ("east", po::value<double>(&east), "The easternmost longitude in projection units")
+    ("west", po::value<double>(&west), "The westernmost longitude in projection units")
     ("sinusoidal", "Assume a sinusoidal projection")
     ("mercator", "Assume a Mercator projection")
     ("transverse-mercator", "Assume a transverse Mercator projection")
@@ -544,6 +531,7 @@ int main(int argc, char **argv) {
     ("lambert-azimuthal", "Assume a Lambert azimuthal projection")
     ("lambert-conformal-conic", "Assume a Lambert Conformal Conic projection")
     ("utm", po::value(&utm_zone), "Assume UTM projection with the given zone (+ for North, - for South)")
+    ("plate-carre", "Assume a Plate Carree or Geographic projection")
     ("proj-lat", po::value<double>(&proj_lat), "The center of projection latitude (if applicable)")
     ("proj-lon", po::value<double>(&proj_lon), "The center of projection longitude (if applicable)")
     ("proj-scale", po::value<double>(&proj_scale), "The projection scale (if applicable)")
@@ -592,7 +580,7 @@ int main(int argc, char **argv) {
   }
 
   if( output_file_name == "" )
-    output_file_name = prefix_from_filename(image_files[0]);
+    output_file_name = fs::path(image_files[0]).replace_extension().string();
 
   if( tile_size <= 0 ) {
     std::cerr << "Error: The tile size must be a positive number!  (You specified: " << tile_size << ")." << std::endl << std::endl;
@@ -608,16 +596,6 @@ int main(int argc, char **argv) {
 
   TerminalProgressCallback tpc( "tools.image2qtree", "");
   const ProgressCallback *progress = &tpc;
-
-  // Set a few booleans based on input values.
-  if(vm.count("verbose")) {
-    set_debug_level(VerboseDebugMessage);
-    progress = &ProgressCallback::dummy_instance();
-  }
-  else if(vm.count("quiet")) {
-    set_debug_level(WarningMessage);
-    progress = &ProgressCallback::dummy_instance();
-  }
 
   if(vm.count("terrain")) {
     terrain = true;

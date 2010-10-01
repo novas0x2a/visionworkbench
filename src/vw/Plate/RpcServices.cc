@@ -15,8 +15,7 @@ using namespace vw::platefile;
 
 #include <google/protobuf/descriptor.h>
 
-// A dummy method for passing to the RPC calls below.
-static void null_closure() {}
+void vw::platefile::noop() {}
 
 // -----------------------------------------------------------------------------
 //                                AmqpRpcServer
@@ -34,8 +33,8 @@ void vw::platefile::AmqpRpcServer::run() {
       RpcRequestWrapper request_wrapper;
       try {
         this->get_message(request_wrapper, -1);
-        vw_out(DebugMessage, "platefile::rpc") << "[RPC: " << request_wrapper.method() 
-                                               << " from " << request_wrapper.requestor() 
+        vw_out(DebugMessage, "platefile::rpc") << "[RPC: " << request_wrapper.method()
+                                               << " from " << request_wrapper.requestor()
                                                << "  SEQ: " << request_wrapper.sequence_number() << "]\n";
       } catch (const vw::platefile::RpcErr&e) {
         vw_out() << "Invalid RPC, ignoring." << std::endl;
@@ -49,7 +48,7 @@ void vw::platefile::AmqpRpcServer::run() {
       // Step 2 : Instantiate the proper messages and delegate them to
       // the proper method on the service.
       // -------------------------------------------------------------
-      
+
       try {
 
         const google::protobuf::MethodDescriptor* method =
@@ -72,8 +71,7 @@ void vw::platefile::AmqpRpcServer::run() {
         // For debugging:
         //        std::cout << "Request: " << request->DebugString() << "\n";
 
-        m_service->CallMethod(method, this, request.get(), response.get(),
-                              google::protobuf::NewCallback(&null_closure));
+        m_service->CallMethod(method, this, request.get(), response.get(), null_callback());
 
         // ---------------------------
         // Step 3 : Return the result.
@@ -126,7 +124,7 @@ void vw::platefile::AmqpRpcClient::CallMethod(const google::protobuf::MethodDesc
   AmqpRpcEndpoint* real_controller = dynamic_cast<AmqpRpcEndpoint*>(controller);
   if (!real_controller)
     vw_throw(LogicErr() << "AmqpRpcClient::CallMethod(): Unknown RpcController");
-  
+
   // For debugging:
   //  std::cout << "Request: " << request->DebugString() << "\n";
 
@@ -148,8 +146,8 @@ void vw::platefile::AmqpRpcClient::CallMethod(const google::protobuf::MethodDesc
     request_wrapper.set_sequence_number(request_seq);
 
     // For debugging:
-    vw_out(DebugMessage, "platefile::rpc::send") << "[ RPC: " << request_wrapper.method() 
-                                           << " from " << request_wrapper.requestor() 
+    vw_out(DebugMessage, "platefile::rpc::send") << "[ RPC: " << request_wrapper.method()
+                                           << " from " << request_wrapper.requestor()
                                            << "  SEQ: " << request_wrapper.sequence_number() << " ]\n";
 
     // Send the message
@@ -235,7 +233,7 @@ void vw::platefile::AmqpRpcClient::CallMethod(const google::protobuf::MethodDesc
   done->Run();
 }
 
-std::string vw::platefile::AmqpRpcClient::UniqueQueueName(const std::string identifier) {
+std::string vw::platefile::unique_name(const std::string& identifier) {
   // Start by generating a unique queue name based on our hostname, PID, and thread ID.
   char hostname[255];
   gethostname(hostname, 255);
@@ -244,11 +242,10 @@ std::string vw::platefile::AmqpRpcClient::UniqueQueueName(const std::string iden
   return requestor.str();
 }
 
-AmqpRpcEndpoint::AmqpRpcEndpoint(boost::shared_ptr<AmqpConnection> conn, std::string exchange, std::string queue, uint32 exchange_count)
-  : m_channel(new AmqpChannel(conn)), m_exchange(exchange), m_queue(queue), m_exchange_count(exchange_count), m_next_exchange(0) {
+AmqpRpcEndpoint::AmqpRpcEndpoint(boost::shared_ptr<AmqpConnection> conn, std::string exchange, std::string queue)
+  : m_channel(new AmqpChannel(conn)), m_exchange(exchange), m_queue(queue) {
 
-  for (uint32 i = 0; i < m_exchange_count; ++i)
-    m_channel->exchange_declare(exchange + "_" + vw::stringify(i), "direct", false, false);
+  m_channel->exchange_declare(exchange + "_0", "direct", false, false);
   m_channel->queue_declare(queue, false, true, true);
 
   this->Reset();
@@ -270,8 +267,7 @@ void AmqpRpcEndpoint::send_message(const ::google::protobuf::Message& message, s
 }
 
 void AmqpRpcEndpoint::send_bytes(ByteArray const& message, std::string routing_key) {
-  m_channel->basic_publish(message, m_exchange + "_" + vw::stringify(m_next_exchange++), routing_key);
-  m_next_exchange %= m_exchange_count;
+  m_channel->basic_publish(message, m_exchange + "_0", routing_key);
 }
 
 void AmqpRpcEndpoint::get_bytes(SharedByteArray& bytes, vw::int32 timeout) {
@@ -291,16 +287,14 @@ void AmqpRpcEndpoint::bind_service(boost::shared_ptr<google::protobuf::Service> 
 
   m_service = service;
   m_routing_key = routing_key;
-  for (uint32 i = 0; i < m_exchange_count; ++i)
-    m_channel->queue_bind(m_queue, m_exchange + "_" + vw::stringify(i), routing_key);
+  m_channel->queue_bind(m_queue, m_exchange + "_0", routing_key);
   m_consumer = m_channel->basic_consume(m_queue, boost::bind(&vw::ThreadQueue<SharedByteArray>::push, boost::ref(m_incoming_messages), _1));
 }
 
 void AmqpRpcEndpoint::unbind_service() {
   if (m_consumer) {
     m_consumer.reset();
-    for (uint32 i = 0; i < m_exchange_count; ++i)
-      m_channel->queue_unbind(m_queue, m_exchange + "_" + vw::stringify(i), m_routing_key);
+    m_channel->queue_unbind(m_queue, m_exchange + "_0", m_routing_key);
     m_routing_key = "";
     m_service.reset();
   }

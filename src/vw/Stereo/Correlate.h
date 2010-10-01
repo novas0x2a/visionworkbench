@@ -8,12 +8,11 @@
 #ifndef __VW_STEREO_CORRELATE_H__
 #define __VW_STEREO_CORRELATE_H__
 
-#include <vw/Stereo/StereoExport.h>
 #include <vw/Image/ImageView.h>
 #include <vw/Image/ImageViewBase.h>
+#include <vw/Image/ImageMath.h>
 #include <vw/Stereo/DisparityMap.h>
-
-#define VW_STEREO_MISSING_PIXEL -32000
+#include <limits.h>
 
 namespace vw {
 namespace stereo {
@@ -34,7 +33,22 @@ namespace stereo {
   template <> struct CorrelatorAccumulatorType<vw::float32> { typedef vw::float32 type; };
   template <> struct CorrelatorAccumulatorType<vw::float64> { typedef vw::float64 type; };
 
-VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
+  // Return type for the correlator .. remember SOAD can only return positive values
+  template <class T>
+  inline typename boost::enable_if_c<std::numeric_limits<typename CorrelatorAccumulatorType<T>::type>::has_quiet_NaN,typename CorrelatorAccumulatorType<T>::type>::type
+  CorrelatorFailureValue() {
+    typedef typename CorrelatorAccumulatorType<T>::type accum_type;
+    return std::numeric_limits<accum_type>::quiet_NaN();
+  }
+
+  template <class T>
+  inline typename boost::disable_if_c<std::numeric_limits<typename CorrelatorAccumulatorType<T>::type>::has_quiet_NaN,typename CorrelatorAccumulatorType<T>::type>::type
+  CorrelatorFailureValue() {
+    typedef typename CorrelatorAccumulatorType<T>::type accum_type;
+    return std::numeric_limits<accum_type>::max();
+  }
+
+VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception);
 
   // Sign of the Laplacian of the Gaussian pre-processing
   //
@@ -136,17 +150,20 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
   /// Compute the sum of the absolute difference between a template
   /// region taken from img1 and the window centered at (c,r) in img0.
   template <class PixelT>
-  inline double compute_soad(PixelT *img0, PixelT *img1,
-                             int r, int c,                   // row and column in img0
-                             int hdisp, int vdisp,           // Current disparity offset from (c,r) for img1
-                             int kern_width, int kern_height,// Kernel dimensions
-                             int width, int height) {        // Image dimensions
+  inline typename CorrelatorAccumulatorType<typename CompoundChannelType<PixelT>::type>::type
+  compute_soad(PixelT *img0, PixelT *img1,
+	       int r, int c,                   // row and column in img0
+	       int hdisp, int vdisp,           // Current disparity offset from (c,r) for img1
+	       int kern_width, int kern_height,// Kernel dimensions
+	       int width, int height) {        // Image dimensions
+    typedef typename CompoundChannelType<PixelT>::type channel_type;
+    typedef typename CorrelatorAccumulatorType<channel_type>::type accum_type;
 
     r -= kern_height/2;
     c -= kern_width/2;
     if (r<0         || c<0       || r+kern_height>=height       || c+kern_width>=width ||
         r+vdisp < 0 || c+hdisp<0 || r+vdisp+kern_height>=height || c+hdisp+kern_width>=width) {
-      return VW_STEREO_MISSING_PIXEL;
+      return CorrelatorFailureValue<PixelT>();
     }
 
     PixelT *new_img0 = img0;
@@ -155,7 +172,7 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
     new_img0 += c + r*width;
     new_img1 += (c+hdisp) + (r+vdisp)*width;
 
-    typename CorrelatorAccumulatorType<typename CompoundChannelType<PixelT>::type>::type ret = 0;
+    accum_type ret = 0;
     AbsDiffCostFunc cost_fn;
     for (int rr= 0; rr< kern_height; rr++) {
      for (int cc= 0; cc< kern_width; cc++) {
@@ -164,44 +181,47 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
       new_img0 += width;
       new_img1 += width;
     }
-    return double(ret);
+    return ret;
   }
 
   /// Compute the sum of the absolute difference between a template
   /// region taken from img1 and the window centered at (c,r) in img0.
   template <class ViewT>
-  inline double compute_soad(ImageViewBase<ViewT> const& img0,
-                             ImageViewBase<ViewT> const& img1,
-                             int r, int c,                   // row and column in img0
-                             int hdisp, int vdisp,           // Current disparity offset from (c,r) for img1
-                             int kern_width, int kern_height,
-                             BBox2i const& left_bbox,
-                             BBox2i const& right_bbox) {// Kernel dimensions
+  inline typename CorrelatorAccumulatorType<typename CompoundChannelType<typename ViewT::pixel_type>::type>::type
+  compute_soad(ImageViewBase<ViewT> const& img0,
+	       ImageViewBase<ViewT> const& img1,
+	       int r, int c,                   // row and column in img0
+	       int hdisp, int vdisp,           // Current disparity offset from (c,r) for img1
+	       int kern_width, int kern_height,
+	       BBox2i const& left_bbox,
+	       BBox2i const& right_bbox) {// Kernel dimensions
+    typedef typename CompoundChannelType<typename ViewT::pixel_type>::type channel_type;
+    typedef typename CorrelatorAccumulatorType<channel_type>::type accum_type;
 
     r -= kern_height/2;
     c -= kern_width/2;
     if ( r < left_bbox.min().y()  || c<left_bbox.min().x() ||
          r + kern_height >= left_bbox.max().y()            ||
          c + kern_width >= left_bbox.max().x() ) {
-      return VW_STEREO_MISSING_PIXEL;
+      return CorrelatorFailureValue<typename ViewT::pixel_type>();
     }
 
     if ( r + vdisp < right_bbox.min().y() ||
          c + hdisp<right_bbox.min().x()   ||
          r + vdisp+kern_height >= right_bbox.max().y() ||
          c + hdisp+kern_width >= right_bbox.max().x() ) {
-      return VW_STEREO_MISSING_PIXEL;
+      return CorrelatorFailureValue<typename ViewT::pixel_type>();
     }
 
 
-    typename CorrelatorAccumulatorType<typename CompoundChannelType<typename ViewT::pixel_type>::type>::type ret = 0;
+    accum_type ret = 0;
     AbsDiffCostFunc cost_fn;
     for (int rr= 0; rr< kern_height; rr++) {
      for (int cc= 0; cc< kern_width; cc++) {
        ret += cost_fn(img0.impl()(c+cc,r+rr), img1.impl()(c+cc+hdisp,r+rr+vdisp));
       }
     }
-    return double(ret);
+    return ret;
   }
 
   /// For a given set of images, compute the optimal disparity (minimum
@@ -211,22 +231,25 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
   /// The left_image and right_image must have the same dimensions, but
   /// this is only checked here if debugging is enabled.
   template <class ChannelT>
-  inline PixelMask<Vector2f> compute_disparity(ImageView<ChannelT> &left_image,
-                                               ImageView<ChannelT> &right_image,
-                                               int i, int j,
-                                               int kern_width, int kern_height,
-                                               int min_h_disp, int max_h_disp,
-                                               int min_v_disp, int max_v_disp) {
+  inline PixelMask<Vector2f>
+  compute_disparity(ImageView<ChannelT> &left_image,
+		    ImageView<ChannelT> &right_image,
+		    int i, int j,
+		    int kern_width, int kern_height,
+		    int min_h_disp, int max_h_disp,
+		    int min_v_disp, int max_v_disp) {
 
-    double min_soad = 1e10;               // Impossibly large
+    typedef typename CorrelatorAccumulatorType<ChannelT>::type accum_type;
+    accum_type min_soad = std::numeric_limits<accum_type>::max(); // Impossibly large
     PixelMask<Vector2f> best_disparity;
     invalidate(best_disparity);
     for (int ii = min_h_disp; ii <= max_h_disp; ++ii) {
       for (int jj = min_v_disp; jj <= max_v_disp; ++jj) {
-        double soad = compute_soad(&(left_image(0,0)), &(right_image(0,0)),
-                                   j, i, ii, jj,kern_width, kern_height,
-                                   left_image.cols(), left_image.rows());
-        if (soad != VW_STEREO_MISSING_PIXEL && soad < min_soad) {
+        accum_type soad = compute_soad(&(left_image(0,0)), &(right_image(0,0)),
+				       j, i, ii, jj,kern_width, kern_height,
+				       left_image.cols(), left_image.rows());
+        if (soad != CorrelatorFailureValue<ChannelT>()
+	    && soad < min_soad) {
           min_soad = soad;
           validate( best_disparity );
           best_disparity[0] = ii;
@@ -237,23 +260,56 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
     return best_disparity;
   }
 
-  template <class ChannelT>
-  void subpixel_correlation_affine_2d(ImageView<PixelMask<Vector2f> > &disparity_map,
-                                      ImageView<ChannelT> const& left_image,
-                                      ImageView<ChannelT> const& right_image,
-                                      int kern_width, int kern_height,
-                                      bool do_horizontal_subpixel = true,
-                                      bool do_vertical_subpixel = true,
-                                      bool verbose = false);
+  inline int
+  adjust_weight_image(ImageView<float> &weight,
+                      ImageView<PixelMask<Vector2f> > const& disparity_map_patch,
+                      ImageView<float> const& weight_template) {
 
-  template <class ChannelT>
-  void subpixel_correlation_affine_2d_bayesian(ImageView<PixelMask<Vector2f> > &disparity_map,
-                                               ImageView<ChannelT> const& left_image,
-                                               ImageView<ChannelT> const& right_image,
-                                               int kern_width, int kern_height,
-                                               bool do_horizontal_subpixel = true,
-                                               bool do_vertical_subpixel = true,
-                                               bool verbose = false);
+    int center_pix_x = weight_template.cols()/2;
+    int center_pix_y = weight_template.rows()/2;
+    PixelMask<Vector2f> center_pix =
+      disparity_map_patch(center_pix_x, center_pix_y);
+
+    float sum = 0;
+    int num_good_pix = 0;
+    typedef ImageView<float>::pixel_accessor IViewFAcc;
+    typedef ImageView<PixelMask<Vector2f> >::pixel_accessor IViewDAcc;
+    IViewFAcc weight_row_acc = weight.origin();
+    IViewFAcc template_row_acc = weight_template.origin();
+    IViewDAcc disp_row_acc = disparity_map_patch.origin();
+    for (int j = 0; j < weight_template.rows(); ++j) {
+      IViewFAcc weight_col_acc = weight_row_acc;
+      IViewFAcc template_col_acc = template_row_acc;
+      IViewDAcc disp_col_acc = disp_row_acc;
+      for (int i = 0; i < weight_template.cols(); ++i ) {
+
+        // Mask is zero if the disparity map's pixel is missing...
+        if ( !is_valid(*disp_col_acc) )
+          *weight_col_acc = 0;
+
+        // ... otherwise we use the weight from the weight template
+        else {
+          *weight_col_acc = *template_col_acc;
+          sum += *weight_col_acc;
+          ++num_good_pix;
+        }
+
+        disp_col_acc.next_col();
+        weight_col_acc.next_col();
+        template_col_acc.next_col();
+      }
+      disp_row_acc.next_row();
+      weight_row_acc.next_row();
+      template_row_acc.next_row();
+    }
+
+    // Normalize the weight image
+    if (sum == 0)
+      vw_throw(LogicErr() << "subpixel_weight: Sum of weight image was zero.  This isn't supposed to happen!");
+    else
+      weight /= sum;
+    return num_good_pix;
+  }
 
   template <class ChannelT>
   void subpixel_correlation_affine_2d_EM(ImageView<PixelMask<Vector2f> > &disparity_map,
@@ -266,6 +322,16 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
                                          bool verbose = false);
 
   template <class ChannelT>
+  void subpixel_optimized_affine_2d_EM(ImageView<PixelMask<Vector2f> > &disparity_map,
+				       ImageView<ChannelT> const& left_image,
+				       ImageView<ChannelT> const& right_image,
+				       int kern_width, int kern_height,
+				       BBox2i region_of_interest,
+				       bool do_horizontal_subpixel = true,
+				       bool do_vertical_subpixel = true,
+				       bool verbose = false);
+
+  template <class ChannelT>
   void subpixel_correlation_parabola(ImageView<PixelMask<Vector2f> > &disparity_map,
                                      ImageView<ChannelT> const& left_image,
                                      ImageView<ChannelT> const& right_image,
@@ -276,85 +342,9 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
 
   /// This routine cross checks L2R and R2L, placing the final version
   /// of the disparity map in L2R.
-  VW_STEREO_DECL void cross_corr_consistency_check(ImageView<PixelMask<Vector2f> > &L2R,
+  void cross_corr_consistency_check(ImageView<PixelMask<Vector2f> > &L2R,
                                     ImageView<PixelMask<Vector2f> > const& R2L,
                                     double cross_corr_threshold, bool verbose = false);
-
-#ifdef VW_HAS_DECLSPEC
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d(
-                                               ImageView<PixelMask<Vector2f> > &disparity_map,
-                                               ImageView<uint8> const& left_image,
-                                               ImageView<uint8> const& right_image,
-                                               int kern_width, int kern_height,
-                                               bool do_horizontal_subpixel,
-                                               bool do_vertical_subpixel,
-                                               bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d(
-                                               ImageView<PixelMask<Vector2f> > &disparity_map,
-                                               ImageView<float> const& left_image,
-                                               ImageView<float> const& right_image,
-                                               int kern_width, int kern_height,
-                                               bool do_horizontal_subpixel,
-                                               bool do_vertical_subpixel,
-                                               bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_bayesian(
-                                                        ImageView<PixelMask<Vector2f> > &disparity_map,
-                                                        ImageView<uint8> const& left_image,
-                                                        ImageView<uint8> const& right_image,
-                                                        int kern_width, int kern_height,
-                                                        bool do_horizontal_subpixel,
-                                                        bool do_vertical_subpixel,
-                                                        bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_bayesian(
-                                                        ImageView<PixelMask<Vector2f> > &disparity_map,
-                                                        ImageView<float> const& left_image,
-                                                        ImageView<float> const& right_image,
-                                                        int kern_width, int kern_height,
-                                                        bool do_horizontal_subpixel,
-                                                        bool do_vertical_subpixel,
-                                                        bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_EM(
-                                                  ImageView<PixelMask<Vector2f> > &disparity_map,
-                                                  ImageView<uint8> const& left_image,
-                                                  ImageView<uint8> const& right_image,
-                                                  int kern_width, int kern_height,
-                                                  BBox2i region_of_interest,
-                                                  bool do_horizontal_subpixel,
-                                                  bool do_vertical_subpixel,
-                                                  bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_affine_2d_EM(
-                                                  ImageView<PixelMask<Vector2f> > &disparity_map,
-                                                  ImageView<float> const& left_image,
-                                                  ImageView<float> const& right_image,
-                                                  int kern_width, int kern_height,
-                                                  BBox2i region_of_interest,
-                                                  bool do_horizontal_subpixel,
-                                                  bool do_vertical_subpixel,
-                                                  bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_parabola(
-                                              ImageView<PixelMask<Vector2f> > &disparity_map,
-                                              ImageView<uint8> const& left_image,
-                                              ImageView<uint8> const& right_image,
-                                              int kern_width, int kern_height,
-                                              bool do_horizontal_subpixel,
-                                              bool do_vertical_subpixel,
-                                              bool verbose);
-
-  VW_STEREO_EXTERN template VW_STEREO_DECL void subpixel_correlation_parabola(
-                                              ImageView<PixelMask<Vector2f> > &disparity_map,
-                                              ImageView<float> const& left_image,
-                                              ImageView<float> const& right_image,
-                                              int kern_width, int kern_height,
-                                              bool do_horizontal_subpixel,
-                                              bool do_vertical_subpixel,
-                                              bool verbose);
-#endif// VW_HAS_DECLSPEC
 
 }} // namespace vw::stereo
 

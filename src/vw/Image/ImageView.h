@@ -34,7 +34,7 @@ namespace vw {
   /// shallow, lightweight operation.  The underlying image data is
   /// reference counted, so the user does not usually need to be
   /// concerned with memory allocation and deallocation.
-  /// 
+  ///
   /// A more complete name for this class might be something like
   /// MemoryImageView, or StandardImageView, but it is so ubiquitous
   /// that we decided to keep the name short.
@@ -42,6 +42,10 @@ namespace vw {
   template <class PixelT>
   class ImageView : public ImageViewBase<ImageView<PixelT> >
   {
+    // Protect user from themselves. ImageView can never contain
+    // another ImageView.
+    BOOST_STATIC_ASSERT( !IsImageView<PixelT>::value );
+
     boost::shared_array<PixelT> m_data;
     int32 m_cols, m_rows, m_planes;
     PixelT *m_origin;
@@ -171,7 +175,7 @@ namespace vw {
 
     /// Adjusts the size of the image to match the dimensions of another image.
     template <class ImageT>
-    void set_size( ImageViewBase<ImageT> &img ) {
+    void set_size( const ImageViewBase<ImageT> &img ) {
       this->set_size(img.impl().cols(), img.impl().rows(), img.impl().planes());
     }
 

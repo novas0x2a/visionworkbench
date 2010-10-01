@@ -43,14 +43,13 @@
 #ifndef __VW_MATH_RANSAC_H__
 #define __VW_MATH_RANSAC_H__
 
-#include <vw/Math/MathExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Core/Log.h>
 
 namespace vw { 
 namespace math {
 
-  VW_DEFINE_EXCEPTION(RANSACErr, Exception, VW_MATH_DECL);
+  VW_DEFINE_EXCEPTION(RANSACErr, Exception);
 
   /// This is a basic error metric can be used when the mathematical
   /// multiplication and subtraction operators are defined for p1, p2,
@@ -124,7 +123,7 @@ namespace math {
       for (unsigned i=0; i<n; ++i) {
         bool done = false;
         while (!done) {
-          samples[i] = (int)(((double)random() / (double)RAND_MAX) * size);
+          samples[i] = int( (double(std::rand()) / double(RAND_MAX)) * size );
           done = true;
           for (unsigned j = 0; j < i; j++) 
             if (samples[i] == samples[j]) 
@@ -174,7 +173,7 @@ namespace math {
       // check consistency
       VW_ASSERT( p1.size() == p2.size(), 
                  RANSACErr() << "RANSAC Error.  data vectors are not the same size." );
-      VW_ASSERT( p1.size() != 0,  
+      VW_ASSERT( !p1.empty(),
                  RANSACErr() << "RANSAC Error.  Insufficient data.\n");
       VW_ASSERT( p1.size() >= m_fitting_func.min_elements_needed_for_fit(p1[0]),  
                  RANSACErr() << "RANSAC Error.  Not enough potential matches for this fitting funtor. ("<<p1.size() << "/" << m_fitting_func.min_elements_needed_for_fit(p1[0]) << ")\n");

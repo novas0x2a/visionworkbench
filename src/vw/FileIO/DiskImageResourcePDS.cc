@@ -27,9 +27,11 @@ using namespace boost;
 
 
 static bool cpu_is_big_endian() {
-  union { vw::uint16 number; vw::uint8 bytes[2]; } short_endian_check;
-  short_endian_check.number = 1;
-  return (vw::uint8(short_endian_check.number) == short_endian_check.bytes[1]);
+#if VW_BYTE_ORDER == VW_BIG_ENDIAN
+  return true;
+#else
+  return false;
+#endif
 }
 
 void vw::DiskImageResourcePDS::treat_invalid_data_as_alpha() {
@@ -75,7 +77,9 @@ vw::PixelFormatEnum vw::DiskImageResourcePDS::planes_to_pixel_format(int32 plane
 void vw::DiskImageResourcePDS::open( std::string const& filename ) {
 
   FILE* input_file = fopen(filename.c_str(), "r");
-  if( ! input_file ) vw_throw( vw::IOErr() << "Failed to open \"" << filename << "\"." );
+  if( !input_file )
+    vw_throw( vw::ArgumentErr() << "DiskImageResourcePDS: Failed to open \""
+              << filename << "\"." );
 
   char c_line[2048];
   int i = 0;
@@ -194,26 +198,26 @@ void vw::DiskImageResourcePDS::open( std::string const& filename ) {
   }
 
   if( ! valid ) {
-    vw_throw( IOErr() << "DiskImageResourcePDS: could not find critical information in the image header." );
+    vw_throw( ArgumentErr() << "DiskImageResourcePDS: Could not find complete image header. Possibly not PDS image." );
   }
 
   m_file_is_msb_first = true;
   if (format_str == "UNSIGNED_INTEGER" ||
-      format_str == "MSB_UNSIGNED_INTEGER" || 
+      format_str == "MSB_UNSIGNED_INTEGER" ||
       format_str == "LSB_UNSIGNED_INTEGER") {
-    
+
     if (sample_bits_str == "8") 
       m_format.channel_type = VW_CHANNEL_UINT8; 
     else if (sample_bits_str == "16") 
       m_format.channel_type = VW_CHANNEL_UINT16; 
-    
+
     if (format_str == "LSB_UNSIGNED_INTEGER") 
       m_file_is_msb_first = false;
-    
+
   } else if (format_str == "INTEGER" ||
              format_str == "MSB_INTEGER" || 
              format_str == "LSB_INTEGER") {
-    
+
     if (sample_bits_str == "8") 
       m_format.channel_type = VW_CHANNEL_INT8; 
     else if (sample_bits_str == "16") 
@@ -267,7 +271,8 @@ void vw::DiskImageResourcePDS::read( ImageBuffer const& dest, BBox2i const& bbox
     if (image_file.bad()) {
       image_file.open(boost::to_upper_copy(m_pds_data_filename).c_str(), std::ios::in | std::ios::binary); 
       if (image_file.bad()) {
-        vw_throw( vw::IOErr() << "Failed to open \"" << DiskImageResource::m_filename << "\"." );
+        vw_throw( vw::ArgumentErr() << "DiskImageResourcePDS: Failed to open \""
+                  << DiskImageResource::m_filename << "\"." );
       } 
     }
   }

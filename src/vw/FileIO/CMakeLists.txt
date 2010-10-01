@@ -6,7 +6,6 @@ set( HEADERS
   DiskImageResourcePBM.h
   DiskImageResourcePDS.h 
   DiskImageView.h 
-  JP2.h	
   KML.h 
 )
 

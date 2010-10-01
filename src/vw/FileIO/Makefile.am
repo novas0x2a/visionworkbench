@@ -43,7 +43,7 @@ gdal_headers = DiskImageResourceGDAL.h
 gdal_sources = DiskImageResourceGDAL.cc
 endif
 
-include_HEADERS = DiskImageResource.h DiskImageView.h JP2.h	\
+include_HEADERS = DiskImageResource.h DiskImageView.h	\
 	DiskImageResourcePDS.h $(png_headers) $(jpeg_headers)	\
 	$(tiff_headers) $(openexr_headers) $(hdf_headers)	\
 	$(gdal_headers) KML.h DiskImageResourcePBM.h
@@ -66,7 +66,7 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@
-AM_LDFLAGS = @VW_LDFLAGS@ -version-info @LIBTOOL_VERSION@
+AM_LDFLAGS = @VW_LDFLAGS@ $(LIBTOOL_LIB_FLAGS)
 
 SUBDIRS = . tests
 

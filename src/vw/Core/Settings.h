@@ -20,7 +20,6 @@
 
 #include <vector>
 
-#include <vw/Core/CoreExport.h>
 #include <vw/Core/Thread.h>
 
 namespace vw {
@@ -36,13 +35,15 @@ namespace vw {
   /// static vw_settings() function below, which returns a singleton
   /// instance of the system settings class.  You should _not_ need to
   /// create a settings object yourself!!!!
-  class VW_CORE_DECL Settings {
+  class Settings : private boost::noncopyable {
 
     // Vision Workbench Global Settings
     int m_default_num_threads;
     bool m_default_num_threads_override;
     size_t m_system_cache_size;
     bool m_system_cache_size_override;
+    size_t m_write_pool_size;
+    bool m_write_pool_size_override;
     int m_default_tile_size;
     bool m_default_tile_size_override;
     std::string m_tmp_directory;
@@ -57,10 +58,6 @@ namespace vw {
     Mutex m_rc_time_mutex;
     Mutex m_rc_file_mutex;
     Mutex m_settings_mutex;
-
-    // Ensure non-copyable semantics
-    Settings( Settings const& );
-    Settings& operator=( Settings const& );
 
   public:
 
@@ -109,6 +106,15 @@ namespace vw {
     /// Set the default tile size to be used for block processing.
     void set_default_tile_size(int num);
 
+    /// Query for write pool size in number of threads
+    int write_pool_size();
+
+    /// Set the current write cache size. Write cache is only used in
+    /// block writing. In that code this number is used to determine how many
+    /// threads can be used for waiting to write. Use this number and file
+    /// cache size to define the amount of memory to be used.
+    void set_write_pool_size(int size);
+
     /// Query for the directory being used to store temporary files.
     std::string tmp_directory();
     
@@ -125,7 +131,7 @@ namespace vw {
   ///
   ///     vw_settings().set_system_cache_size(2048)
   ///
-  VW_CORE_DECL Settings& vw_settings();
+  Settings& vw_settings();
 
 } // namespace vw
 

@@ -22,6 +22,8 @@
 #include <set>
 #include <map>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem/convenience.hpp>
+namespace fs = boost::filesystem;
 
 // For RunOnce
 #include <vw/Core/Thread.h>
@@ -36,10 +38,6 @@
 
 #if defined(VW_HAVE_PKG_JPEG) && VW_HAVE_PKG_JPEG==1
 #include <vw/FileIO/DiskImageResourceJPEG.h>
-#endif
-
-#if defined(VW_HAVE_PKG_JPEG2K) && VW_HAVE_PKG_JPEG2K==1
-#include <vw/FileIO/DiskImageResourceJP2.h>
 #endif
 
 #if defined(VW_HAVE_PKG_TIFF) && VW_HAVE_PKG_TIFF==1
@@ -119,16 +117,7 @@ void vw::DiskImageResource::register_file_type( std::string const& extension,
   register_default_file_types_internal();
 
   // Add the file to the list
-  register_file_type_internal(extension, disk_image_resource_type, open_func, create_func);
-}
-
-static std::string file_extension( std::string const& filename ) {
-  std::string::size_type dot = filename.find_last_of('.');
-  if (dot == std::string::npos)
-    vw_throw( vw::IOErr() << "DiskImageResource: Cannot infer file format from filename with no file extension." );
-  std::string extension = filename.substr( dot );
-  boost::to_lower( extension );
-  return extension;
+  register_file_type_internal(boost::to_lower_copy(extension), disk_image_resource_type, open_func, create_func);
 }
 
 static void register_default_file_types_impl() {
@@ -136,82 +125,77 @@ static void register_default_file_types_impl() {
   if( ! open_map ) open_map = new OpenMapType();
   if( ! create_map ) create_map = new CreateMapType();
 
+// Let's cut the verbosity of this func just a bit.
+#define REGISTER(ext, driver) register_file_type_internal( ext, vw::DiskImageResource ## driver::type_static(), &vw::DiskImageResource ## driver::construct_open, &vw::DiskImageResource ## driver::construct_create );
+
   // Give GDAL precedence in reading PDS images when this is supported.
 #if defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   if (vw::DiskImageResourceGDAL::gdal_has_support(".img") &&
       vw::DiskImageResourceGDAL::gdal_has_support(".pds") &&
       vw::DiskImageResourceGDAL::gdal_has_support(".lbl")) {
-    register_file_type_internal( ".img", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
-    register_file_type_internal( ".pds", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
-    register_file_type_internal( ".lbl", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+
+    REGISTER(".img", GDAL)
+    REGISTER(".pds", GDAL)
+    REGISTER(".lbl", GDAL)
   } else {
 #endif
-  register_file_type_internal( ".img", vw::DiskImageResourcePDS::type_static(), &vw::DiskImageResourcePDS::construct_open, &vw::DiskImageResourcePDS::construct_create );
-  register_file_type_internal( ".pds", vw::DiskImageResourcePDS::type_static(), &vw::DiskImageResourcePDS::construct_open, &vw::DiskImageResourcePDS::construct_create );
-  register_file_type_internal( ".lbl", vw::DiskImageResourcePDS::type_static(), &vw::DiskImageResourcePDS::construct_open, &vw::DiskImageResourcePDS::construct_create );
+  REGISTER(".img", PDS)
+  REGISTER(".pds", PDS)
+  REGISTER(".lbl", PDS)
 #if defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   }
 #endif
 
 #if defined(VW_HAVE_PKG_PNG) && VW_HAVE_PKG_PNG==1
-  register_file_type_internal( ".png", vw::DiskImageResourcePNG::type_static(), &vw::DiskImageResourcePNG::construct_open, &vw::DiskImageResourcePNG::construct_create );
+  REGISTER(".png", PNG)
 #elif defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   if (vw::DiskImageResourceGDAL::gdal_has_support(".png"))
-    register_file_type_internal( ".png", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+    REGISTER(".png", GDAL)
   else
     vw::vw_throw(vw::IOErr() << "GDAL does not have PNG support.");
 #endif
 
 #if defined(VW_HAVE_PKG_JPEG) && VW_HAVE_PKG_JPEG==1
-  register_file_type_internal( ".jpg", vw::DiskImageResourceJPEG::type_static(), &vw::DiskImageResourceJPEG::construct_open, &vw::DiskImageResourceJPEG::construct_create );
-  register_file_type_internal( ".jpeg", vw::DiskImageResourceJPEG::type_static(), &vw::DiskImageResourceJPEG::construct_open, &vw::DiskImageResourceJPEG::construct_create );
+  REGISTER(".jpg", JPEG)
+  REGISTER(".jpeg", JPEG)
 #elif defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   if (vw::DiskImageResourceGDAL::gdal_has_support(".jpg"))
-    register_file_type_internal( ".jpg", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+    REGISTER(".jpg", GDAL)
   if (vw::DiskImageResourceGDAL::gdal_has_support(".jpeg"))
-    register_file_type_internal( ".jpeg", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+    REGISTER(".jpeg", GDAL)
 #endif
 
-#if defined(VW_HAVE_PKG_JPEG2K) && VW_HAVE_PKG_JPEG2K==1 && 0
-  // A file with a .jp2 extension is a full fledged JPEG2000 image
-  // with acquisition metadata. A file with a .j2k extension has only
-  // the "raw" encoded image, with image encoding and size specified
-  // in a small header. A file with a .jpf extension is a full fledged
-  // JPEG2000 image with acquisition and (possibly) GML metadata.
-  register_file_type_internal(".jp2", vw::DiskImageResourceJP2::type_static(), &vw::DiskImageResourceJP2::construct_open, &vw::DiskImageResourceJP2::construct_create );
-  register_file_type_internal(".j2k", vw::DiskImageResourceJP2::type_static(), &vw::DiskImageResourceJP2::construct_open, &vw::DiskImageResourceJP2::construct_create );
-  register_file_type_internal(".jpf", vw::DiskImageResourceJP2::type_static(), &vw::DiskImageResourceJP2::construct_open, &vw::DiskImageResourceJP2::construct_create );
-#elif defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
+#if defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   if (vw::DiskImageResourceGDAL::gdal_has_support(".jp2"))
-    register_file_type_internal(".jp2", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+    REGISTER(".jp2", GDAL)
   if (vw::DiskImageResourceGDAL::gdal_has_support(".j2k"))
-    register_file_type_internal(".j2k", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+    REGISTER(".j2k", GDAL)
 #endif
 
 // This is a little hackish but it makes it so libtiff acts as a proper fallback
 #if defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   if (vw::DiskImageResourceGDAL::gdal_has_support(".tif") && vw::DiskImageResourceGDAL::gdal_has_support(".tiff")) {
-    register_file_type_internal( ".tif", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
-    register_file_type_internal( ".tiff", vw::DiskImageResourceGDAL::type_static(), &vw::DiskImageResourceGDAL::construct_open, &vw::DiskImageResourceGDAL::construct_create );
+    REGISTER(".tif", GDAL)
+    REGISTER(".tiff", GDAL)
   } else {
 #endif
 #if defined(VW_HAVE_PKG_TIFF) && VW_HAVE_PKG_TIFF==1
-    register_file_type_internal( ".tif", vw::DiskImageResourceTIFF::type_static(), &vw::DiskImageResourceTIFF::construct_open, &vw::DiskImageResourceTIFF::construct_create );
-    register_file_type_internal( ".tiff", vw::DiskImageResourceTIFF::type_static(), &vw::DiskImageResourceTIFF::construct_open, &vw::DiskImageResourceTIFF::construct_create );
+    REGISTER(".tif", TIFF)
+    REGISTER(".tiff", TIFF)
 #endif
 #if defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
   }
 #endif
 
 #if defined(VW_HAVE_PKG_OPENEXR) && VW_HAVE_PKG_OPENEXR==1
-  register_file_type_internal( ".exr", vw::DiskImageResourceOpenEXR::type_static(), &vw::DiskImageResourceOpenEXR::construct_open, &vw::DiskImageResourceOpenEXR::construct_create );
+  REGISTER(".exr", OpenEXR)
 #endif
 
   // Filetypes that are always supported
-  register_file_type_internal( ".pbm", vw::DiskImageResourcePBM::type_static(), &vw::DiskImageResourcePBM::construct_open, &vw::DiskImageResourcePBM::construct_create );
-  register_file_type_internal( ".pgm", vw::DiskImageResourcePBM::type_static(), &vw::DiskImageResourcePBM::construct_open, &vw::DiskImageResourcePBM::construct_create );
-  register_file_type_internal( ".ppm", vw::DiskImageResourcePBM::type_static(), &vw::DiskImageResourcePBM::construct_open, &vw::DiskImageResourcePBM::construct_create );
-
+  REGISTER(".pbm", PBM)
+  REGISTER(".pgm", PBM)
+  REGISTER(".ppm", PBM)
+#undef REGISTER
 }
 
 // Kill this function eventually.. it's marked as deprecated now.
@@ -221,8 +205,10 @@ void vw::DiskImageResource::register_default_file_types() {
 
 vw::DiskImageResource* vw::DiskImageResource::open( std::string const& filename ) {
   register_default_file_types_internal();
+  std::string extension = boost::to_lower_copy(fs::extension(filename));
+
   if( open_map ) {
-    OpenMapType::iterator i = open_map->find( file_extension( filename ) );
+    OpenMapType::iterator i = open_map->find( extension );
     if( i != open_map->end() ) {
       DiskImageResource* rsrc = i->second( filename );
       vw_out(DebugMessage,"fileio") << "Produce DiskImageResource of type: " << rsrc->type() << "\n";
@@ -234,7 +220,7 @@ vw::DiskImageResource* vw::DiskImageResource::open( std::string const& filename 
   // on it here in case none of the registered file handlers know how
   // to do the job.
 #if defined(VW_HAVE_PKG_GDAL) && VW_HAVE_PKG_GDAL==1
-  if (vw::DiskImageResourceGDAL::gdal_has_support( file_extension(filename) ))
+  if (vw::DiskImageResourceGDAL::gdal_has_support( extension ))
     return vw::DiskImageResourceGDAL::construct_open(filename);
 #endif
 
@@ -249,7 +235,7 @@ vw::DiskImageResource* vw::DiskImageResource::open( std::string const& filename 
 vw::DiskImageResource* vw::DiskImageResource::create( std::string const& filename, ImageFormat const& format, std::string const& type ) {
   register_default_file_types_internal();
   if( create_map ) {
-    CreateMapType::iterator i = create_map->find( type );
+    CreateMapType::iterator i = create_map->find( boost::to_lower_copy(type) );
     if( i != create_map->end() )
       return i->second( filename, format );
   }
@@ -262,7 +248,7 @@ vw::DiskImageResource* vw::DiskImageResource::create( std::string const& filenam
 vw::DiskImageResource* vw::DiskImageResource::create( std::string const& filename, ImageFormat const& format ) {
   register_default_file_types_internal();
   if( create_map ) {
-    CreateMapType::iterator i = create_map->find( file_extension( filename ) );
+    CreateMapType::iterator i = create_map->find( boost::to_lower_copy(fs::extension( filename )) );
     if( i != create_map->end() )
       return i->second( filename, format );
   }

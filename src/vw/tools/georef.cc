@@ -27,7 +27,6 @@ namespace po = boost::program_options;
 #include <vw/FileIO/DiskImageResource.h>
 #include <vw/FileIO/DiskImageResourceGDAL.h>
 #include <vw/FileIO/DiskImageView.h>
-#include <vw/Cartography/FileIO.h>
 #include <vw/Cartography/GeoReference.h>
 
 using namespace vw;
@@ -46,8 +45,6 @@ int main( int argc, char *argv[] ) {
   po::options_description general_options("General Options");
   general_options.add_options()
     ("output-file,o", po::value<std::string>(&output_filename)->default_value("output.tif"), "Specify the base output filename")
-    ("quiet,q", "Quiet output")
-    ("verbose,v", "Verbose output")
     ("help,h", "Display this help message");
 
   po::options_description projection_options("Projection Options");
@@ -108,13 +105,6 @@ int main( int argc, char *argv[] ) {
     std::cout << "Error: Must specify at least one input file!" << std::endl << std::endl;
     std::cout << usage.str();
     return 1;
-  }
-
-  if( vm.count("verbose") ) {
-    set_debug_level(VerboseDebugMessage);
-  }
-  else if( vm.count("quiet") ) {
-    set_debug_level(WarningMessage);
   }
 
   GeoReference output_georef;

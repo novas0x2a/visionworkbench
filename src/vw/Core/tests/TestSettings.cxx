@@ -15,6 +15,7 @@
 #include <test/Helpers.h>
 
 using namespace vw;
+using namespace vw::test;
 
 TEST(Settings, HAS_CONFIG_FILE(VWrc)) {
 
@@ -41,12 +42,14 @@ TEST(Settings, HAS_CONFIG_FILE(VWrc)) {
       VerboseDebugMessage = *             \n\
       ";
 
-  std::ofstream ostr(TEST_SRCDIR"/test_vwrc");
+  UnlinkName file("test_vwrc");
+  std::ofstream ostr(file.c_str());
+  ASSERT_TRUE(ostr.is_open()) << "Could not open test config file for writing";
   ostr << conf;
   ostr.close();
 
   // Test to see if the settings were correctly read in
-  vw_settings().set_rc_filename(TEST_SRCDIR"/test_vwrc");
+  vw_settings().set_rc_filename(file);
   EXPECT_EQ( 20, vw_settings().default_num_threads() );
   EXPECT_EQ( 623u, vw_settings().system_cache_size() );
 
@@ -65,7 +68,9 @@ TEST(Settings, Override) {
   EXPECT_EQ( 223u, vw_settings().system_cache_size() );
 }
 
-TEST(Settings, OldVWrc) {
+TEST(SettingsDeathTest, OldVWrc) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
   const char *conf = "\n\
                       logfile console\n\
                       40 *\n";
@@ -73,6 +78,5 @@ TEST(Settings, OldVWrc) {
   Settings s;
   std::istringstream stream(conf);
 
-  // This should print a warning, but not throw an exception
-  parse_config(stream, s);
+  EXPECT_EXIT(parse_config(stream, s); exit(251);, ::testing::ExitedWithCode(251), "Could not parse config file");
 }

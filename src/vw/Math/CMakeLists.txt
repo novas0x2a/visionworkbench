@@ -2,6 +2,7 @@ vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 if( LAPACK_FOUND )
   set( LAPACK_HEADERS 
+    FundamentalMatrix.h
     Geometry.h  
     LapackExports.h
     LevenbergMarquardt.h 

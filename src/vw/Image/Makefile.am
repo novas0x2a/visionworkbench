@@ -19,7 +19,7 @@ include_HEADERS = PixelIterator.h ImageViewBase.h PixelAccessors.h	\
 	EdgeExtension.h Interpolation.h Convolution.h Filter.h		\
 	Filter.tcc Transform.h Statistics.h Algorithms.h EdgeExtend.h	\
 	BlockProcessor.h BlockRasterize.h UtilityViews.h Palette.h	\
-	MaskViews.h SparseImageCheck.h
+	MaskViews.h SparseImageCheck.h ImageResourceImpl.h
 
 libvwImage_la_SOURCES = PixelTypeInfo.cc ImageResource.cc Filter.cc     \
 	Interpolation.cc
@@ -28,6 +28,11 @@ libvwImage_la_LIBADD = @MODULE_IMAGE_LIBS@
 
 lib_LTLIBRARIES = libvwImage.la
 
+if HAVE_PKG_OPENCV
+include_HEADERS += ImageResourceOpenCV.h
+libvwImage_la_SOURCES += ImageResourceOpenCV.cc
+endif
+
 endif
 
 ########################################################################
@@ -35,7 +40,7 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@
-AM_LDFLAGS = @VW_LDFLAGS@ -version-info @LIBTOOL_VERSION@
+AM_LDFLAGS = @VW_LDFLAGS@ $(LIBTOOL_LIB_FLAGS)
 
 SUBDIRS = . tests
 

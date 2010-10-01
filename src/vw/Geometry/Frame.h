@@ -9,7 +9,6 @@
 #ifndef vw_Math_Frame_h
 #define vw_Math_Frame_h
 
-#include <vw/Geometry/GeometryExport.h>
 #include <vw/Geometry/ATrans.h>
 
 #include <string>
@@ -24,7 +23,7 @@ namespace vw
      * This class is mostly used in combination with the TreeNode
      * class to create a frame tree.
      */
-    class VW_GEOMETRY_DECL Frame
+    class Frame
     {
     public:
       typedef vw::ATrans3 Transform;
@@ -63,7 +62,7 @@ namespace vw
         if (&rhs != this) {
           m_name = rhs.m_name;
           m_trans = rhs.m_trans;
-	  delete m_extras;
+          delete m_extras;
           m_extras = (rhs.m_extras == NULL)? NULL : rhs.m_extras->clone();
         }
         return *this;
@@ -85,7 +84,7 @@ namespace vw
       }
       /** Mutable access to transform field. */
       Transform& transform() throw() {
-	return m_trans;
+        return m_trans;
       }
       /** Set transform field. */
       void set_transform(Transform const& trans) {

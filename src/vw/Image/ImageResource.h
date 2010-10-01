@@ -15,7 +15,6 @@
 #include <vw/Math/Vector.h>
 #include <vw/Math/BBox.h>
 
-#include <vw/Image/ImageExport.h>
 #include <vw/Image/PixelTypeInfo.h>
 
 namespace vw {
@@ -26,12 +25,12 @@ namespace vw {
 
   /// Copies image pixel data from the source buffer to the destination 
   /// buffer, converting the pixel format and channel type as required.
-  VW_IMAGE_DECL void convert( ImageBuffer const& dst, ImageBuffer const& src, bool rescale=false );
+  void convert( ImageBuffer const& dst, ImageBuffer const& src, bool rescale=false );
 
 
   /// Describes the format of an image, i.e. its dimensions, pixel
   /// structure, and channel type.
-  struct VW_IMAGE_DECL ImageFormat {
+  struct ImageFormat {
     int32 cols, rows, planes;
     PixelFormatEnum pixel_format;
     ChannelTypeEnum channel_type;
@@ -46,7 +45,7 @@ namespace vw {
 
 
   /// Base class from which specific image resources derive.
-  class VW_IMAGE_DECL ImageResource { 
+  class ImageResource { 
   public:
 
     virtual ~ImageResource() {};
@@ -104,7 +103,7 @@ namespace vw {
   /// holds by shared pointer.  This makes it easy to operate on arbitrary 
   /// image resources without having to worry about memory management and 
   /// object lifetime yourself.
-  class VW_IMAGE_DECL ImageResourceRef : public ImageResource {
+  class ImageResourceRef : public ImageResource {
     boost::shared_ptr<ImageResource> m_resource;
   public:
     // This constructor takes ownership over the resource it's given.
@@ -143,7 +142,7 @@ namespace vw {
   /// purpose of this class is to provide some common ground for
   /// converting between image formats using the convert() function.
   /// To allocate a fresh buffer for an image, see ImageView.
-  struct VW_IMAGE_DECL ImageBuffer {
+  struct ImageBuffer {
     void* data;
     ImageFormat format;
     ptrdiff_t cstride, rstride, pstride;

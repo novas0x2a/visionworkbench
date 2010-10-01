@@ -51,17 +51,9 @@ namespace vw {
       m_valid = ChannelRange<channel_type>::min();
     }
 
-    /// implicit construction from the raw channel value, or from the
-    /// child pixel type value.  Values constructed in this manner
-    /// are considered valid.
-    template <class T>
-    PixelMask( T const& pix) {
-      m_child = pix;
-      m_valid = ChannelRange<channel_type>::max();
-    }
-
     /// Conversion from other PixelMask<> types.
-    template <class OtherT> explicit PixelMask( PixelMask<OtherT> other ) {
+    template <class T>
+    PixelMask( PixelMask<T> other ) {
       // We let the child's built-in conversions do their work here.
       // This will fail if there is no conversion defined from
       // OtherT to ChildT.
@@ -71,6 +63,15 @@ namespace vw {
         m_valid = ChannelRange<channel_type>::max();
       else
         m_valid = ChannelRange<channel_type>::min();
+    }
+
+    /// implicit construction from the raw channel value, or from the
+    /// child pixel type value.  Values constructed in this manner
+    /// are considered valid.
+    template <class T>
+    PixelMask( T const& pix) {
+      m_child = ChildT(pix);
+      m_valid = ChannelRange<channel_type>::max();
     }
 
     /// Constructs a pixel with the given channel values (use only when child has 2 channels)
@@ -156,7 +157,7 @@ namespace vw {
   template <class ChildT>
   bool is_transparent(PixelMask<ChildT> const& pixel) { return !pixel.valid(); }
 
-  // Overload for the pixel transparency traits class.  
+  // Overload for the pixel transparency traits class.
   template <class ChildT>
   bool is_opaque(PixelMask<ChildT> const& pixel) { return pixel.valid(); }
 
@@ -190,7 +191,7 @@ namespace vw {
   // This is a no-op by default, but it actually calls px.validate()
   // for PixelMask<> types.
   template <class PixelT>
-  inline void toggle(PixelT &pixel) { return; }
+  inline void toggle(PixelT &/*pixel*/) { return; }
 
   template <class ChildPixelT>
   inline void toggle(PixelMask<ChildPixelT> &pixel) { pixel.toggle(); }
@@ -234,6 +235,9 @@ namespace vw {
   struct CompoundChannelCast<PixelMask<OldT>, const NewChT> {
     typedef const PixelMask<typename CompoundChannelCast<OldT,NewChT>::type> type;
   };
+  template <class T> struct IsMasked : public boost::false_type::type {};
+  template <class T> struct IsMasked<PixelMask<T> > : public boost::true_type::type {};
+
 
   // Computes the mean value of a compound PixelMask<> type.  Not
   // especially efficient.
@@ -613,12 +617,68 @@ namespace vw {
     }
   };
 
+  // ******************************************************************
+  // Special Quotient Safe Functors for Pixel Mask types
+  struct ArgArgMaskedSafeQuotientFunctor : BinaryReturnTemplateType<QuotientType> {
+    template <class Arg1T, class Arg2T>
+    inline typename QuotientType<PixelMask<Arg1T>, PixelMask<Arg2T> >::type
+    operator()( PixelMask<Arg1T> const& arg1, PixelMask<Arg2T> const& arg2 ) const {
+      if ( arg2.child() == Arg2T() ) {
+        if ( is_valid(arg1) && is_valid(arg2) )
+          return typename QuotientType<PixelMask<Arg1T>,PixelMask<Arg2T> >::type(0); // Valid
+        else
+          return typename QuotientType<PixelMask<Arg1T>,PixelMask<Arg2T> >::type();
+      }
+      else return ( arg1 / arg2 );
+    }
+  };
+
+  template <class ValT>
+  struct ValArgMaskedSafeQuotientFunctor : UnaryReturnBinaryTemplateBind1st<QuotientType,ValT> {
+  private:
+    const ValT m_val;
+  public:
+    ValArgMaskedSafeQuotientFunctor( ValT const& val ) : m_val(val) {}
+
+    template <class ArgT>
+    inline typename QuotientType<ValT, PixelMask<ArgT> >::type
+    operator()( PixelMask<ArgT> const& arg ) const {
+      if ( arg.child()==ArgT() ) {
+        if ( is_valid(arg) && is_valid(m_val) )
+          return typename QuotientType<ValT,PixelMask<ArgT> >::type(0);
+        else
+          return typename QuotientType<ValT,PixelMask<ArgT> >::type();
+      }
+      else return (m_val / arg);
+    }
+  };
+
+  struct ArgArgInPlaceMaskedSafeQuotientFunctor : BinaryReturn1stType {
+    template <class Arg1T, class Arg2T>
+    inline PixelMask<Arg1T>& operator()( PixelMask<Arg1T>& arg1,
+                                         PixelMask<Arg2T> const& arg2 ) const {
+      if ( arg2.child()==Arg2T() ) {
+        if ( is_valid(arg1) && is_valid(arg2) )
+          return arg1=PixelMask<Arg1T>(0);
+        else
+          return arg1=PixelMask<Arg1T>();
+      } else
+        return arg1=(PixelMask<Arg1T>)(arg1/arg2);
+    }
+  };
+
   // *******************************************************************
-  // The PixelMath specialization
+  // The Pixel Math specialization for math against PixelMask<Scalar>
+  //
+  // Yet this should specifically not do PixelMask<scalar> against
+  // PixelMask<scalar> as that becomes an ambiguous call against the
+  // normal math operators.
   // *******************************************************************
-#define VW_PIXEL_MASK_MATH_BINARY_PS_FUNCTION(func,ftor)                               \
-  template <class PixelT, class ScalarT>                                               \
-  typename boost::enable_if< IsScalar<ScalarT>, typename CompoundResult<ftor<ScalarT>,PixelT>::type >::type \
+#define VW_PIXEL_MASK_MATH_BINARY_PS_FUNCTION(func,ftor)                                \
+  template <class PixelT, class ScalarT>                                                \
+    typename boost::enable_if< boost::mpl::and_<boost::mpl::and_<IsScalar<ScalarT>, IsMasked<PixelT> >, \
+                               boost::mpl::not_<boost::is_same<PixelT,PixelMask<ScalarT> > > >, \
+                               typename CompoundResult<ftor<ScalarT>,PixelT>::type >::type \
   inline func( PixelMathBase<PixelT> const& pixel, PixelMask<ScalarT> masked_scalar ) { \
     if (!masked_scalar.valid()) {                                                       \
       PixelT px = pixel.impl();                                                         \
@@ -631,7 +691,9 @@ namespace vw {
 
 #define VW_PIXEL_MASK_MATH_BINARY_SP_FUNCTION(func,ftor)                                \
   template <class PixelT, class ScalarT>                                                \
-  typename boost::enable_if< IsScalar<ScalarT>, typename CompoundResult<ftor<ScalarT>,PixelT>::type >::type \
+    typename boost::enable_if< boost::mpl::and_<boost::mpl::and_<IsScalar<ScalarT>, IsMasked<PixelT> >, \
+                               boost::mpl::not_<boost::is_same<PixelT,PixelMask<ScalarT> > > >, \
+                               typename CompoundResult<ftor<ScalarT>,PixelT>::type >::type \
   inline func( PixelMask<ScalarT> masked_scalar, PixelMathBase<PixelT> const& pixel ) { \
     if (!masked_scalar.valid()) {                                                       \
       PixelT px = pixel.impl();                                                         \
@@ -644,7 +706,7 @@ namespace vw {
 
 #define VW_PIXEL_MASK_MATH_BINARY_IS_FUNCTION(func,ftor)                                 \
   template <class PixelT, class ScalarT>                                                 \
-  typename boost::enable_if< IsScalar<ScalarT>, PixelT&>::type                           \
+    typename boost::enable_if< boost::mpl::and_<IsScalar<ScalarT>, IsMasked<PixelT> >, PixelT&>::type \
   inline func( PixelMathBase<PixelT>& pixel, PixelMask<ScalarT> masked_scalar ) {        \
     if (!masked_scalar.valid())                                                          \
       pixel.impl().invalidate();                                                         \
@@ -663,6 +725,8 @@ namespace vw {
   VW_PIXEL_MASK_MATH_BINARY_PS_FUNCTION(operator /, vw::ArgValQuotientFunctor)
   VW_PIXEL_MASK_MATH_BINARY_SP_FUNCTION(operator /, vw::ValArgQuotientFunctor)
   VW_PIXEL_MASK_MATH_BINARY_IS_FUNCTION(operator /=, vw::ArgValInPlaceQuotientFunctor)
+
+
 
 } // namespace vw
 

@@ -9,8 +9,6 @@
 #ifndef vw_geometry_FrameHandle_h
 #define vw_geometry_FrameHandle_h
 
-#include <vw/Geometry/GeometryExport.h>
-
 namespace vw
 {
   namespace geometry
@@ -24,7 +22,7 @@ namespace vw
     /**
      * Handle to a frame tree node stored in a frame-store.
      */
-    class VW_GEOMETRY_DECL FrameHandle
+    class FrameHandle
     {
       FrameTreeNode * node;
     public:

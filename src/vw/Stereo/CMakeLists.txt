@@ -4,6 +4,7 @@ set( HEADERS
   ${EXPORT_H}
   AffineMixtureComponent.h 
   Correlate.h 
+  CorrelateResearch.h
   CorrelatorView.h	
   DisparityMap.h 
   EMSubpixelCorrelatorView.h 		
@@ -22,6 +23,8 @@ set( HEADERS
 
 set( SOURCES 
   Correlate.cc
+  CorrelateResearch.cc
+  EMSubpixelCorrelatorView.cc
   OptimizedCorrelator.cc
   PyramidCorrelator.cc 
   StereoModel.cc 

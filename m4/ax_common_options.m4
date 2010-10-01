@@ -11,23 +11,37 @@ AC_DEFUN([AX_COMMON_OPTIONS], [
 # Compilation options
 ##################################################
 
-AX_ARG_ENABLE(exceptions,      yes, [am-yes cpp-bool], [enable the C++ exception mechanism])
-AX_ARG_ENABLE(debug,            no, [none],            [generate debugging symbols])
-AX_ARG_ENABLE(optimize,          3, [none],            [compiler optimization level])
-AX_ARG_ENABLE(profile,          no, [none],            [generate profiling data])
-AX_ARG_ENABLE(arch-libs,        no, [none],            [force /lib64 (=64) or /lib32 (=32) instead of /lib])
-AX_ARG_ENABLE(ccache,           no, [none],            [try to use ccache, if available])
-AX_ARG_ENABLE(multi-arch,       [], [none],            [build multi-arch (universal) binaries])
-AX_ARG_ENABLE(no-undefined,     no, [none],            [set -Wl,-no-undefined (might break linking)])
-AX_ARG_ENABLE(rpath,            no, [none],            [set RPATH/RUNPATH on generated binaries])
-AX_ARG_ENABLE(as-needed,        no, [none],            [set -Wl,-as-needed (might break linking)])
+AX_ARG_ENABLE(exceptions,   yes, [am-yes cpp-bool], [enable the C++ exception mechanism])
+AX_ARG_ENABLE(debug,         no, [none],            [generate debugging symbols])
+AX_ARG_ENABLE(optimize,       3, [none],            [compiler optimization level])
+AX_ARG_ENABLE(profile,       no, [none],            [generate profiling data])
+AX_ARG_ENABLE(arch-libs,     no, [none],            [force /lib64 (=64) or /lib32 (=32) instead of /lib])
+AX_ARG_ENABLE(ccache,        no, [none],            [try to use ccache, if available])
+AX_ARG_ENABLE(multi-arch,    [], [none],            [build multi-arch (universal) binaries])
+AX_ARG_ENABLE(no-undefined,  no, [none],            [set -Wl,-no-undefined (might break linking)])
+AX_ARG_ENABLE(rpath,         no, [none],            [set RPATH/RUNPATH on generated binaries])
+AX_ARG_ENABLE(as-needed,     no, [none],            [set -Wl,-as-needed (might break linking)])
 AX_ARG_ENABLE(google-tcmalloc, yes, [none],            [Try to use google perftools' tcmalloc])
 AX_ARG_ENABLE(google-profiler,  no, [none],            [Try to use google perftools' cpu profiler])
+AX_ARG_ENABLE(super-inlining, no, [none],           [turn off as much inlining as possible])
 
 
 ##################################################
 # Handle options
 ##################################################
+
+# Sometimes we have /foo/lib64 and /foo/lib confusion on 64-bit machines,
+# so we'll use possibly both if one doesn't appear for a certain
+# library path.
+AX_OTHER_LIBDIR="lib"
+if test x"$ENABLE_ARCH_LIBS" = "x64"; then
+  AX_LIBDIR="lib64"
+elif test x"$ENABLE_ARCH_LIBS" = "x32"; then
+  AX_LIBDIR="lib32"
+else
+  AX_LIBDIR="lib"
+  AX_OTHER_LIBDIR=""
+fi
 
 if test x"$ENABLE_GOOGLE_TCMALLOC" != x"yes"; then
   HAVE_PKG_TCMALLOC=no:disabled
@@ -60,19 +74,6 @@ if test x"$ENABLE_CCACHE" = x"yes"; then
     fi
 fi
 
-# Sometimes we have /foo/lib64 and /foo/lib confusion on 64-bit machines,
-# so we'll use possibly both if one doesn't appear for a certain
-# library path.
-AX_OTHER_LIBDIR="lib"
-if test x"$ENABLE_ARCH_LIBS" = "x64"; then
-  AX_LIBDIR="lib64"
-elif test x"$ENABLE_ARCH_LIBS" = "x32"; then
-  AX_LIBDIR="lib32"
-else
-  AX_LIBDIR="lib"
-  AX_OTHER_LIBDIR=""
-fi
-
 # These are good if they're supported
 if test x"$ENABLE_NO_UNDEFINED" = "xyes"; then
     AX_TRY_CPPFLAGS([-Wl,-no-undefined], [OTHER_LDFLAGS="$OTHER_LDFLAGS -Wl,-no-undefined"])
@@ -80,6 +81,15 @@ fi
 
 if test x"$ENABLE_AS_NEEDED" = "xyes"; then
     AX_TRY_CPPFLAGS([-Wl,-as-needed],    [OTHER_LDFLAGS="$OTHER_LDFLAGS -Wl,-as-needed"])
+fi
+
+if test x"$ENABLE_SUPER_INLINING" = "xyes"; then
+  AX_TRY_CPPFLAGS([-fno-default-inline],               [AX_CFLAGS="$AX_CFLAGS -fno-default-inline"])
+  AX_TRY_CPPFLAGS([-fno-inline],                       [AX_CFLAGS="$AX_CFLAGS -fno-inline"])
+  AX_TRY_CPPFLAGS([-fno-inline-small-functions],       [AX_CFLAGS="$AX_CFLAGS -fno-inline-small-functions"])
+  AX_TRY_CPPFLAGS([-fno-inline-functions],             [AX_CFLAGS="$AX_CFLAGS -fno-inline-functions"])
+  AX_TRY_CPPFLAGS([-fno-inline-functions-called-once], [AX_CFLAGS="$AX_CFLAGS -fno-inline-functions-called-once"])
+  AX_TRY_CPPFLAGS([-fkeep-inline-functions],           [AX_CFLAGS="$AX_CFLAGS -fkeep-inline-functions"])
 fi
 
 # Debugging

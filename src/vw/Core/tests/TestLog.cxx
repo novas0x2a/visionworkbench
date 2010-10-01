@@ -13,6 +13,8 @@
 #include <vw/Core/Log.h>
 #include <vw/Core/Thread.h>
 #include <vw/Core/ProgressCallback.h>
+#include <vw/Core/FundamentalTypes.h>
+#include <vw/Core/Stopwatch.h>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -36,9 +38,9 @@ struct TestLogTask {
   TestLogTask(LogInstance &log, std::string ns) : m_terminate(false), m_log(log), m_ns(ns) {}
 
   void operator()() {
-    const std::string start("Start " + vw::stringify(Thread::id()) + "\n"),
-                        tick("Tick " + vw::stringify(Thread::id()) + "\n"),
-                        stop("Stop " + vw::stringify(Thread::id()) + "\n");
+    const std::string start("Start " + stringify(Thread::id()) + "\n"),
+                        tick("Tick " + stringify(Thread::id()) + "\n"),
+                        stop("Stop " + stringify(Thread::id()) + "\n");
 
     m_log(InfoMessage,m_ns) << start;
 
@@ -64,8 +66,8 @@ TEST(Log, MultiStream) {
   const static char no_string[]  = "==>You should not see this message.\n";
   const static char yes_string[] = "==>You should see this message twice.\n";
 
-  vw::null_ostream null_strm;
-  vw::multi_ostream multi_strm;
+  null_ostream null_strm;
+  multi_ostream multi_strm;
 
   std::ostringstream log;
 
@@ -87,19 +89,61 @@ TEST(Log, MultiStream) {
 
 TEST(Log, RuleSet) {
   LogRuleSet rs;
-  // LogRuleSet comes with a default rule for "console"
   rs.clear();
 
-  rs.add_rule(vw::InfoMessage, "console");
-  rs.add_rule(vw::VerboseDebugMessage, "foo");
-  rs.add_rule(vw::EveryMessage, "Bar");
+  // *   matches anything
+  // *.a matches [first.a, second.a]
+  // a   matches just a (ie, no namespace)
+  // a.* matches [a, a.first, a.first.second]
 
-  EXPECT_FALSE( rs(vw::InfoMessage+1, "console"));
-  EXPECT_TRUE(  rs(vw::InfoMessage, "console"));
-  EXPECT_FALSE( rs(vw::VerboseDebugMessage+1, "foo"));
-  EXPECT_TRUE(  rs(vw::VerboseDebugMessage, "foo"));
-  EXPECT_TRUE(  rs(vw::VerboseDebugMessage+1, "BAR"));
-  EXPECT_TRUE(  rs(vw::VerboseDebugMessage, "BAR"));
+  rs.add_rule(InfoMessage, "console");
+  rs.add_rule(VerboseDebugMessage, "verbose");
+  rs.add_rule(EveryMessage, "every");
+
+  rs.add_rule(EveryMessage, "unqual");
+  rs.add_rule(EveryMessage, "prefix.*");
+  rs.add_rule(EveryMessage, "*.suffix");
+
+  const MessageLevel v = VerboseDebugMessage;
+
+  EXPECT_FALSE( rs(InfoMessage+1, "console"));
+  EXPECT_TRUE(  rs(InfoMessage, "console"));
+  EXPECT_FALSE( rs(v+1, "verbose"));
+  EXPECT_TRUE(  rs(v, "verbose"));
+  EXPECT_TRUE(  rs(v+1, "every"));
+  EXPECT_TRUE(  rs(v, "every"));
+
+  EXPECT_TRUE( rs(v, "unqual"));
+  EXPECT_FALSE(rs(v, "unqual.foo"));
+  EXPECT_TRUE( rs(v, "prefix"));
+  EXPECT_TRUE( rs(v, "prefix.foo"));
+  EXPECT_FALSE(rs(v, "foo.prefix"));
+  EXPECT_FALSE(rs(v, "foo.prefix.bar"));
+  EXPECT_FALSE(rs(v, "suffix"));
+  EXPECT_TRUE( rs(v, "foo.suffix"));
+  EXPECT_TRUE( rs(v, "foo.bar.suffix"));
+  EXPECT_FALSE(rs(v, "suffix.foo"));
+  EXPECT_FALSE(rs(v, "bar.suffix.foo"));
+  EXPECT_FALSE(rs(v, "foo.falsesuffix"));
+  EXPECT_FALSE(rs(v,  "falseprefix"));
+  EXPECT_FALSE(rs(v,  "falseprefix.foo"));
+  EXPECT_FALSE(rs(v,  "prefixfalse.foo"));
+
+  LogRuleSet all;
+  all.add_rule(EveryMessage, "*");
+  all.add_rule(ErrorMessage, "console");
+  all.add_rule(WarningMessage, "off");
+
+  EXPECT_FALSE(all(v, "console"));
+  EXPECT_TRUE( all(v, "any"));
+  EXPECT_FALSE(all(v, "off"));
+  EXPECT_TRUE( all(v, "any.all"));
+}
+
+TEST(Log, RuleSetIllegal) {
+  LogRuleSet rs;
+  EXPECT_THROW(rs.add_rule(VerboseDebugMessage, "*.foo.*"), vw::ArgumentErr);
+  EXPECT_THROW(rs.add_rule(VerboseDebugMessage, "foo.*.bar"), vw::ArgumentErr);
 }
 
 TEST(Log, BasicLogging) {
@@ -115,10 +159,10 @@ TEST(Log, MultiThreadLog) {
   std::ostringstream stream;
 
   LogInstance log(stream, false);
-  log.rule_set().add_rule(vw::EveryMessage, "log test");
+  log.rule_set().add_rule(EveryMessage, "log test");
 
   typedef boost::shared_ptr<TestLogTask> TheTask;
-  typedef boost::shared_ptr<vw::Thread>  TheThread;
+  typedef boost::shared_ptr<Thread>  TheThread;
   std::vector<std::pair<TheTask, TheThread> > threads(100);
 
   for (size_t i = 0; i < threads.size(); ++i) {
@@ -176,45 +220,57 @@ TEST(Log, MultiThreadLog) {
 
 TEST(Log, SystemLog) {
 
-  std::ostringstream sstr;
+  const std::string
+    s1("\tTesting system log (first call)"),
+    s2("\tTesting system log (second call)"),
+    s3("\tYou should see this message twice; once with the logging prefix and once without."),
+    s4("\tYou should see this message once.");
+
+  std::ostringstream sstr, sstr2;
 
   raii fix(boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(sstr),      LogRuleSet(),  false),
            boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(std::cout), LogRuleSet(), false));
 
-  vw_log().console_log().rule_set().add_rule(vw::EveryMessage, "test");
+  vw_log().console_log().rule_set().add_rule(EveryMessage, "test");
 
-  vw_out() << "\tTesting system log (first call)\n";
-  vw_out(InfoMessage,"test") << "\tTesting system log (second call)\n";
+  vw_out() << s1 << "\n";
+  vw_out(DebugMessage,"test") << s2 << "\n";
 
   boost::shared_ptr<LogInstance> new_log(new LogInstance(sstr));
-  new_log->rule_set().add_rule(vw::EveryMessage, "test");
+  new_log->rule_set().add_rule(EveryMessage, "test");
   vw_log().add(new_log);
-  vw_out(InfoMessage,"test") << "\tYou should see this message twice; once with the logging prefix and once without.\n";
+  vw_log().add(sstr2, new_log->rule_set());
+
+  vw_out(DebugMessage,"test") << s3 << "\n";
 
   vw_log().clear();
-  vw_out(InfoMessage,"test") << "\tYou should see this message once.\n";
+  vw_out(DebugMessage,"test") << s4 << "\n";
 
-  const std::string &out = sstr.str();
-  std::vector<std::string> lines;
-  boost::split(lines, out, boost::is_any_of("\n"));
+  const std::string out1 = sstr.str(), out2 = sstr2.str();
 
-  EXPECT_EQ(6u, lines.size());
-  EXPECT_EQ("\tTesting system log (first call)", lines[0]);
-  EXPECT_EQ("\tTesting system log (second call)", lines[1]);
+  std::vector<std::string> lines, lines2;
+  boost::split(lines,  out1, boost::is_any_of("\n"));
+  boost::split(lines2, out2, boost::is_any_of("\n"));
 
-  // Technically, these can arrive in any order, but in practice, it's the order the rules were added
-  EXPECT_EQ("\tYou should see this message twice; once with the logging prefix and once without.", lines[2]);
-
-  EXPECT_EQ("\tYou should see this message once.", lines[4]);
+  ASSERT_EQ(6u, lines.size());
+  EXPECT_EQ(s1, lines[0]);
+  EXPECT_EQ(s2, lines[1]);
+  // Technically, 2 and 3 can arrive in any order, but in practice, it's the order the rules were added
+  EXPECT_EQ(s3, lines[2]);
+  EXPECT_EQ(s3, lines[3].substr(35)); // remove log prefix
+  EXPECT_EQ(s4, lines[4]);
   EXPECT_EQ("", lines[5]);
 
+  ASSERT_EQ(2u, lines2.size());
+  EXPECT_EQ(s3, lines2[0].substr(35)); // remove log prefix
+  EXPECT_EQ("", lines2[1]);
 }
 
 TEST(Log, ProgressCallback) {
   std::ostringstream sstr;
 
-  raii fix(boost::bind(&vw::set_output_stream, boost::ref(sstr)),
-           boost::bind(&vw::set_output_stream, boost::ref(std::cout)));
+  raii fix(boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(sstr),      LogRuleSet(),  false),
+           boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(std::cout), LogRuleSet(), false));
 
   TerminalProgressCallback pc( "test", "\tTesting: ");
   for (double i = 0; i < 1.0; i+=0.01) {
@@ -228,16 +284,16 @@ TEST(Log, ProgressCallback) {
   size_t last_line_idx = out.rfind("\r");
   EXPECT_EQ( 80u, out.size()-last_line_idx-2 );
   EXPECT_TRUE(boost::iends_with(out, std::string("***] Complete!\n")));
-  EXPECT_THROW(TerminalProgressCallback("monkey","monkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkey"), vw::ArgumentErr );
+  EXPECT_THROW(TerminalProgressCallback("monkey","monkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkey"), ArgumentErr );
 }
 
 TEST(Log, HiresProgressCallback) {
   std::ostringstream sstr;
 
-  raii fix(boost::bind(&vw::set_output_stream, boost::ref(sstr)),
-           boost::bind(&vw::set_output_stream, boost::ref(std::cout)));
+  raii fix(boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(sstr),      LogRuleSet(),  false),
+           boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(std::cout), LogRuleSet(), false));
 
-  TerminalProgressCallback pc( "test", "\tTesting: ", vw::InfoMessage, 2);
+  TerminalProgressCallback pc( "test", "\tTesting: ", InfoMessage, 2);
   for (int i = 0; i < 10000; ++i) {
     pc.report_progress(i/10000.0);
     if (i % 50 == 0)
@@ -250,18 +306,18 @@ TEST(Log, HiresProgressCallback) {
   size_t last_line_idx = out.rfind("\r");
   EXPECT_EQ( 80u, out.size()-last_line_idx-2 );
   EXPECT_TRUE(boost::iends_with(out, std::string("***] Complete!\n")));
-  EXPECT_THROW(TerminalProgressCallback("monkey","monkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkey"), vw::ArgumentErr );
+  EXPECT_THROW(TerminalProgressCallback("monkey","monkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkeymonkey"), ArgumentErr );
 }
 
 TEST(Log, ProgressHide) {
 
   std::ostringstream sstr;
 
-  raii fix(boost::bind(&vw::set_output_stream, boost::ref(sstr)),
-           boost::bind(&vw::set_output_stream, boost::ref(std::cout)));
+  raii fix(boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(sstr),      LogRuleSet(),  false),
+           boost::bind(&Log::set_console_stream, boost::ref(vw_log()), boost::ref(std::cout), LogRuleSet(), false));
 
   // Progress bars hidden
-  vw_log().console_log().rule_set().add_rule(0, "*.progress");
+  vw_log().console_log().rule_set().add_rule(vw::NoMessage, "*.progress");
 
   // Can't see progress bar
   TerminalProgressCallback pc( "test", "Rawr:" );
@@ -320,4 +376,41 @@ TEST(Log, FlushAndNewline) {
 
   log(InfoMessage) << s6;
   EXPECT_EQ(s1 + s2 + s3 + s4 + s5 + s6, stream.str());
+}
+
+TEST(LogDeathTest, MakeSureDeathTestsWork) {
+  LogInstance log(std::cerr, false);
+  EXPECT_EXIT(log(ErrorMessage) << "Rawr" << std::flush; exit(12), ::testing::ExitedWithCode(12), "Rawr");
+}
+
+// This test is tied to bug #199. Which is still a bug.
+TEST(LogDeathTest, DISABLED_FlushOnExit) {
+  LogInstance log(std::cerr, false);
+  EXPECT_EXIT(log(ErrorMessage) << "Rawr"; exit(12), ::testing::ExitedWithCode(12), "Rawr");
+}
+
+const std::string& slow(int len, const std::string& msg) {
+  sleep(len);
+  return msg;
+}
+
+// This tests whether the loggers are lazy or not (whether they evaluate their
+// arguments if they're turned off). This may never work, but here's a test for it!
+TEST(Log, DISABLED_LazyLog) {
+  std::ostringstream stream, ends;
+  ends << std::endl;
+
+  LogInstance log(stream, false);
+
+  std::string s1("A"), s2("B"), s3("C"), end(ends.str());
+
+  uint64 start = vw::Stopwatch::microtime();
+  log(InfoMessage)         << s1          << std::endl;
+  log(VerboseDebugMessage) << slow(1, s2) << std::endl;
+  log(InfoMessage)         << s3          << std::endl;
+  uint64 stop = vw::Stopwatch::microtime();
+
+  ASSERT_EQ(s1 + end + s3 + end, stream.str());
+  // the sleep inside slow() should not have run.
+  EXPECT_LT(stop-start, 200000);
 }

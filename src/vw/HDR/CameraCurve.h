@@ -13,7 +13,6 @@
 #ifndef __VW_HDR_CAMERACURVE_H__
 #define __VW_HDR_CAMERACURVE_H__
 
-#include <vw/HDR/HDRExport.h>
 #include <vw/Image/PerPixelViews.h>
 #include <vw/Image/EdgeExtension.h>
 #include <vw/Image/Statistics.h>
@@ -76,7 +75,7 @@ namespace hdr {
   template <class ViewT>
   Matrix<typename PixelChannelType<typename ViewT::pixel_type>::type> generate_ldr_intensity_pairs(std::vector<ViewT> const &images, 
                                                                                                    std::vector<double> const &brightness_values, 
-                                                                                                   int num_pairs, int channel,
+                                                                                                   int num_pairs, uint32 channel,
                                                                                                    int kernel_size = 1) {
 
     typedef typename PixelChannelType<typename ViewT::pixel_type>::type channel_type;
@@ -84,7 +83,7 @@ namespace hdr {
 
     // Error checking
     VW_ASSERT(images.size() > 1, ArgumentErr() << "Need at least two images.");
-    VW_ASSERT((channel >= 0) && (channel < n_channels), ArgumentErr() << "No such channel.");
+    VW_ASSERT(channel < n_channels, ArgumentErr() << "No such channel.");
 
     Matrix<channel_type> pair_list(num_pairs, 3);
     int height = images[0].impl().rows();
@@ -134,7 +133,7 @@ namespace hdr {
   /// LDR image, and the ratio of exposure between these two images.
   template <class ViewT>
   Matrix<typename PixelChannelType<typename ViewT::pixel_type>::type> sample_ldr_images(std::vector<ViewT> const &images, 
-                                                                                        std::vector<double> const &brightness_values, 
+                                                                                        std::vector<double> const &/*brightness_values*/,
                                                                                         int num_pairs, int channel,
                                                                                         int kernel_size = 1) {
 
@@ -186,7 +185,7 @@ namespace hdr {
   // Camera Curve Estimation
   // ---------------------------------------------------------------------
 
-  class VW_HDR_DECL CameraCurveFn {
+  class CameraCurveFn {
 
     // The lookup table stores the log luminance values for each pixel
     // value.  

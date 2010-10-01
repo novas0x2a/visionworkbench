@@ -11,13 +11,14 @@
 
 if MAKE_MODULE_STEREO
 
-TestStereoModel_SOURCES  = TestStereoModel.oldtest
-TestDisparity_SOURCES    = TestDisparity.oldtest
-# TestCorrelator_SOURCES = TestCorrelator.oldtest
+TestStereoModel_SOURCES  = TestStereoModel.cxx
+TestDisparity_SOURCES    = TestDisparity.cxx
+TestCorrelator_SOURCES   = TestCorrelator.cxx
+TestSubPixel_SOURCES     = TestSubPixel.cxx
 
-TESTS = TestStereoModel TestDisparity # TestCorrelator
+TESTS = TestStereoModel TestDisparity TestCorrelator TestSubPixel
 
-include $(top_srcdir)/config/instantiate.am
+#include $(top_srcdir)/config/instantiate.am
 
 endif
 
@@ -29,7 +30,6 @@ AM_CPPFLAGS = @VW_CPPFLAGS@ $(TEST_CPPFLAGS)
 AM_LDFLAGS  = @VW_LDFLAGS@ @PKG_STEREO_LIBS@
 
 check_PROGRAMS = $(TESTS)
-CLEANFILES = $(TESTS:%=%.cxx)
 
 include $(top_srcdir)/config/rules.mak
-include $(top_srcdir)/config/tests_old.am
+include $(top_srcdir)/config/tests.am

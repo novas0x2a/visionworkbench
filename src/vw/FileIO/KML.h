@@ -19,7 +19,6 @@
 #include <stack>
 
 // Vision Workbench
-#include <vw/FileIO/FileIOExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Math/Quaternion.h>
 
@@ -37,11 +36,11 @@ namespace vw {
     int count;
   };
 
-  VW_FILEIO_DECL std::ostream& operator<<( std::ostream& os, TabCount const& tab);
+  std::ostream& operator<<( std::ostream& os, TabCount const& tab);
 
   // KMLFile:
   // Class wrapper for KML file.
-  class VW_FILEIO_DECL KMLFile {
+  class KMLFile {
     boost::filesystem::ofstream m_output_file;
     TabCount m_tab;
     std::string m_filename;   // Output filename
@@ -52,7 +51,7 @@ namespace vw {
     KMLFile( std::string filename,
              std::string name,
              std::string directory="" );
-    ~KMLFile( void ); // Closes file out
+    ~KMLFile(); // Closes file out
 
     // Access internal
     std::string filename() const { return m_filename; }
@@ -61,14 +60,14 @@ namespace vw {
 
     // Lower Level Writing Functions
     void open_bracket( std::string name );
-    void close_bracket( void );
+    void close_bracket();
     void close_brackets( int );
-    void close_all_brackets( void );
+    void close_all_brackets();
 
     // Low Level Functions
     void enter_folder( std::string name="",
                        std::string description="" );
-    void exit_folder( void );
+    void exit_folder();
     void append_placemark( double lon, double lat,
                            std::string name="",
                            std::string description="",
@@ -96,9 +95,9 @@ namespace vw {
                          double north, double south,
                          double east, double west );
 
-    void close_kml( void ); // If it seems the file wasn't finished, try this.
+    void close_kml(); // If it seems the file wasn't finished, try this.
   protected:
-    void open_kml( void );
+    void open_kml();
 
   };
 

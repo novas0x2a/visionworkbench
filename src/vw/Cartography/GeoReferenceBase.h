@@ -8,7 +8,6 @@
 #ifndef __VW_CARTOGRAPHY_GEOREFERENCE_H__
 #define __VW_CARTOGRAPHY_GEOREFERENCE_H__
 
-#include <vw/Cartography/CartographyExport.h>
 #include <vw/Image/ImageViewBase.h>
 #include <vw/Cartography/Datum.h>
 
@@ -20,7 +19,7 @@ namespace cartography {
   /// or possibly meters in a UTM grid cell, etc.).  It must also
   /// encode how to translate between this coordinate system and the
   /// "Geographic" coordinate system (lat,lon)
-  class VW_CARTOGRAPHY_DECL GeoReferenceBase {
+  class GeoReferenceBase {
   public:
     /// The affine transform converts from pixel space to geographic
     /// or projected space and vice versa.  Most often, this process

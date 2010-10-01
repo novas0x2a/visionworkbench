@@ -15,15 +15,17 @@
 #include <vw/Image/PerPixelAccessorViews.h>
 #include <vw/Image/UtilityViews.h>
 #include <vw/Image/Algorithms.h>
+#include <vw/Image/Transform.h>
 
 // For the PixelDisparity math.
 #include <boost/operators.hpp>
 
 namespace vw {
 
-  // Registering the Pixel Disparity type
+  // Registering the Pixel Disparity type for FileIO
   template<> struct PixelFormatID<PixelMask<Vector2f> > { static const PixelFormatEnum value = VW_PIXEL_GENERIC_3_CHANNEL; };
   template<> struct PixelFormatID<PixelMask<Vector2> > { static const PixelFormatEnum value = VW_PIXEL_GENERIC_3_CHANNEL; };
+  template<> struct PixelFormatID<Vector2> { static const PixelFormatEnum value = VW_PIXEL_GENERIC_2_CHANNEL; };
 
 namespace stereo {
 
@@ -57,14 +59,6 @@ namespace stereo {
   missing_pixel_image(ImageViewBase<ViewT> &image) {
     return per_pixel_filter(image.impl(), MissingPixelImageFunc<typename ViewT::pixel_type>());
   }
-
-  //  generate_mask()
-  //
-  /// HAS BEEN REMOVED. See edge_mask() in MaskViews.h
-
-  //  mask_black_pixels()
-  //
-  /// HAS BEEN REMOVED. See MaskViews.h
 
   //  disparity_mask()
   //
@@ -102,16 +96,16 @@ namespace stereo {
   /// also removes any pixels that fall outside the bounds of
   /// the left or right mask image.
   template <class ViewT, class MaskViewT>
-  BinaryPerPixelView<ViewT, PixelIndexView, DisparityMaskFunc<typename ViewT::pixel_type,MaskViewT> >
+  BinaryPerPixelView<ViewT, PerPixelIndexView<VectorIndexFunctor>, DisparityMaskFunc<typename ViewT::pixel_type,MaskViewT> >
   disparity_mask ( ImageViewBase<ViewT> const& disparity_map,
                    ImageViewBase<MaskViewT> const& left_mask,
                    ImageViewBase<MaskViewT> const& right_mask ) {
     // idiom her to pass the location (in pixel coordinates) into the
     // functor along with the pixel value at that location.
     typedef DisparityMaskFunc<typename ViewT::pixel_type,MaskViewT> func_type;
-    typedef BinaryPerPixelView<ViewT, PixelIndexView, func_type > view_type;
+    typedef BinaryPerPixelView<ViewT, PerPixelIndexView<VectorIndexFunctor>, func_type > view_type;
     return view_type(disparity_map.impl(),
-                     PixelIndexView(disparity_map.impl()),
+                     pixel_index_view(disparity_map.impl()),
                      func_type(left_mask.impl(), right_mask.impl()));
   }
 
@@ -147,8 +141,8 @@ namespace stereo {
   };
 
   template <class ViewT>
-  BinaryPerPixelView<ViewT, PixelIndexView, DisparityRangeMaskFunc<typename ViewT::pixel_type> >
-  disparity_range_mask( ImageViewBase<ViewT> &disparity_map,
+  BinaryPerPixelView<ViewT, PerPixelIndexView<VectorIndexFunctor>, DisparityRangeMaskFunc<typename ViewT::pixel_type> >
+  disparity_range_mask( ImageViewBase<ViewT> const& disparity_map,
                         typename ViewT::pixel_type const& min,
                         typename ViewT::pixel_type const& max ) {
 
@@ -156,9 +150,9 @@ namespace stereo {
     // idiom her to pass the location (in pixel coordinates) into the
     // functor along with the pixel value at that location.
     typedef DisparityRangeMaskFunc<typename ViewT::pixel_type> func_type;
-    typedef BinaryPerPixelView<ViewT, PixelIndexView, func_type> view_type;
+    typedef BinaryPerPixelView<ViewT, PerPixelIndexView<VectorIndexFunctor>, func_type> view_type;
     return view_type( disparity_map.impl(),
-                      PixelIndexView(disparity_map),
+                      pixel_index_view(disparity_map),
                       func_type( min, max) );
   }
 
@@ -240,7 +234,8 @@ namespace stereo {
   // Useful routine for printing how many points have been rejected
   // using a particular RemoveOutliersFunc.
   template <class PixelT>
-  inline std::ostream& operator<<(std::ostream& os, RemoveOutliersFunc<PixelT> const& u) {
+  inline std::ostream&
+  operator<<(std::ostream& os, RemoveOutliersFunc<PixelT> const& u) {
     os << "\tKernel: [ " << u.half_h_kernel()*2 << ", " << u.half_v_kernel()*2 << "]\n";
     os << "   Rejected " << u.rejected_points() << "/" << u.total_points() << " vertices ("
        << double(u.rejected_points())/u.total_points()*100 << "%).\n";
@@ -392,16 +387,168 @@ namespace stereo {
   };
 
   template <class ViewT, class TransformT>
-  BinaryPerPixelView<ViewT, PixelIndexView, TransformDisparitiesFunc<TransformT, typename ViewT::pixel_type> >
+  BinaryPerPixelView<ViewT, PerPixelIndexView<VectorIndexFunctor>, TransformDisparitiesFunc<TransformT, typename ViewT::pixel_type> >
   transform_disparities(ImageViewBase<ViewT> const& disparity_map, TransformT const& transform) {
 
     // Note: We use the PixelIndexView and Binary per pixel filter
     // idiom her to pass the location (in pixel coordinates) into the
     // functor along with the pixel value at that location.
     typedef TransformDisparitiesFunc<TransformT, typename ViewT::pixel_type> func_type;
-    typedef BinaryPerPixelView<ViewT, PixelIndexView, func_type > view_type;
-    return view_type(disparity_map.impl(),PixelIndexView(disparity_map),
+    typedef BinaryPerPixelView<ViewT, PerPixelIndexView<VectorIndexFunctor>, func_type > view_type;
+    return view_type(disparity_map.impl(),pixel_index_view(disparity_map),
                      func_type(transform));
+  }
+
+  // DisparityTransform image transform functor
+  //
+  // Used to transform an image by using a disparity map
+  // Given Left I. + Disparity I. = Right Image :
+  // transform( right_image, DisparityTransform(DisparityI)) will
+  // project the right image into the perspective of the left.
+  class DisparityTransform : public TransformBase<DisparityTransform> {
+    ImageViewRef<PixelMask<Vector2f> > m_offset_image;
+  public:
+    template <class DisparityT>
+    DisparityTransform(ImageViewBase<DisparityT> const& offset_image)
+    : m_offset_image(offset_image.impl()) {}
+
+    inline Vector2 reverse(const Vector2 &p ) const {
+      PixelMask<Vector2f> offset =  m_offset_image(p.x(),p.y());
+      if ( !is_valid(offset) )
+        return Vector2(-1,p.y());
+      return p + offset.child();
+    }
+  };
+
+
+  /// intersect_mask_and_data(view, mask)
+  ///
+  /// Intersects 'mask' w/ view. View's data is returned first or mask
+  template <class PixelT>
+  class IntersectPixelMaskData : public ReturnFixedType<typename MaskedPixelType<PixelT>::type> {
+    typedef typename MaskedPixelType<PixelT>::type return_type;
+  public:
+    template <class MaskedPixelT>
+    return_type operator()( PixelT const& value, MaskedPixelT const& mask ) const {
+      if ( is_valid(value) )
+        return value;
+      if ( is_valid(mask) )
+        return mask;
+      return value;
+    }
+  };
+
+  template <class ViewT, class MaskViewT>
+  BinaryPerPixelView<ViewT,MaskViewT,IntersectPixelMaskData<typename ViewT::pixel_type> >
+  intersect_mask_and_data( ImageViewBase<ViewT> const& view,
+                           ImageViewBase<MaskViewT> const& mask_view ) {
+    typedef BinaryPerPixelView<ViewT,MaskViewT,IntersectPixelMaskData<typename ViewT::pixel_type> > view_type;
+    return view_type( view.impl(), mask_view.impl(), IntersectPixelMaskData<typename ViewT::pixel_type>() );
+  }
+
+  // Disparity Downsample
+  template <class ImageT>
+  class DisparitySubsampleView : public ImageViewBase<DisparitySubsampleView<ImageT> > {
+    ImageT m_child;
+  public:
+    typedef typename ImageT::pixel_type pixel_type;
+    typedef typename boost::remove_reference<typename ImageT::result_type>::type result_type;
+    typedef ProceduralPixelAccessor<DisparitySubsampleView<ImageT> > pixel_accessor;
+
+    DisparitySubsampleView( ImageT const& image ) : m_child(image) {}
+
+    inline int32 cols() const { return 1 + (m_child.cols()-1)/2; }
+    inline int32 rows() const { return 1 + (m_child.rows()-1)/2; }
+    inline int32 planes() const { return m_child.planes(); }
+    inline pixel_accessor origin() const { return pixel_accessor( *this ); }
+
+    inline result_type operator()( int32 i, int32 j, int32 p=0 ) const {
+      int32 ci = i << 1; int32 cj = j << 1;
+      result_type buffer;
+      float count = 0;
+      if ( is_valid( m_child(ci,cj,p) ) ) {
+        count+=1.0; buffer += m_child(ci,cj,p);
+      }
+      if ( is_valid( m_child(ci+1,cj,p) ) ) {
+        count+=0.5; buffer += 0.5*m_child(ci+1,cj,p);
+      }
+      if ( is_valid( m_child(ci,cj+1,p) ) ) {
+        count+=0.5; buffer += 0.5*m_child(ci,cj+1,p);
+      }
+      if ( is_valid( m_child(ci-1,cj,p) ) ) {
+        count+=0.5; buffer += 0.5*m_child(ci-1,cj,p);
+      }
+      if ( is_valid( m_child(ci,cj-1,p) ) ) {
+        count+=0.5; buffer += 0.5*m_child(ci,cj-1,p);
+      }
+      if ( is_valid( m_child(ci+1,cj+1,p) ) ) {
+        count+=0.2; buffer += 0.2*m_child(ci+1,cj+1,p);
+      }
+      if ( is_valid( m_child(ci-1,cj-1,p) ) ) {
+        count+=0.2; buffer += 0.2*m_child(ci-1,cj-1,p);
+      }
+      if ( is_valid( m_child(ci-1,cj+1,p) ) ) {
+        count+=0.2; buffer += 0.2*m_child(ci-1,cj+1,p);
+      }
+      if ( is_valid( m_child(ci+1,cj-1,p) ) ) {
+        count+=0.2; buffer += 0.2*m_child(ci+1,cj-1,p);
+      }
+      if ( count > 0 ) {
+        buffer.validate();
+        return buffer / (count*2.0 );
+      }
+      return result_type();
+    }
+
+    typedef DisparitySubsampleView<typename ImageT::prerasterize_type> prerasterize_type;
+    inline prerasterize_type prerasterize( BBox2i const& /*bbox*/ ) const {
+      return *this; }
+    template <class DestT>
+    inline void rasterize( DestT const& dest, BBox2i const& bbox ) const {
+      vw::rasterize( prerasterize(bbox), dest, bbox );
+    }
+  };
+
+  template <class ViewT>
+  DisparitySubsampleView<EdgeExtensionView<ViewT,ConstantEdgeExtension> >
+  disparity_subsample( ImageViewBase<ViewT> const& view ) {
+    return DisparitySubsampleView<EdgeExtensionView<ViewT,ConstantEdgeExtension> >( edge_extend(view.impl()) );
+  }
+
+  // Disparity Upsample
+  template <class ImageT>
+  class DisparityUpsampleView : public ImageViewBase<DisparityUpsampleView<ImageT> > {
+    ImageT m_child;
+  public:
+    typedef typename ImageT::pixel_type pixel_type;
+    typedef typename boost::remove_reference<typename ImageT::result_type>::type result_type;
+    typedef ProceduralPixelAccessor<DisparityUpsampleView<ImageT> > pixel_accessor;
+
+    DisparityUpsampleView( ImageT const& image ) : m_child(image) {}
+
+    inline int32 cols() const { return m_child.cols()*2; }
+    inline int32 rows() const { return m_child.rows()*2; }
+    inline int32 planes() const { return m_child.planes(); }
+    inline pixel_accessor origin() const { return pixel_accessor( *this ); }
+
+    inline result_type operator()( int32 i, int32 j, int32 p=0 ) const {
+      int32 ci = i >> 1; int32 cj = j >> 1;
+      return m_child(ci,cj,p)*2;
+    }
+
+    typedef DisparityUpsampleView<typename ImageT::prerasterize_type> prerasterize_type;
+    inline prerasterize_type prerasterize( BBox2i const& /*bbox*/ ) const {
+      return *this; }
+    template <class DestT>
+    inline void rasterize( DestT const& dest, BBox2i const& bbox ) const {
+      vw::rasterize( prerasterize(bbox), dest, bbox );
+    }
+  };
+
+  template <class ViewT>
+  DisparityUpsampleView<ViewT>
+  disparity_upsample( ImageViewBase<ViewT> const& view ) {
+    return DisparityUpsampleView<ViewT>( view.impl() );
   }
 
 }}    // namespace vw::stereo

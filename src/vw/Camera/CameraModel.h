@@ -5,42 +5,18 @@
 // __END_LICENSE__
 
 
-// __BEGN_LICENSE__
-// 
-// Copyright (C) 2006 United States Government as represented by the
-// Administrator of the National Aeronautics and Space Administration
-// (NASA).  All Rights Reserved.
-// 
-// Copyright 2006 Carnegie Mellon University. All rights reserved.
-// 
-// This software is distributed under the NASA Open Source Agreement
-// (NOSA), version 1.3.  The NOSA has been approved by the Open Source
-// Initiative.  See the file COPYING at the top of the distribution
-// directory tree for the complete NOSA document.
-// 
-// THE SUBJECT SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY OF ANY
-// KIND, EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT
-// LIMITED TO, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL CONFORM TO
-// SPECIFICATIONS, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR
-// A PARTICULAR PURPOSE, OR FREEDOM FROM INFRINGEMENT, ANY WARRANTY THAT
-// THE SUBJECT SOFTWARE WILL BE ERROR FREE, OR ANY WARRANTY THAT
-// DOCUMENTATION, IF PROVIDED, WILL CONFORM TO THE SUBJECT SOFTWARE.
-// 
-// __END_LICENSE__
-
 /// \file CameraModel.h
-/// 
+///
 /// This file contains the abstract base class from which all camera
 /// models must derive their interface.
-/// 
+///
 #ifndef __VW_CAMERA_CAMERAMODEL_H__
 #define __VW_CAMERA_CAMERAMODEL_H__
 
 #include <fstream>
-#include <vw/Camera/CameraExport.h>
 #include <vw/Math/Quaternion.h>
 
-namespace vw { 
+namespace vw {
 namespace camera {
 
   /// This is the abstract base class for a camera model object.  You
@@ -100,13 +76,13 @@ namespace camera {
     virtual std::string type() const = 0;
 
     /// Returns the pose (as a quaternion) of the camera for a given
-    /// pixel.
+    /// pixel. It represents the rotation from the camera frame to world frame.
     virtual Quaternion<double> camera_pose(Vector2 const& /*pix*/) const {
       vw_throw( NoImplErr() << "CameraModel: this camera model has not implemented camera_pose()" );
       return Quaternion<double>();
     }
 
-  };  
+  };
 
 
   /// This class is useful if you have an existing camera model, and
@@ -114,12 +90,12 @@ namespace camera {
   /// (position and pose).  This is particularly useful in Bundle
   /// Adjustment.
   class AdjustedCameraModel : public CameraModel {
-    
+
     boost::shared_ptr<CameraModel> m_camera;
     Vector3 m_translation;
     Quaternion<double> m_rotation;
     Quaternion<double> m_rotation_inverse;
-    
+
   public:
     AdjustedCameraModel(boost::shared_ptr<CameraModel> camera_model) : m_camera(camera_model) {
       m_rotation = math::Quaternion<double>(math::identity_matrix<3>());
@@ -127,7 +103,7 @@ namespace camera {
     }
 
     AdjustedCameraModel(boost::shared_ptr<CameraModel> camera_model,
-                        Vector3 const& translation, math::Quaternion<double> const& rotation) : 
+                        Vector3 const& translation, math::Quaternion<double> const& rotation) :
       m_camera(camera_model), m_translation(translation), m_rotation(rotation), m_rotation_inverse(inverse(rotation)) {}
 
     virtual ~AdjustedCameraModel() {}
@@ -136,105 +112,32 @@ namespace camera {
     Vector3 translation() const { return m_translation; }
     Quaternion<double> rotation() const { return m_rotation; }
     Matrix<double,3,3> rotation_matrix() const { return m_rotation.rotation_matrix(); }
-    Vector3 axis_angle_rotation() const {
-      Quaternion<double> quat = this->rotation();
-      Vector4 rot;
-      rot(0) = quat.w();
-      rot(1) = quat.x();
-      rot(2) = quat.y();
-      rot(3) = quat.z();
-      if (rot(0) > 1)
-        rot = normalize(rot);
-      double angle = 2 * acos(rot[0]);
-      double s = sqrt(1-rot[0]*rot[0]); // assuming quaternion normalised then w is less than 1, so term always positive.
-      Vector3 result;
-      // if s is close to zero, then direction of axis is not important
-      if (s < 0.001) {
-        result[0] = rot.x();   // if it is important that axis is normalised then replace with x=1; y=z=0
-        result[1] = rot.y();
-        result[2] = rot.z();
-      } else {
-        result[0] = rot.x()/s; // normalize axis
-        result[1] = rot.y()/s;
-        result[2] = rot.z()/s;
-      }
+    Vector3 axis_angle_rotation() const;
+    void set_translation(Vector3 const&);
+    void set_rotation(Quaternion<double> const&);
+    void set_rotation(Matrix<double,3,3> const&);
+    void set_axis_angle_rotation(Vector3 const&);
 
-      result *= angle;
-      return result;
-    }
+    virtual Vector2 point_to_pixel (Vector3 const&) const;
+    virtual Vector3 pixel_to_vector (Vector2 const&) const;
+    virtual Vector3 camera_center (Vector2 const&) const;
+    virtual Quaternion<double> camera_pose(Vector2 const&) const;
 
-    void set_translation(Vector3 const& translation) { m_translation = translation; }
-    void set_rotation(Quaternion<double> const& rotation) { 
-      m_rotation = rotation;
-      m_rotation_inverse = inverse(m_rotation);
-    }
-    void set_rotation(Matrix<double,3,3> const& rotation) {
-      m_rotation = Quaternion<double>(rotation);
-      m_rotation_inverse = inverse(m_rotation);
-    }
+    void write(std::string const&);
+    void read(std::string const&);
 
-    void set_axis_angle_rotation(Vector3 const& axis_angle) {
-      Quaternion<double> rot; 
-      double angle = norm_2(axis_angle);
-      Vector3 temp = normalize(axis_angle);
-      double s = sin(angle/2);
-      if (angle == 0) {
-        rot.x() = 0;
-        rot.y() = 0;
-        rot.z() = 0;
-      } else {
-        rot.x() = temp[0] * s;
-        rot.y() = temp[1] * s;
-        rot.z() = temp[2] * s;
-      }
-      rot.w() = cos(angle/2);
-      this->set_rotation(rot);
-    }
-
-    virtual Vector2 point_to_pixel (Vector3 const& point) const {
-      Vector3 offset_pt = point-m_camera->camera_center(Vector2(0,0))-m_translation;
-      Vector3 new_pt = m_rotation_inverse.rotate(offset_pt) + m_camera->camera_center(Vector2(0,0));
-      return m_camera->point_to_pixel(new_pt);
-    }
-
-    virtual Vector3 pixel_to_vector (Vector2 const& pix) const {
-      return m_rotation.rotate(m_camera->pixel_to_vector(pix));
-    }
-
-    virtual Vector3 camera_center (Vector2 const& pix) const {
-      return m_camera->camera_center(pix) + m_translation;
-    }
-
-    virtual Quaternion<double> camera_pose(Vector2 const& pix) const {
-      return m_rotation*m_camera->camera_pose(pix);      
-    }
-
-    void write(std::string filename) {
-      std::ofstream ostr(filename.c_str());
-      ostr << m_translation[0] << " " << m_translation[1] << " " << m_translation[2] << "\n";
-      ostr << m_rotation.w() << " " << m_rotation.x() << " " << m_rotation.y() << " " << m_rotation.z() << "\n";
-    }
-
-    void read(std::string filename) {
-      Quaternion<double> rot;
-      Vector3 pos;
-      std::ifstream istr(filename.c_str());
-      istr >> pos[0] >> pos[1] >> pos[2];
-      istr >> rot.w() >> rot.x() >> rot.y() >> rot.z();
-      this->set_translation(pos);
-      this->set_rotation(rot);
-    }
-
+    friend std::ostream& operator<<(std::ostream&, AdjustedCameraModel const&);
   };
 
+  std::ostream& operator<<(std::ostream&, AdjustedCameraModel const&);
 
   /// Error during projection of a 3D point onto the image plane.
-  VW_DEFINE_EXCEPTION(PointToPixelErr, vw::Exception, VW_CAMERA_DECL);
+  VW_DEFINE_EXCEPTION(PointToPixelErr, vw::Exception);
 
   /// Error during reverse projection of a pixel to a pointing vector
   /// from the camera center.
-  VW_DEFINE_EXCEPTION(PixelToRayErr, vw::Exception, VW_CAMERA_DECL);
+  VW_DEFINE_EXCEPTION(PixelToRayErr, vw::Exception);
 
-}}	// namespace vw::camera
+}} // namespace vw::camera
 
 #endif // __VW_CAMERA_CAMERAMODEL_H__

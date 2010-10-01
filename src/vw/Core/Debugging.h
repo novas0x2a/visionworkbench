@@ -12,41 +12,27 @@
 #ifndef __VW_CORE_DEBUGGING_H__
 #define __VW_CORE_DEBUGGING_H__
 
-#include <vw/Core/CoreExport.h>
 #include <vw/Core/Log.h>
+#include <vw/Core/Features.h>
+#include <boost/current_function.hpp>
 
 #ifndef WIN32
 #include <sys/time.h>
 #endif
+
+#define VW_CURRENT_FUNCTION BOOST_CURRENT_FUNCTION
 
 #include <ostream>
 #include <string>
 
 namespace vw {
 
-/// The master compile-time debugging level flag.  The default value
-/// for VW_DEBUG_LEVEL is guessed based on whether or not NDEBUG
-/// is defined if the user has not specified it explicitly.
-#ifndef VW_DEBUG_LEVEL
-#ifdef NDEBUG
-#define VW_DEBUG_LEVEL 0
-#else
-#define VW_DEBUG_LEVEL 1
-#endif
-#endif
-
-/// A quick macro for selectively disabling code in non-debug builds.
-#if VW_DEBUG_LEVEL == 0
-#define VW_DEBUG(x)
-#else
-#define VW_DEBUG(x) x
-#endif
 
   // *******************************************************************
   // Timing types and functions
   // *******************************************************************
 
-  class VW_CORE_DECL Timer {
+  class Timer {
     std::string m_desc;
     MessageLevel m_level;
     std::string m_log_namespace;

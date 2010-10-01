@@ -10,30 +10,28 @@
 
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Core/Cache.h>
-
 #include <vw/Plate/Index.h>
 #include <vw/Plate/IndexPage.h>
-#include <vw/Plate/BlobManager.h>
-#include <vw/Plate/ProtoBuffers.pb.h>
 
 #include <vector>
-#include <string>
 #include <list>
 
 namespace vw {
 namespace platefile {
+  class TileHeader;
 
   // --------------------------------------------------------------------
   //                             INDEX LEVEL
   // --------------------------------------------------------------------
   class IndexLevel {
 
+    typedef Cache::Handle<boost::shared_ptr<PageGeneratorBase> > handle_t;
+
     boost::shared_ptr<PageGeneratorFactory> m_page_gen_factory;
     int m_level;
     int m_page_width, m_page_height;
     int m_horizontal_pages, m_vertical_pages;
-    mutable std::vector<boost::shared_ptr<IndexPageGenerator> > m_cache_generators;
-    mutable std::vector<Cache::Handle<IndexPageGenerator> > m_cache_handles;
+    mutable std::vector<handle_t> m_cache_handles;
     mutable vw::Cache m_cache;
     mutable Mutex m_cache_mutex;
 
@@ -61,13 +59,13 @@ namespace platefile {
 
     /// Returns a list of valid tiles at this level.
     std::list<TileHeader> search_by_region(BBox2i const& region,
-                                           int start_transaction_id, 
-                                           int end_transaction_id, 
+                                           int start_transaction_id,
+                                           int end_transaction_id,
                                            int min_num_matches,
                                            bool fetch_one_additional_entry) const;
 
     /// Returns a list of valid tiles at this level and specified location
-    std::list<TileHeader> search_by_location(int col, int row, 
+    std::list<TileHeader> search_by_location(int col, int row,
                                              int start_transaction_id, int end_transaction_id,
                                              bool fetch_one_additional_entry = false) const;
   };
@@ -94,19 +92,23 @@ namespace platefile {
 
     /// Create a new, empty index.
     PagedIndex(boost::shared_ptr<PageGeneratorFactory> page_generator,
-               IndexHeader new_index_info, 
-               int page_width = 256, int page_height = 256, 
+               IndexHeader new_index_info,
+               int page_width = 256, int page_height = 256,
                int default_cache_size = 100);
 
     /// Open an existing index from a file on disk.
     PagedIndex(boost::shared_ptr<PageGeneratorFactory> page_generator,
-               int page_width = 256, int page_height = 256, 
+               int page_width = 256, int page_height = 256,
                int default_cache_size = 100);
 
     virtual ~PagedIndex() {}
 
     /// Sync any unsaved data in the index to disk.
     virtual void sync();
+
+    virtual void set_default_cache_size(int size) {
+      m_default_cache_size = size;
+    }
 
     // ----------------------- READ/WRITE REQUESTS  ----------------------
 
@@ -115,7 +117,7 @@ namespace platefile {
 
     /// Attempt to access a tile in the index.  Throws an
     /// TileNotFoundErr if the tile cannot be found.
-    /// 
+    ///
     /// By default, this call to read will return a tile with the MOST
     /// RECENT transaction_id <= to the transaction_id you specify
     /// here in the function arguments (if a tile exists).  However,
@@ -125,7 +127,7 @@ namespace platefile {
     ///
     /// A transaction ID of -1 indicates that we should return the
     /// most recent tile, regardless of its transaction id.
-    virtual IndexRecord read_request(int col, int row, int level, 
+    virtual IndexRecord read_request(int col, int row, int level,
                                      int transaction_id, bool exact_transaction_match = false);
 
     // Writing, pt. 1: Locks a blob and returns the blob id that can
@@ -135,8 +137,8 @@ namespace platefile {
     // Writing, pt. 2: Supply information to update the index and
     // unlock the blob id.
     virtual void write_update(TileHeader const& header, IndexRecord const& record);
-  
-    /// Writing, pt. 3: Signal the completion 
+
+    /// Writing, pt. 3: Signal the completion
     virtual void write_complete(int blob_id, uint64 blob_offset) = 0;
 
     // ----------------------- PROPERTIES  ----------------------
@@ -155,8 +157,8 @@ namespace platefile {
 
     /// Returns a list of tile headers for a given tile location in
     /// the mosaic, subject to the specified transaction_id range.
-    virtual std::list<TileHeader> search_by_location(int col, int row, int level, 
-                                                     int start_transaction_id, 
+    virtual std::list<TileHeader> search_by_location(int col, int row, int level,
+                                                     int start_transaction_id,
                                                      int end_transaction_id,
                                                      bool fetch_one_additional_entry) const;
 

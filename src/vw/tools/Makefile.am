@@ -126,20 +126,18 @@ endif
 # Bundle adjustment test programs
 if MAKE_MODULE_CAMERA
 if MAKE_MODULE_STEREO
+if MAKE_MODULE_INTERESTPOINT
+if MAKE_MODULE_BUNDLEADJUSTMENT
 batest_progs = ba_test make_ba_test_data
 ba_test_SOURCES = ba_test.cc
-ba_test_LDADD = @PKG_CAMERA_LIBS@ @PKG_STEREO_LIBS@ $(COMMON_LIBS)
+ba_test_LDADD = @PKG_BUNDLEADJUSTMENT_LIBS@ $(COMMON_LIBS)
 make_ba_test_data_SOURCES = make_ba_test_data.cc
-make_ba_test_data_LDADD = @PKG_CAMERA_LIBS@ @PKG_STEREO_LIBS@ $(COMMON_LIBS)
-endif
-endif
-
-# Control network editor (used by ba_test)
-if MAKE_MODULE_CAMERA
-if MAKE_MODULE_INTERESTPOINT
+make_ba_test_data_LDADD = @PKG_BUNDLEADJUSTMENT_LIBS@ $(COMMON_LIBS)
 cnet_editor_progs = cnet_editor
 cnet_editor_SOURCES = cnet_editor.cc
-cnet_editor_LDADD = @PKG_CAMERA_LIBS@ @PKG_INTERESTPOINT_LIBS@ $(COMMON_LIBS)
+cnet_editor_LDADD = @PKG_BUNDLEADJUSTMENT_LIBS@ $(COMMON_LIBS)
+endif
+endif
 endif
 endif
 
@@ -151,15 +149,18 @@ contourgen_CPPFLAGS = @VW_CPPFLAGS@ @PKG_CAIROMM_CPPFLAGS@
 contourgen_LDADD = $(COMMON_LIBS) @PKG_CAIROMM_LIBS@
 endif
 
+if MAKE_MODULE_MOSAIC
+doc_generate_progs = doc-generate
 doc_generate_SOURCES = doc-generate.cc
 doc_generate_LDADD   = @PKG_VW_LIBS@ @PKG_MOSAIC_LIBS@
+endif
 
 bin_PROGRAMS = $(camera_progs) $(cartography_progs) $(hdr_progs) \
                $(interestpoint_progs) $(mosaic_progs)            \
                $(cart_mos_progs) $(stereo_progs) $(gpu_progs)    \
                $(cnet_editor_progs) $(contourgen_progs)
 
-noinst_PROGRAMS      = doc-generate $(batest_progs)
+noinst_PROGRAMS      = $(doc_generate_progs) $(batest_progs)
 dist_noinst_SCRIPTS  = ba_unit_test run_ba_tests
 
 endif

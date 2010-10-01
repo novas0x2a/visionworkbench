@@ -8,21 +8,20 @@
 #ifndef __VW_PLATE_AMQP__
 #define __VW_PLATE_AMQP__
 
-#include <string>
-#include <boost/shared_ptr.hpp>
-#include <boost/shared_array.hpp>
-#include <boost/utility.hpp>
-#include <boost/function.hpp>
-
-#include <vw/Core/Log.h>
+#include <vw/Plate/Exception.h>
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Core/Exception.h>
 #include <vw/Core/VarArray.h>
-#include <vw/Plate/Exception.h>
+#include <vw/Core/Thread.h>
+
+#include <amqp.h>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/utility.hpp>
+#include <boost/function.hpp>
 
 #include <set>
 
-#include <amqp.h>
 
 namespace vw {
 namespace platefile {
@@ -30,13 +29,19 @@ namespace platefile {
   typedef vw::VarArray<uint8> ByteArray;
   typedef boost::shared_ptr<ByteArray> SharedByteArray;
 
-  VW_DEFINE_EXCEPTION(AMQPErr,     PlatefileErr, VW_PLATE_DECL);
-  VW_DEFINE_EXCEPTION(AMQPTimeout, AMQPErr,      VW_PLATE_DECL);
-  VW_DEFINE_EXCEPTION(AMQPEof,     AMQPErr,      VW_PLATE_DECL);
+  VW_DEFINE_EXCEPTION(AMQPErr,     PlatefileErr);
+  VW_DEFINE_EXCEPTION(AMQPTimeout, AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPEof,     AMQPErr);
+
+  // These are specified by the spec. They indicate that the server forcibly
+  // closed the connection or channel. The channel or connection must be
+  // recreated to recover.
+  VW_DEFINE_EXCEPTION(AMQPConnectionErr, AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPChannelErr,    AMQPErr);
 
   // This exception denotes a potentially desynchronizing AMQP error. Only
   // recovery mechanism is to recreate the connection.
-  VW_DEFINE_EXCEPTION(AMQPAssertion, AMQPErr, VW_PLATE_DECL);
+  VW_DEFINE_EXCEPTION(AMQPAssertion, AMQPErr);
 
   // Forward declaration because amqp.h is gross
   class AmqpChannel;
@@ -52,19 +57,19 @@ namespace platefile {
       vw::Mutex m_state_mutex;
       std::set<int16> m_used_channels;
 
-      /// Allocates a communications channel number. Meant to be called by
-      ///     AmqpChannel's constructor. Grab the m_state_mutex BEFORE you call this.
-      /// @param channel Request a specific channel number. -1 for don't care.
-      //                 Requesting a particular one will throw if it's already used.
-      int16 get_channel(int16 channel = -1);
-
-      friend class AmqpChannel;
-      friend class AmqpConsumeTask;
-
     public:
       /// Open a new connection to the AMQP server.  This connection
       /// terminates automatically when this object is destroyed.
       AmqpConnection(std::string const& hostname = "localhost", int port = 5672);
+
+      vw::Mutex& get_mutex(AmqpConnectionState** state);
+
+      /// Allocates a communications channel number. Meant to be called by
+      ///     AmqpChannel's constructor. Grab the mutex BEFORE you call this.
+      /// @param channel Request a specific channel number. -1 for don't care.
+      //                 Requesting a particular one will throw if it's already used.
+      int16 get_channel(int16 channel = -1);
+
 
       /// Closes the AMQP connection and destroys this object.
       ~AmqpConnection();
@@ -75,6 +80,9 @@ namespace platefile {
     private:
       boost::shared_ptr<AmqpConnection> m_conn;
       int16 m_channel;
+      // if we get a channel exception, the channel is closed.
+      bool is_open;
+      void check_error(amqp_rpc_reply_t x, const std::string& context);
 
     public:
       AmqpChannel(boost::shared_ptr<AmqpConnection> conn, int16 channel = -1);

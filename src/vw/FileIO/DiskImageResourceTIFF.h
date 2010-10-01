@@ -20,7 +20,7 @@ namespace vw {
 
   class DiskImageResourceInfoTIFF;
 
-  class VW_FILEIO_DECL DiskImageResourceTIFF : public DiskImageResource {
+  class DiskImageResourceTIFF : public DiskImageResource {
   public:
 
     DiskImageResourceTIFF( std::string const& filename );

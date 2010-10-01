@@ -22,7 +22,7 @@ namespace stereo {
   //                           COST FUNCTIONS
   // ---------------------------------------------------------------------------
 
-  class VW_STEREO_DECL StereoCostFunction {
+  class StereoCostFunction {
 
   protected:
     BBox2i m_left_bbox;
@@ -99,7 +99,7 @@ namespace stereo {
     }
   };
 
-  class VW_STEREO_DECL AbsDifferenceCost : public StereoCostFunction {
+  class AbsDifferenceCost : public StereoCostFunction {
     ImageView<float> m_left, m_right;
 
   public:
@@ -123,7 +123,7 @@ namespace stereo {
   };
 
 
-  class VW_STEREO_DECL SqDifferenceCost : public StereoCostFunction {
+  class SqDifferenceCost : public StereoCostFunction {
     ImageView<float> m_left, m_right;
   public:
     template <class ViewT>
@@ -146,7 +146,7 @@ namespace stereo {
     virtual int sample_size() const { return this->kernel_size(); }
   };
 
-  class VW_STEREO_DECL NormXCorrCost : public StereoCostFunction {
+  class NormXCorrCost : public StereoCostFunction {
     ImageView<float> m_left, m_left_mean, m_left_variance;
     ImageView<float> m_right, m_right_mean, m_right_variance;
 
@@ -178,7 +178,7 @@ namespace stereo {
     virtual int sample_size() const { return this->kernel_size(); }
   };
 
-  class VW_STEREO_DECL BlurCost : public StereoCostFunction {
+  class BlurCost : public StereoCostFunction {
     boost::shared_ptr<StereoCostFunction> m_base_cost;
     int m_blur_size;
   public:
@@ -200,11 +200,11 @@ namespace stereo {
     }
   };
 
-  VW_STEREO_DECL ImageView<PixelMask<Vector2f> > correlate(boost::shared_ptr<StereoCostFunction> const& cost_function,
+  ImageView<PixelMask<Vector2f> > correlate(boost::shared_ptr<StereoCostFunction> const& cost_function,
                                             BBox2i const& search_window,
                                             ProgressCallback const& progress = ProgressCallback::dummy_instance() );
 
-  class VW_STEREO_DECL OptimizedCorrelator {
+  class OptimizedCorrelator {
 
     BBox2i m_search_window;
     int m_kern_size;

@@ -19,7 +19,6 @@
 
 #include <boost/function.hpp>
 
-#include <vw/Mosaic/MosaicExport.h>
 #include <vw/Core/ProgressCallback.h>
 #include <vw/Core/Stopwatch.h>
 #include <vw/Image/EdgeExtension.h>
@@ -43,7 +42,7 @@ namespace mosaic {
     return result;
   }
 
-  class VW_MOSAIC_DECL QuadTreeGenerator {
+  class QuadTreeGenerator {
   public:
     struct TileInfo {
       std::string name, filepath, filetype;
@@ -56,7 +55,7 @@ namespace mosaic {
     typedef boost::function<void(QuadTreeGenerator const&, TileInfo const&)> metadata_func_type;
     typedef boost::function<bool(BBox2i const&)> sparse_image_check_type;
 
-    class VW_MOSAIC_DECL ProcessorBase {
+    class ProcessorBase {
     protected:
       QuadTreeGenerator *qtree;
     public:
@@ -190,27 +189,27 @@ namespace mosaic {
     }
 
     // Makes paths of the form "path/name/r0132.jpg"
-    struct VW_MOSAIC_DECL simple_image_path {
+    struct simple_image_path {
       std::string operator()( QuadTreeGenerator const& qtree, std::string const& name );
     };
 
     // Makes paths of the form "path/name/r01/r0132.jpg"
-    struct VW_MOSAIC_DECL tiered_image_path {
+    struct tiered_image_path {
       std::string operator()( QuadTreeGenerator const& qtree, std::string const& name, int32 levels_per_directory = 3 );
     };
 
     // Makes paths of the form "path/name/013/0132.jpg" (and "path/name/name.jpg" for the top level)
-    struct VW_MOSAIC_DECL named_tiered_image_path {
+    struct named_tiered_image_path {
       std::string operator()( QuadTreeGenerator const& qtree, std::string const& name, int32 levels_per_directory = 3 );
     };
 
     // The default quad-tree branching function
-    struct VW_MOSAIC_DECL default_branch_func {
+    struct default_branch_func {
       std::vector<std::pair<std::string,BBox2i> > operator()(QuadTreeGenerator const& qtree, std::string const& name, BBox2i const& region);
     };
 
     // The default resource function, creates standard disk image resources
-    struct VW_MOSAIC_DECL default_tile_resource_func {
+    struct default_tile_resource_func {
       boost::shared_ptr<ImageResource> operator()( QuadTreeGenerator const& qtree, TileInfo const& info, ImageFormat const& format );
     };
 

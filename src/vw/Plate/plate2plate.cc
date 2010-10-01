@@ -1,8 +1,14 @@
+// __BEGIN_LICENSE__
+// Copyright (C) 2006-2010 United States Government as represented by
+// the Administrator of the National Aeronautics and Space Administration.
+// All Rights Reserved.
+// __END_LICENSE__
+
+
 #include <vw/Plate/ToastDem.h>
-#include <vw/Plate/PlateManager.h>
 #include <vw/Plate/PlateFile.h>
-#include <vw/Core.h>
-#include <boost/shared_ptr.hpp>
+#include <vw/Plate/TileManipulation.h>
+#include <vw/Core/Debugging.h>
 #include <boost/foreach.hpp>
 
 #include <boost/program_options.hpp>
@@ -28,11 +34,12 @@ struct FilterBase {
   inline ImplT& impl()             { return static_cast<ImplT&>(*this); }
   inline ImplT const& impl() const { return static_cast<ImplT const&>(*this); }
 
-  inline void init(PlateFile& output, const PlateFile& input, int transaction_id) {
-    return impl().init(output, input, transaction_id);
+  inline void init(PlateFile& output, const PlateFile& input,
+                   int input_transaction_id, int output_transaction_id) {
+    return impl().init(output, input, input_transaction_id, output_transaction_id);
   }
-  inline void fini(PlateFile& output, const PlateFile& input, int transaction_id) {
-    return impl().fini(output, input, transaction_id);
+  inline void fini(PlateFile& output, const PlateFile& input, int output_transaction_id) {
+    return impl().fini(output, input, output_transaction_id);
   }
 
 #   define lookup(name, type) type name(type data) const { return impl().name(data); }
@@ -43,8 +50,8 @@ struct FilterBase {
     lookup(channel_type, ChannelTypeEnum);
 #   undef lookup
 
-  inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 transaction_id) {
-    impl()(output, input, col, row, level, transaction_id);
+  inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 input_transaction_id, int32 output_transaction_id) {
+    impl()(output, input, col, row, level, input_transaction_id, output_transaction_id);
   }
 };
 
@@ -57,13 +64,13 @@ struct Identity : public FilterBase<Identity> {
     lookup(channel_type, ChannelTypeEnum);
 #   undef lookup
 
-  inline void init(PlateFile& output, const PlateFile& /*input*/, int /*transaction_id*/) { output.write_request(); }
+  inline void init(PlateFile& output, const PlateFile& /*input*/, int /* input_transaction_id */, int /*output_transaction_id*/) { output.write_request(); }
   inline void fini(PlateFile& output, const PlateFile& /*input*/, int /*transaction_id*/) { output.write_complete(); }
 
-  inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 transaction_id) {
+  inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 input_transaction_id, int32 output_transaction_id) {
     ImageView<PixelRGBA<double> > tile;
-    input.read(tile, col, row, level, transaction_id);
-    output.write_update(tile, col, row, level, transaction_id);
+    TileHeader hdr = input.read(tile, col, row, level, input_transaction_id);
+    output.write_update(tile, col, row, level, output_transaction_id);
   }
 };
 
@@ -74,19 +81,26 @@ struct ToastDem : public FilterBase<ToastDem> {
   PixelFormatEnum pixel_format(PixelFormatEnum) const { return VW_PIXEL_SCALAR; }
   ChannelTypeEnum channel_type(ChannelTypeEnum) const { return VW_CHANNEL_UINT8; }
 
-  inline void init(PlateFile& output, const PlateFile& input, int transaction_id) {
+  inline void init(PlateFile& output, const PlateFile& input, int input_transaction_id, int output_transaction_id) {
     output.write_request();
 
     // Write null tiles for the levels we don't have data for
     int level_difference = log(input.default_tile_size()/float(output.default_tile_size())) / log(2.) + 0.5;
 
-    vw_out(InfoMessage, "plate.tools.plate2plate") << "Creating null tiles for a level difference of " << level_difference << std::endl;
+    vw_out() << "Creating null tiles for a level difference of " << level_difference << std::endl;
+
+    uint64 bytes;
+    boost::shared_array<uint8> null_tile = toast_dem_null_tile(bytes);
 
     for (int level = 0; level < level_difference; ++level) {
       int region_size = 1 << level;
-      for (int col = 0; col < region_size; ++col)
-        for (int row = 0; row < region_size; ++row)
-          create_uniform_tile(0, output, col, row, level, transaction_id);
+      for (int row = 0; row < region_size; ++row) {
+        for (int col = 0; col < region_size; ++col) {
+          DemWriter writer(output);
+          make_toast_dem_tile(writer, input, col, row, level, 0,
+                              input_transaction_id, output_transaction_id);
+        }
+      }
     }
   }
 
@@ -97,14 +111,20 @@ struct ToastDem : public FilterBase<ToastDem> {
   struct DemWriter : public ToastDemWriter {
     PlateFile& platefile;
     DemWriter(PlateFile& output) : platefile(output) { }
-    void operator()(const boost::shared_array<uint8> data, uint64 data_size, int32 dem_col, int32 dem_row, int32 dem_level, int32 transaction_id) const {
-      platefile.write_update(data, data_size, dem_col, dem_row, dem_level, transaction_id);
+    inline void operator()(const boost::shared_array<uint8> data, uint64 data_size,
+                           int32 dem_col, int32 dem_row,
+                           int32 dem_level, int32 output_transaction_id) const {
+      platefile.write_update(data, data_size, dem_col, dem_row,
+                             dem_level, output_transaction_id);
     }
   };
 
-  inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 transaction_id) {
+  inline void operator()( PlateFile& output, const PlateFile& input, int32 col, int32 row, int32 level, int32 input_transaction_id, int32 output_transaction_id) {
     DemWriter writer(output);
-    make_toast_dem_tile(writer, input, col, row, level, transaction_id);
+    int level_difference = log(input.default_tile_size()/
+                               float(output.default_tile_size())) / log(2.) + 0.5;
+    make_toast_dem_tile(writer, input, col, row, level, level_difference,
+                        input_transaction_id, output_transaction_id);
   }
 };
 
@@ -118,6 +138,8 @@ struct Options {
   string filetype;
   PixelFormatEnum pixel_format;
   ChannelTypeEnum channel_type;
+  int bottom_level;
+  bool skim_mode;
 
   string filter;
 
@@ -125,17 +147,19 @@ struct Options {
     tile_size(0), pixel_format(VW_PIXEL_UNKNOWN), channel_type(VW_CHANNEL_UNKNOWN) {}
 };
 
-VW_DEFINE_EXCEPTION(Usage, Exception, VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(Usage, Exception);
 
 void handle_arguments(int argc, char *argv[], Options& opt) {
   po::options_description options("Options");
   options.add_options()
-    ("output-name,o",    po::value(&opt.output_name), "Specify the URL of the input platefile.")
-    ("input-name,i",     po::value(&opt.input_name),  "Specify the URL of the output platefile.")
-    ("file-type",        po::value(&opt.filetype),    "Output file type")
-    ("mode",             po::value(&opt.mode),        "Output mode [toast, kml]")
-    ("tile-size",        po::value(&opt.tile_size),   "Output size, in pixels")
-    ("filter",           po::value(&opt.filter),      "Filters to run")
+    ("output-name,o",    po::value(&opt.output_name),  "Specify the URL of the output platefile.")
+    ("input-name,i",     po::value(&opt.input_name),   "Specify the URL of the input platefile.")
+    ("file-type",        po::value(&opt.filetype),     "Output file type")
+    ("mode",             po::value(&opt.mode),         "Output mode [toast, kml]")
+    ("tile-size",        po::value(&opt.tile_size),    "Output size, in pixels")
+    ("filter",           po::value(&opt.filter),       "Filters to run [identity, toast_dem]")
+    ("bottom-level",     po::value(&opt.bottom_level), "Bottom level to process")
+    ("skim-last-id-only", "Only process the last transaction id from the input")
     ("help,h",           "Display this help message.");
 
   po::variables_map vm;
@@ -143,12 +167,15 @@ void handle_arguments(int argc, char *argv[], Options& opt) {
     po::store( po::command_line_parser( argc, argv ).options(options).run(), vm );
     po::notify( vm );
   } catch (po::error &e) {
-    vw_throw(Usage() << "Error parsing input:\n\t"
-             << e.what() << "\n" << options );
+    vw_throw(Usage() << "Error parsing input:\n\t" << e.what() << "\n" << options );
   }
 
-  if (opt.output_name.empty() || opt.input_name.empty() || opt.filter.empty())
-    vw_throw(Usage() << options);
+  opt.skim_mode = vm.count("skim-last-id-only");
+
+  if (opt.output_name.empty() || opt.input_name.empty())
+    vw_throw(Usage() << "Requires input and output defined!\n" << options);
+  if ( opt.filter.empty() )
+    vw_throw(Usage() << "Requires filter to be defined!\n" << options);
 }
 
 template <typename FilterT>
@@ -171,38 +198,67 @@ void run(Options& opt, FilterBase<FilterT>& filter) {
 
   PlateFile output(opt.output_name, opt.mode, opt.description, opt.tile_size, opt.filetype, opt.pixel_format, opt.channel_type);
 
-  int transaction_id = output.transaction_request("plate2plate, reporting for duty", -1);
+  int output_transaction_id = output.transaction_request("plate2plate, reporting for duty", -1);
 
-  filter.init(output, input, transaction_id);
+  filter.init(output, input, input.transaction_cursor(), output_transaction_id);
 
-  for (int level = 0; level < input.num_levels(); ++level) {
-    std::cout << "Processing level " << level << " of " << input.num_levels()-1 << std::endl;
+  VW_ASSERT(input.num_levels() < 31, ArgumentErr() << "Can't handle plates deeper than 32 levels");
+
+  int bottom_level = min(input.num_levels(), opt.bottom_level+1);
+
+  for (int level = 0; level < bottom_level; ++level) {
+    vw_out(InfoMessage) << "\nProcessing level " << level << " of " << bottom_level-1 << ".  ";
+    TerminalProgressCallback tpc("plate.plate2plate.progress", "");
+    vw::Timer timer( "\t    Processing time in seconds" );
 
     // The entire region contains 2^level tiles.
-    int region_size = 1 << level;
-    int subdivided_region_size = region_size / 16;
-    if (subdivided_region_size < 1024) subdivided_region_size = 1024;
+    int32 region_size = 1 << level;
+    int subdivided_region_size = 1024;
+    if (subdivided_region_size < region_size) subdivided_region_size = region_size;
 
     BBox2i full_region(0,0,region_size,region_size);
+    std::list<BBox2i> boxes1 = bbox_tiles(full_region,
+                                          subdivided_region_size,
+                                          subdivided_region_size);
 
-    std::list<BBox2i> boxes1 = bbox_tiles(full_region, subdivided_region_size, subdivided_region_size);
+    vw_out(InfoMessage) << "Region"   << full_region << " has " << boxes1.size() << " bboxes\n";
 
+    float region_counter = 0;
     BOOST_FOREACH( const BBox2i& region1, boxes1 ) {
-      //      vw_out() << "\t--> " << region1 << "\n";
-      std::list<TileHeader> tiles = input.search_by_region(level, region1, 0, std::numeric_limits<int>::max(), 1);
-      BOOST_FOREACH( const TileHeader& tile, tiles ) {
-        // vw_out() << "\t--> " << "[" << tile.transaction_id() << "]  " 
-        //         << tile.col() << " " << tile.row() << " @ " << tile.level() << "\n";
-        filter(output, input, tile.col(), tile.row(), tile.level(), transaction_id);
-      }
-    }
+      std::cout << "\n\t--> Sub-region: " << region1 << "\n";
+      std::list<TileHeader> tiles;
+      if ( !opt.skim_mode )
+        tiles = input.search_by_region(level, region1, 0,
+                                       input.transaction_cursor(), true);
+      else
+        tiles = input.search_by_region(level, region1, -1, -1, true);
 
+      //      if (tiles.size() > 0)
+      //      std::cout << "\t--> Region " << region1 << " has " << tiles.size() << " tiles.\n";
+      std::ostringstream ostr;
+      ostr << "\t    Converting " << tiles.size() << " tiles: ";
+      tpc.set_progress_text(ostr.str());
+      SubProgressCallback sub_progress(tpc,
+                                       region_counter / boxes1.size(),
+                                       (region_counter+1.0) / boxes1.size());
+      BOOST_FOREACH( const TileHeader& tile, tiles ) {
+        // ++n;
+        // if (n % 100 == 0)
+        //   std::cout << "n = " << n << "  --  "<< tile.col() << " " << tile.row() << " " << tile.level() << " " << tile.transaction_id() << "\n";
+        filter(output, input, tile.col(), tile.row(), tile.level(),
+               tile.transaction_id(), output_transaction_id);
+        sub_progress.report_incremental_progress(1.0/tiles.size());
+      }
+      sub_progress.report_finished();
+      region_counter++;
+    }
+    tpc.report_finished();
     output.sync();
   }
 
-  filter.fini(output, input, transaction_id);
+  filter.fini(output, input, output_transaction_id);
 
-  output.transaction_complete(transaction_id, true);
+  output.transaction_complete(output_transaction_id, true);
 }
 
 // Blah blah boilerplate

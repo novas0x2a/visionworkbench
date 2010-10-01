@@ -69,8 +69,18 @@ geometry_subdirs = Geometry
 geometry_headers = Geometry.h
 endif
 
+if MAKE_MODULE_PHOTOMETRY
+photometry_subdirs = Photometry
+photometry_headers = Photometry.h
+endif
+
 if MAKE_MODULE_PLATE
 plate_subdirs = Plate
+endif
+
+if MAKE_MODULE_BUNDLEADJUSTMENT
+bundleadjustment_subdirs = BundleAdjustment
+bundleadjustment_headers = BundleAdjustment.h
 endif
 
 if MAKE_MODULE_TOOLS
@@ -85,23 +95,25 @@ if MAKE_MODULE_PYTHON
 python_subdirs = Python
 endif
 
-include_HEADERS = $(core_headers) $(math_headers) $(image_headers)	\
-	$(fileio_headers) $(camera_headers) $(mosaic_headers)		\
-	$(stereo_headers) $(cartography_headers) $(gpu_headers)		\
-	$(interestpoint_headers) $(hdr_headers) $(geometry_headers)	\
-	vw.h config.h
+include_HEADERS = $(core_headers) $(math_headers) $(image_headers)      \
+        $(fileio_headers) $(camera_headers) $(mosaic_headers)           \
+        $(stereo_headers) $(cartography_headers) $(gpu_headers)         \
+        $(interestpoint_headers) $(hdr_headers) $(geometry_headers)     \
+        $(photometry_headers) $(bundleadjustment_headers) vw.h config.h
 
-SUBDIRS = $(core_subdirs) $(math_subdirs) $(image_subdirs)		\
-	$(fileio_subdirs) . $(camera_subdirs) $(mosaic_subdirs)		\
-	$(stereo_subdirs) $(cartography_subdirs) $(gpu_subdirs)		\
-	$(interestpoint_subdirs) $(hdr_subdirs) $(geometry_subdirs)	\
-	$(plate_subdirs) $(tools_subdirs) $(gui_subdirs)		\
-	$(python_subdirs)
+SUBDIRS = $(core_subdirs) $(math_subdirs) $(image_subdirs)              \
+        $(fileio_subdirs) . $(camera_subdirs) $(mosaic_subdirs)         \
+        $(stereo_subdirs) $(cartography_subdirs) $(gpu_subdirs)         \
+        $(interestpoint_subdirs) $(hdr_subdirs) $(geometry_subdirs)     \
+        $(photometry_subdirs) $(plate_subdirs) $(bundleadjustment_subdirs) \
+        $(gui_subdirs) $(python_subdirs) $(tools_subdirs)
 
 lib_LTLIBRARIES = libvw.la
 libvw_la_SOURCES =
-libvw_la_LDFLAGS= -version-info @LIBTOOL_VERSION@
+libvw_la_LDFLAGS= $(LIBTOOL_LIB_FLAGS)
 libvw_la_LIBADD = Core/libvwCore.la Math/libvwMath.la Image/libvwImage.la FileIO/libvwFileIO.la
+# This makes sure we're using the c++ linker
+nodist_EXTRA_libvw_la_SOURCES = dummy.cxx
 
 CLEANFILES = config.h.pre.in~
 
@@ -112,3 +124,4 @@ CLEANFILES = config.h.pre.in~
 includedir = $(prefix)/include/vw
 
 include $(top_srcdir)/config/rules.mak
+DISTCLEANFILES += config.h

@@ -37,7 +37,7 @@ struct Options {
   bool fsync;
 };
 
-VW_DEFINE_EXCEPTION(Usage, Exception, VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(Usage, Exception);
 
 void handle_arguments(int argc, char *argv[], Options& opt)
 {

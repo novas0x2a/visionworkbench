@@ -15,14 +15,13 @@
 // BOOST includes
 #include <boost/shared_ptr.hpp>
 
-#include <vw/Core/CoreExport.h>
 #include <vw/Core/Thread.h>
 
 namespace vw {
 
   // Stopwatch measures time elapsed between calls to start() and stop()
   
-  class VW_CORE_DECL Stopwatch {
+  class Stopwatch {
     struct data {
       unsigned long long m_total_elapsed; // in microseconds
       unsigned long long m_last_start;    // from Stopwatch::microtime
@@ -78,7 +77,7 @@ namespace vw {
   }; // class Stopwatch
 
   // StopwatchSet is a named set of Stopwatches
-  class VW_CORE_DECL StopwatchSet {
+  class StopwatchSet {
     mutable Mutex m_mutex;
     unsigned long long m_construction_time;
 
@@ -118,7 +117,7 @@ namespace vw {
   //
 
   // Return the global StopwatchSet
-  VW_CORE_DECL StopwatchSet *global_stopwatch_set();
+  StopwatchSet *global_stopwatch_set();
   
   // Find or create names stopwatch from the global StopwatchSet
   inline Stopwatch stopwatch_get(const std::string &name) { return global_stopwatch_set()->get(name); }
@@ -134,7 +133,7 @@ namespace vw {
   //  on destruction
   //
   
-  class VW_CORE_DECL ScopedWatch {
+  class ScopedWatch {
   private:
     Stopwatch m_stopwatch;
   public:

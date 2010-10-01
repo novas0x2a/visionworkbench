@@ -13,7 +13,7 @@ if MAKE_MODULE_MATH
 
 if HAVE_PKG_LAPACK
 lapack_headers = LinearAlgebra.h LevenbergMarquardt.h Geometry.h        \
-	PoseEstimation.h LapackExports.h FundamentalMatrix.h
+	PoseEstimation.h LapackExports.h
 endif
 
 include_HEADERS = Vector.h Matrix.h BBox.h Functions.h Functors.h	\
@@ -34,7 +34,7 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@
-AM_LDFLAGS = @VW_LDFLAGS@ -version-info @LIBTOOL_VERSION@
+AM_LDFLAGS = @VW_LDFLAGS@ $(LIBTOOL_LIB_FLAGS)
 
 SUBDIRS = . tests
 

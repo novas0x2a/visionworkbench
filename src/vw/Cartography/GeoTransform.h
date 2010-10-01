@@ -11,7 +11,6 @@
 #include <sstream>
 #include <string>
 
-#include <vw/Cartography/CartographyExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Image/Transform.h>
 #include <vw/Cartography/GeoReference.h>
@@ -19,7 +18,7 @@
 namespace vw {
 namespace cartography {
 
-  class VW_CARTOGRAPHY_DECL GeoTransform : public TransformHelper<GeoTransform,ContinuousFunction,ContinuousFunction> {
+  class GeoTransform : public TransformHelper<GeoTransform,ContinuousFunction,ContinuousFunction> {
     
     GeoReference m_src_georef;
     GeoReference m_dst_georef;
@@ -65,65 +64,16 @@ namespace cartography {
 
     // We override forward_bbox so it understands to check if the image 
     // crosses the poles or not.
-    BBox2i forward_bbox( BBox2i const& bbox ) const {
-      BBox2 r = TransformHelper<GeoTransform,ContinuousFunction,ContinuousFunction>::forward_bbox(bbox);
-      int rows_min = bbox.min().y();
-      int rows_max = bbox.max().y();
-      int cols_min = bbox.min().x();
-      int cols_max = bbox.max().x();
-      Vector2 pix;
-
-      // TODO: Proper solution here is to detect the discontinuity points in any projection.
-      if (!m_src_georef.is_projected()) {
-        // Check the north pole.
-        pix = m_src_georef.lonlat_to_pixel( Vector2(0, 90) );
-        if (rows_min <= pix[1] && pix[1] <= rows_max &&
-            cols_min <= pix[0] && pix[0] <= cols_max)
-          r.grow( forward(pix) );
-
-        // Check the south pole.
-        pix = m_src_georef.lonlat_to_pixel( Vector2(0, -90) );
-        if (rows_min <= pix[1] && pix[1] <= rows_max &&
-            cols_min <= pix[0] && pix[0] <= cols_max)
-          r.grow( forward(pix) );
-      }
-
-      return grow_bbox_to_int(r);
-    }
+    BBox2i forward_bbox( BBox2i const& bbox ) const;
 
     // We do the same for reverse_bbox
-    BBox2i reverse_bbox( BBox2i const& bbox ) const {
-      BBox2 r = TransformHelper<GeoTransform,ContinuousFunction,ContinuousFunction>::reverse_bbox(bbox);
-      int rows_min = bbox.min().y();
-      int rows_max = bbox.max().y();
-      int cols_min = bbox.min().x();
-      int cols_max = bbox.max().x();
-      Vector2 pix;
-
-      // TODO: Proper solution here is to detect the discontinuity points in any projection.
-      if (!m_dst_georef.is_projected()) {
-        // Check the north pole.
-        pix = m_dst_georef.lonlat_to_pixel( Vector2(0, 90) );
-        if (rows_min <= pix[1] && pix[1] < rows_max &&
-            cols_min <= pix[0] && pix[0] < cols_max)
-          r.grow( reverse(pix) );
-
-        // Check the south pole.
-        pix = m_dst_georef.lonlat_to_pixel( Vector2(0, -90) );
-        if (rows_min <= pix[1] && pix[1] < rows_max &&
-            cols_min <= pix[0] && pix[0] < cols_max)
-          r.grow( reverse(pix) );
-      }
-
-      return grow_bbox_to_int(r);
-    }
-
+    BBox2i reverse_bbox( BBox2i const& bbox ) const;
   };
 
 
-  // -------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // Functional API
-  // -------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
   /// Returns a transformed image view.  The user can specify the type
   /// of interpolation and edge extension to be done by supplying the
@@ -223,7 +173,7 @@ namespace cartography {
   ///
   /// Important Note: The convention here is that the Vector3 contains
   /// the ordered triple: (longitude, latitude, altitude). 
-  VW_CARTOGRAPHY_DECL void reproject_point_image(ImageView<Vector3> const& point_image,
+  void reproject_point_image(ImageView<Vector3> const& point_image,
                              GeoReference const& src_georef,
                              GeoReference const& dst_georef); 
 

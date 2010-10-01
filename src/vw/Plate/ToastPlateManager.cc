@@ -6,17 +6,19 @@
 
 
 #include <vw/Plate/ToastPlateManager.h>
+#include <vw/Image/Filter.h>
+#include <vw/Image/Algorithms.h>
+
 using namespace vw::platefile;
 using namespace vw;
+using std::vector;
 
-template <class PixelT>
-std::vector<TileInfo> ToastPlateManager<PixelT>::wwt_image_tiles( BBox2i const& input_bbox,
-                                           cartography::ToastTransform const& toast_tx,
-                                           BBox2i const& tile_bbox,
-                                           int32 const /*resolution*/,
-                                           int32 const tile_size) {
-  std::vector<TileInfo> result;
-      
+vector<TileInfo> vw::platefile::wwt_image_tiles(
+    BBox2i const& input_bbox, cartography::ToastTransform const& toast_tx,
+    BBox2i const& tile_bbox, int32 const /*resolution*/, int32 const tile_size) {
+
+  vector<TileInfo> result;
+
   // There's no point in starting the search before there is good
   // image data, so we adjust the start point here.
   int32 minx = int(floor(tile_bbox.min().x() / (tile_size-1)) * (tile_size-1));
@@ -29,9 +31,9 @@ std::vector<TileInfo> ToastPlateManager<PixelT>::wwt_image_tiles( BBox2i const& 
   int cury = miny;
   while (cury < tile_bbox.max().y() - 1) {
     while (curx < tile_bbox.max().x() - 1) {
-      
+
       TileInfo be(x, y, BBox2i(curx, cury, tile_size, tile_size));
-      
+
       // ...but only add bounding boxes that overlap with the image.
       if (tile_bbox.intersects(be.bbox)) {
 
@@ -62,7 +64,7 @@ std::vector<TileInfo> ToastPlateManager<PixelT>::wwt_image_tiles( BBox2i const& 
           //   vw_out() << "\t    Rejecting bogus bbox: " << reversed_bbox << "   " << "\n";
           //  } else {
           result.push_back(be);
-          // } 
+          // }
         }
       }
       curx += (tile_size-1);
@@ -77,7 +79,7 @@ std::vector<TileInfo> ToastPlateManager<PixelT>::wwt_image_tiles( BBox2i const& 
 }
 
 template <class PixelT>
-ImageView<PixelT> ToastPlateManager<PixelT>::fetch_child_tile(int x, int y, int level, 
+ImageView<PixelT> ToastPlateManager<PixelT>::fetch_child_tile(int x, int y, int level,
                                                               int transaction_id) const {
 
   //  std::cout << "Fetching child tile " << x << " " << y << "\n";
@@ -115,7 +117,7 @@ ImageView<PixelT> ToastPlateManager<PixelT>::fetch_child_tile(int x, int y, int 
     if( tile ) return rotate_180(tile);
     else return tile;
   }
-   
+
   // Tile accesses during mipmapping of a TOAST mosaic are highly
   // localized, so it speeds things up considerably to cache the tiles
   // as we access them. We check the cache for this tile here.
@@ -128,12 +130,12 @@ ImageView<PixelT> ToastPlateManager<PixelT>::fetch_child_tile(int x, int y, int 
       vw_out(VerboseDebugMessage, "platefile") << "Found cached tile at "
                                                << x << " " << y << " " << level << "\n";
       return e.tile;
-    } 
+    }
   }
 
   ImageView<PixelT> tile;
   try {
-    
+
     // If the tile is not in the cache, we attempt to access it in the index.
     vw_out(VerboseDebugMessage, "platefile") << "Reading tile at " << x << " " << y << " " << level << "\n";
     m_platefile->read(tile, x, y, level, transaction_id, true); // exact_transaction_match == true
@@ -162,13 +164,15 @@ ImageView<PixelT> ToastPlateManager<PixelT>::fetch_child_tile(int x, int y, int 
 
 
 template <class PixelT>
-void vw::platefile::ToastPlateManager<PixelT>::generate_mipmap_tile(int col, int row, 
-                                                                    int level, int transaction_id) const {
+void vw::platefile::ToastPlateManager<PixelT>::generate_mipmap_tile(int col, int row,
+                                                                    int level,
+                                                                    int transaction_id,
+                                                                    bool preblur) const {
 
   // Create an image large enough to store all of the child nodes
   int tile_size = m_platefile->default_tile_size();
   ImageView<PixelT> super(4*tile_size-3, 4*tile_size-3);
-        
+
   // Iterate over the children, gathering them and (recursively)
   // regenerating them if necessary.
   for( int j=-1; j<3; ++j ) {
@@ -179,28 +183,38 @@ void vw::platefile::ToastPlateManager<PixelT>::generate_mipmap_tile(int col, int
       }
     }
   }
-   
+
   // In the WWT implementation of TOAST the pixel centers
   // (rather than the than pixel corners) are grid-aligned, so
   // we need to use an odd-sized antialiasing kernel instead of
   // the usual 2x2 box filter.  The following 5-pixel kernel was
   // optimized to avoid the extra blurring associated with using
   // a kernel wider than 2 pixels.  Math was involved.
-  std::vector<float> kernel(5);
+  vector<float> kernel(5);
   kernel[0] = kernel[4] = -0.0344;
   kernel[1] = kernel[3] = 0.2135;
   kernel[2] = 0.6418;
-  
-  ImageView<PixelT> new_tile = subsample( crop( separable_convolution_filter( super, 
-                                                                              kernel, 
-                                                                              kernel, 
-                                                                              NoEdgeExtension() ),
-                                                tile_size-1, tile_size-1, 2*tile_size, 2*tile_size ), 2 );
+
+  ImageView<PixelT> new_tile;
+  if (preblur) {
+
+    new_tile = subsample( crop( separable_convolution_filter( super,
+                                                              kernel,
+                                                              kernel,
+                                                              NoEdgeExtension() ),
+                                tile_size-1, tile_size-1, 2*tile_size, 2*tile_size ), 2 );
+
+  } else {
+
+    new_tile = subsample( crop( super,
+                                tile_size-1, tile_size-1, 2*tile_size, 2*tile_size ), 2 );
+
+  }
 
   if (!is_transparent(new_tile)) {
-    vw_out(VerboseDebugMessage, "platefile") << "Writing " << col << " " << row 
+    vw_out(VerboseDebugMessage, "platefile") << "Writing " << col << " " << row
                                              << " @ " << level << "\n";
-    //m_platefile->write_request();  // These could be used here, but this 
+    //m_platefile->write_request();  // These could be used here, but this
                                      // causes a lot of unnecessary work for
                                      // the BlobManager...
     m_platefile->write_update(new_tile, col, row, level, transaction_id);
@@ -210,21 +224,16 @@ void vw::platefile::ToastPlateManager<PixelT>::generate_mipmap_tile(int col, int
 
 
 // Explicit template instatiation
-namespace vw { 
+namespace vw {
 namespace platefile {
 
 #define VW_INSTANTIATE_TOAST_PLATEMANAGER_TYPES(PIXELT)                 \
-  template std::vector<TileInfo>                                        \
-  ToastPlateManager<PIXELT >::wwt_image_tiles( BBox2i const& input_bbox,\
-                            cartography::ToastTransform const& toast_tx,\
-                            BBox2i const& tile_bbox,                    \
-                            int32 const resolution,                     \
-                            int32 const tile_size);                     \
   template void                                                         \
   ToastPlateManager<PIXELT >::generate_mipmap_tile(int col,             \
                                                    int row,             \
                                                    int level,           \
-                                                   int transaction_id) const; \
+                                                   int transaction_id,  \
+                                                   bool preblur) const; \
   template ImageView<PIXELT >                                           \
   ToastPlateManager<PIXELT >::fetch_child_tile(int col,                 \
                                                int row,                 \

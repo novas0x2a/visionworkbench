@@ -7,6 +7,7 @@ set( HEADERS
   ConfigParser.h
   Debugging.h
   Exception.h
+  Features.h
   Functors.h
   FundamentalTypes.h
   Log.h

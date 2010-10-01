@@ -11,20 +11,23 @@
 
 if MAKE_MODULE_CAMERA
 
-TestCAHVORModel_SOURCES           = TestCAHVORModel.oldtest
-TestCAHVModel_SOURCES             = TestCAHVModel.oldtest
-TestLinearPushbroomModel_SOURCES  = TestLinearPushbroomModel.oldtest
-TestPinholeModel_SOURCES          = TestPinholeModel.oldtest
-TestPinholeModelCalibrate_SOURCES = TestPinholeModelCalibrate.oldtest
-TestExifData_SOURCES              = TestExifData.oldtest
-TestCameraGeometry_SOURCES        = TestCameraGeometry.oldtest
+TestCAHVModel_SOURCES             = TestCAHVModel.cxx
+TestCAHVORModel_SOURCES           = TestCAHVORModel.cxx
+TestCameraGeometry_SOURCES        = TestCameraGeometry.cxx
+TestExifData_SOURCES              = TestExifData.cxx
+TestLinearPushbroomModel_SOURCES  = TestLinearPushbroomModel.cxx
+TestPinholeModel_SOURCES          = TestPinholeModel.cxx
+TestPinholeModelCalibrate_SOURCES = TestPinholeModelCalibrate.cxx
+TestAdjustedCamera_SOURCES        = TestAdjustedCamera.cxx
+
 #TestLensDistortion_SOURCES       = TestLensDistortion.oldtest
 #TestCameraTransform_SOURCES      = TestCameraTransform.oldtest
 
-TESTS = TestCAHVORModel TestLinearPushbroomModel TestPinholeModel TestPinholeModelCalibrate \
-	TestExifData TestCAHVModel TestCameraGeometry # TestLensDistortion TestCameraTransform
+TESTS = TestCAHVModel TestCAHVORModel TestCameraGeometry TestExifData \
+        TestLinearPushbroomModel TestPinholeModel                     \
+        TestPinholeModelCalibrate TestAdjustedCamera
 
-include $(top_srcdir)/config/instantiate.am
+#include $(top_srcdir)/config/instantiate.am
 
 endif
 
@@ -37,7 +40,6 @@ AM_LDFLAGS  = @VW_LDFLAGS@ @PKG_CAMERA_LIBS@
 
 check_PROGRAMS = $(TESTS)
 EXTRA_DIST = test.jpg cahvor.txt
-CLEANFILES = $(TESTS:%=%.cxx)
 
 include $(top_srcdir)/config/rules.mak
-include $(top_srcdir)/config/tests_old.am
+include $(top_srcdir)/config/tests.am

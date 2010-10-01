@@ -21,7 +21,7 @@ namespace vw {
 
   class DiskImageResourceInfoHDF;
 
-  class VW_FILEIO_DECL DiskImageResourceHDF : public DiskImageResource {
+  class DiskImageResourceHDF : public DiskImageResource {
   public:
 
     // The standard DiskImageResource interface:

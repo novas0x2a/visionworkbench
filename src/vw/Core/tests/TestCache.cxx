@@ -15,6 +15,8 @@ using namespace vw;
 
 // A dummy BlockGenerator that generates blocks of 1-byte data.
 class BlockGenerator {
+
+protected:
   int m_dimension;
   vw::uint8 m_fill_value;
 
@@ -109,4 +111,115 @@ TEST_F(CacheTest, Priority) {
 
   // make sure that the deprioritized element dropped out of cache
   EXPECT_FALSE(cache_handles[num_actual_blocks-1].valid());
+}
+
+// Every copy increases the fill_value by one
+class GenGen : public BlockGenerator {
+  public:
+    GenGen() : BlockGenerator(1, 0) {}
+
+    GenGen(const GenGen& obj) :
+      BlockGenerator(obj.m_dimension, obj.m_fill_value+1) {}
+};
+
+TEST(Cache, Types) {
+  // This test makes sure cache handles can hold polymorphic types
+  // and gives the user control over copying vs. not.
+  typedef Cache::Handle<GenGen> obj_t;
+  typedef Cache::Handle<boost::shared_ptr<GenGen> > sptr_t;
+
+  vw::Cache cache(sizeof(vw::uint8));
+
+  GenGen value;
+  boost::shared_ptr<GenGen> shared(new GenGen());
+
+  obj_t  h1 = cache.insert(value);
+  sptr_t h2 = cache.insert(shared);
+
+  // Make sure the value hasn't generated yet
+  ASSERT_FALSE(h1.valid());
+  ASSERT_FALSE(h2.valid());
+
+  // value should have copied once
+  EXPECT_EQ(1, *h1);
+  // shared_ptr should not have copied
+  EXPECT_EQ(0, *h2);
+}
+
+TEST(Cache, Stats) {
+  typedef Cache::Handle<BlockGenerator> handle_t;
+
+  // Cache can hold 2 items
+  vw::Cache cache(2*sizeof(handle_t::value_type));
+
+  handle_t h[3] = {
+    cache.insert(BlockGenerator(1, 0)),
+    cache.insert(BlockGenerator(1, 1)),
+    cache.insert(BlockGenerator(1, 2))};
+
+  EXPECT_EQ(0, cache.hits());
+  EXPECT_EQ(0, cache.misses());
+  EXPECT_EQ(0, cache.evictions());
+
+  // miss
+  EXPECT_EQ(0, *h[0]);
+
+  EXPECT_EQ(0, cache.hits());
+  EXPECT_EQ(1, cache.misses());
+  EXPECT_EQ(0, cache.evictions());
+
+  // hit
+  EXPECT_EQ(0, *h[0]);
+
+  EXPECT_EQ(1, cache.hits());
+  EXPECT_EQ(1, cache.misses());
+  EXPECT_EQ(0, cache.evictions());
+
+  // miss
+  EXPECT_EQ(1, *h[1]);
+
+  EXPECT_EQ(1, cache.hits());
+  EXPECT_EQ(2, cache.misses());
+  EXPECT_EQ(0, cache.evictions());
+
+  // hit
+  EXPECT_EQ(1, *h[1]);
+
+  EXPECT_EQ(2, cache.hits());
+  EXPECT_EQ(2, cache.misses());
+  EXPECT_EQ(0, cache.evictions());
+
+  // miss, eviction
+  EXPECT_EQ(2, *h[2]);
+
+  EXPECT_EQ(2, cache.hits());
+  EXPECT_EQ(3, cache.misses());
+  EXPECT_EQ(1, cache.evictions());
+
+  // hit
+  EXPECT_EQ(2, *h[2]);
+
+  EXPECT_EQ(3, cache.hits());
+  EXPECT_EQ(3, cache.misses());
+  EXPECT_EQ(1, cache.evictions());
+
+  // hit
+  EXPECT_EQ(1, *h[1]);
+
+  EXPECT_EQ(4, cache.hits());
+  EXPECT_EQ(3, cache.misses());
+  EXPECT_EQ(1, cache.evictions());
+
+  // miss, eviction
+  EXPECT_EQ(0, *h[0]);
+
+  EXPECT_EQ(4, cache.hits());
+  EXPECT_EQ(4, cache.misses());
+  EXPECT_EQ(2, cache.evictions());
+
+  cache.clear_stats();
+
+  EXPECT_EQ(0, cache.hits());
+  EXPECT_EQ(0, cache.misses());
+  EXPECT_EQ(0, cache.evictions());
 }

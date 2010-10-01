@@ -14,7 +14,7 @@ if MAKE_MODULE_CORE
 include_HEADERS = Exception.h FundamentalTypes.h TypeDeduction.h	\
 	VarArray.h Functors.h CompoundTypes.h Debugging.h Thread.h	\
 	ThreadPool.h Cache.h ProgressCallback.h Stopwatch.h Settings.h	\
-	Log.h ConfigParser.h ThreadQueue.h
+	Log.h ConfigParser.h ThreadQueue.h Features.h
 
 libvwCore_la_SOURCES = Debugging.cc Exception.cc Thread.cc Cache.cc	\
 	ProgressCallback.cc Stopwatch.cc Settings.cc Log.cc		\
@@ -30,7 +30,7 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@ @PKG_BOOST_CPPFLAGS@
-AM_LDFLAGS = @VW_LDFLAGS@ -version-info @LIBTOOL_VERSION@
+AM_LDFLAGS = @VW_LDFLAGS@ $(LIBTOOL_LIB_FLAGS)
 
 SUBDIRS = . tests
 

@@ -52,16 +52,36 @@
 #define VW_CACHE_DEBUG(x) x
 //#define VW_CACHE_DEBUG(x)
 
-#include <typeinfo>
-#include <boost/smart_ptr.hpp>
-
-#include <vw/Core/CoreExport.h>
 #include <vw/Core/Exception.h>
 #include <vw/Core/Thread.h>
 #include <vw/Core/Stopwatch.h>
 #include <vw/Core/Log.h>
+#include <vw/Core/FundamentalTypes.h>
 
-#include <iostream>
+#include <boost/shared_ptr.hpp>
+#include <typeinfo>
+#include <sstream>
+
+namespace vw {
+namespace core {
+namespace detail {
+
+  template <typename T>
+  T* pointerish(boost::shared_ptr<T> x) {return x.get();}
+
+  template <typename T>
+  T* pointerish(T& x) {return &x;}
+
+  template <typename T>
+  struct GenValue {
+    typedef typename T::value_type type;
+  };
+
+  template <typename T>
+  struct GenValue<boost::shared_ptr<T> > {
+    typedef typename T::value_type type;
+  };
+}}} // namespace vw::core::detail
 
 namespace vw {
 
@@ -70,7 +90,7 @@ namespace vw {
   // shared pointer to CacheLine
 
   // An LRU-based regeneratable-data cache
-  class VW_CORE_DECL Cache {
+  class Cache {
 
     // The abstract base class for all cache line objects.
     class CacheLineBase {
@@ -97,13 +117,14 @@ namespace vw {
     template <class GeneratorT>
     class CacheLine : public CacheLineBase {
       GeneratorT m_generator;
-      typename boost::shared_ptr<typename GeneratorT::value_type> m_value;
+      typedef typename boost::shared_ptr<typename core::detail::GenValue<GeneratorT>::type> value_type;
+      value_type m_value;
       Mutex m_mutex; // Mutex for m_value and generation of this cache line
       unsigned m_generation_count;
 
     public:
       CacheLine( Cache& cache, GeneratorT const& generator )
-        : CacheLineBase(cache,generator.size()), m_generator(generator), m_generation_count(0)
+        : CacheLineBase(cache,core::detail::pointerish(generator)->size()), m_generator(generator), m_generation_count(0)
       {
         VW_CACHE_DEBUG( vw_out(DebugMessage, "cache") << "Cache creating CacheLine " << info() << "\n"; )
         Mutex::Lock cache_lock(cache.m_mutex);
@@ -133,10 +154,12 @@ namespace vw {
         return oss.str();
       }
       
-      typename boost::shared_ptr<typename GeneratorT::value_type> const& value() {
+      value_type const& value() {
+        bool hit = true;
         Mutex::Lock line_lock(m_mutex);
         if( !m_value ) {
           m_generation_count++;
+          hit = false;
           VW_CACHE_DEBUG( vw_out(DebugMessage, "cache") << "Cache generating CacheLine " << info() << "\n"; )
           {
             Mutex::Lock cache_lock(cache().m_mutex);
@@ -145,11 +168,15 @@ namespace vw {
           ScopedWatch sw((std::string("Cache ")
                           + (m_generation_count == 1 ? "generating " : "regenerating ")
                           + typeid(this).name()).c_str());
-          m_value = m_generator.generate();
+          m_value = core::detail::pointerish(m_generator)->generate();
         }
         {
           Mutex::Lock cache_lock(cache().m_mutex);
           CacheLineBase::validate();
+          if (hit)
+            cache().m_hits++;
+          else
+            cache().m_misses++;
         }
         return m_value;
       }
@@ -172,6 +199,7 @@ namespace vw {
     CacheLineBase *m_first_valid, *m_last_valid, *m_first_invalid;
     size_t m_size, m_max_size;
     Mutex m_mutex;
+    vw::uint64 m_hits, m_misses, m_evictions;
 
     void allocate( size_t size );
     void deallocate( size_t size );
@@ -187,27 +215,44 @@ namespace vw {
     class Handle {
       boost::shared_ptr<CacheLine<GeneratorT> > m_line_ptr;
     public:
+      typedef typename core::detail::GenValue<GeneratorT>::type value_type;
+
       Handle() {}
       Handle( boost::shared_ptr<CacheLine<GeneratorT> > line_ptr ) : m_line_ptr(line_ptr) {}
-      boost::shared_ptr<typename GeneratorT::value_type> operator->() const { 
+      boost::shared_ptr<value_type> operator->() const {
         VW_ASSERT( m_line_ptr, NullPtrErr() << "Invalid cache handle!" );
         return m_line_ptr->value();
       }
-      typename GeneratorT::value_type const& operator*() const {
+      value_type const& operator*() const {
         VW_ASSERT( m_line_ptr, NullPtrErr() << "Invalid cache handle!" );
         return *(m_line_ptr->value());
       }
-      operator boost::shared_ptr<typename GeneratorT::value_type>() const {
+      operator boost::shared_ptr<value_type>() const {
         VW_ASSERT( m_line_ptr, NullPtrErr() << "Invalid cache handle!" );
         return m_line_ptr->value();
       }
-      bool valid() const { return m_line_ptr->valid(); }
-      size_t size() const { return m_line_ptr->size(); }
+      bool valid() const {
+        VW_ASSERT( m_line_ptr, NullPtrErr() << "Invalid cache handle!" );
+        return m_line_ptr->valid();
+      }
+      size_t size() const {
+        VW_ASSERT( m_line_ptr, NullPtrErr() << "Invalid cache handle!" );
+        return m_line_ptr->size();
+      }
       void reset() { m_line_ptr.reset(); }
-      void deprioritize() const { return m_line_ptr->deprioritize(); }
+      void deprioritize() const {
+        VW_ASSERT( m_line_ptr, NullPtrErr() << "Invalid cache handle!" );
+        return m_line_ptr->deprioritize();
+      }
+      bool attached() const {
+        return (bool)m_line_ptr;
+      }
     };
 
-    Cache( size_t max_size ) : m_first_valid(0), m_last_valid(0), m_first_invalid(0), m_size(0), m_max_size(max_size) {}
+    Cache( size_t max_size ) :
+      m_first_valid(0), m_last_valid(0), m_first_invalid(0),
+      m_size(0), m_max_size(max_size),
+      m_hits(0), m_misses(0), m_evictions(0) {}
 
     template <class GeneratorT>
     Handle<GeneratorT> insert( GeneratorT const& generator ) {
@@ -218,12 +263,20 @@ namespace vw {
 
     void resize( size_t size );
     size_t max_size() { return m_max_size; }
+
+    uint64 hits() const { return m_hits; }
+    uint64 misses() const { return m_misses; }
+    uint64 evictions() const {return m_evictions; }
+    void clear_stats() {
+      Mutex::Lock cache_lock(m_mutex);
+      m_hits = m_misses = m_evictions = 0;
+    }
   };
 
   /// Use this method to return a reference to the Vision Workbench
   /// system cache.  This cache is used by default for all new
   /// BlockImageView<>'s such as DiskImageView<>.
-  VW_CORE_DECL Cache& vw_system_cache();
+  Cache& vw_system_cache();
 
 } // namespace vw
 

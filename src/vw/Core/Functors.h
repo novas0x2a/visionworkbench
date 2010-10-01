@@ -177,7 +177,7 @@ namespace vw {
   // Unary no-operation functor
   struct NoOpFunctor : ReturnFixedType<void> {
     template <class ArgT>
-    inline void operator()( ArgT const& arg ) const {}
+    inline void operator()( ArgT const& /*arg*/ ) const {}
   };
 
   // Unary identity functor
@@ -253,7 +253,7 @@ namespace vw {
     template <class Arg1T, class Arg2T>
     inline typename DifferenceType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const { return arg1-arg2; }
   };
-  
+
   // Unary difference of an argument and a value
   template <class ValT>
   struct ArgValDifferenceFunctor : UnaryReturnBinaryTemplateBind2nd<DifferenceType,ValT> {

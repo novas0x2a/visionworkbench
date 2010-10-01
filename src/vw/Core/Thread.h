@@ -47,12 +47,11 @@
 #ifndef __VW_CORE_THREAD_H__
 #define __VW_CORE_THREAD_H__
 
-#include <vw/Core/CoreExport.h>
-
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/xtime.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace vw {
 
@@ -78,13 +77,9 @@ namespace vw {
   // --------------------------------------------------------------
 
   // A simple mutual exclusion class.
-  class VW_CORE_DECL Mutex : private boost::mutex {
+  class Mutex : private boost::mutex {
 
     friend class Lock;
-
-    // Ensure non-copyable semantics
-    Mutex( Mutex const& );
-    Mutex& operator=( Mutex const& );
 
   public:
     inline Mutex() {}
@@ -93,11 +88,8 @@ namespace vw {
     void unlock() { boost::mutex::unlock(); }
 
     // A scoped lock class, used to lock and unlock a Mutex.
-    class Lock : private boost::unique_lock<Mutex> {
-
-      // Ensure non-copyable semantics
-      Lock( Lock const& );
-      Lock& operator=( Lock const& );
+    class Lock : private boost::unique_lock<Mutex>,
+                 private boost::noncopyable {
 
     public:
       inline Lock( Mutex &mutex ) : boost::unique_lock<Mutex>( mutex ) {}
@@ -107,13 +99,9 @@ namespace vw {
   };
 
   // A simple mutual exclusion class.
-  class VW_CORE_DECL RecursiveMutex : private boost::recursive_mutex {
+  class RecursiveMutex : private boost::recursive_mutex {
 
     friend class Lock;
-
-    // Ensure non-copyable semantics
-    RecursiveMutex( RecursiveMutex const& );
-    RecursiveMutex& operator=( RecursiveMutex const& );
 
   public:
     inline RecursiveMutex() {}
@@ -122,11 +110,8 @@ namespace vw {
     void unlock() { boost::recursive_mutex::unlock(); }
 
     // A scoped lock class, used to lock and unlock a Mutex.
-    class Lock : private boost::unique_lock<RecursiveMutex> {
-
-      // Ensure non-copyable semantics
-      Lock( Lock const& );
-      Lock& operator=( Lock const& );
+    class Lock : private boost::unique_lock<RecursiveMutex>,
+                 private boost::noncopyable {
 
     public:
       inline Lock( RecursiveMutex &mutex ) : boost::unique_lock<RecursiveMutex>( mutex ) {}
@@ -139,11 +124,9 @@ namespace vw {
   //                            CONDITION
   // --------------------------------------------------------------
 
-  class VW_CORE_DECL Condition : private boost::condition
+  class Condition : private boost::condition,
+                    private boost::noncopyable
   {
-    // Ensure non-copyable semantics
-    Condition( Condition const& );
-    Condition& operator=( Condition const& );
 
   public:
     // construct/copy/destruct
@@ -201,13 +184,9 @@ namespace vw {
   // function that has the operator() defined.  When the Thread object
   // is destroyed it will join the child thread if it has not already
   // terminated.
-  class VW_CORE_DECL Thread {
+  class Thread : private boost::noncopyable {
 
     boost::thread m_thread;
-
-    // Ensure non-copyable semantics
-    Thread( Thread const& );
-    Thread& operator=( Thread const& );
 
     // For some reason, the boost thread library makes a copy of the
     // Task object before handing it off to the thread.  This is

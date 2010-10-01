@@ -23,7 +23,7 @@ namespace mosaic {
 
   // This class is overkill, but it exists by analogy to others
   // like it for consistency.
-  class VW_MOSAIC_DECL CelestiaQuadTreeConfig {
+  class CelestiaQuadTreeConfig {
   public:
     void configure( QuadTreeGenerator& qtree ) const;
 

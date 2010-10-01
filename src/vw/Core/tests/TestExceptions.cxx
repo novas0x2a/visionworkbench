@@ -12,8 +12,8 @@
 
 using namespace vw;
 
-VW_DEFINE_EXCEPTION(Level1Err, vw::Exception, VW_CORE_DECL);
-VW_DEFINE_EXCEPTION(Level2Err, Level1Err, VW_CORE_DECL);
+VW_DEFINE_EXCEPTION(Level1Err, vw::Exception);
+VW_DEFINE_EXCEPTION(Level2Err, Level1Err);
 
 TEST(Exceptions, HAS_EXCEPTIONS(Hierarchy)) {
   

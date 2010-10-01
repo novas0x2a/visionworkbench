@@ -11,15 +11,17 @@
 
 if MAKE_MODULE_CARTOGRAPHY
 
-TestGeoReference_SOURCES           = TestGeoReference.oldtest
-TestGeoTransform_SOURCES           = TestGeoTransform.oldtest
-TestPointImageManipulation_SOURCES = TestPointImageManipulation.oldtest
-TestToastTransform_SOURCES         = TestToastTransform.oldtest
+TestGeoReference_SOURCES           = TestGeoReference.cxx
+TestGeoTransform_SOURCES           = TestGeoTransform.cxx
+TestPointImageManipulation_SOURCES = TestPointImageManipulation.cxx
+TestToastTransform_SOURCES         = TestToastTransform.cxx
+TestCameraBBox_SOURCES             = TestCameraBBox.cxx
+TestOrthoImageView_SOURCES         = TestOrthoImageView.cxx
 
-TESTS = TestGeoReference TestGeoTransform TestPointImageManipulation	\
-	TestToastTransform
+TESTS = TestGeoReference TestGeoTransform TestPointImageManipulation   \
+        TestToastTransform TestCameraBBox TestOrthoImageView
 
-include $(top_srcdir)/config/instantiate.am
+#include $(top_srcdir)/config/instantiate.am
 
 endif
 
@@ -28,10 +30,10 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@ $(TEST_CPPFLAGS)
-AM_LDFLAGS  = @VW_LDFLAGS@ @PKG_CARTOGRAPHY_LIBS@
+AM_LDFLAGS  = @VW_LDFLAGS@ @PKG_CARTOGRAPHY_LIBS@ @PKG_CAMERA_LIBS@
 
 check_PROGRAMS = $(TESTS)
-CLEANFILES = $(TESTS:%=%.cxx)
+EXTRA_DIST = apollo.pinhole
 
 include $(top_srcdir)/config/rules.mak
-include $(top_srcdir)/config/tests_old.am
+include $(top_srcdir)/config/tests.am

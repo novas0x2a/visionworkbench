@@ -1,7 +1,17 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
+if( OPENCV_FOUND )
+  set( OPENCV_HEADERS 
+	ImageResourceOpenCV.h
+  )
+  set( OPENCV_SOURCES
+    ImageResourceOpenCV.cc
+  )
+endif( OPENCV_FOUND )
+
 set( HEADERS 
   ${EXPORT_H}
+  ${OPENCV_HEADERS}
   Algorithms.h
   BlockProcessor.h
   BlockRasterize.h
@@ -13,6 +23,7 @@ set( HEADERS
   ImageIO.h
   ImageMath.h
   ImageResource.h
+  ImageResourceImpl.h
   ImageResourceView.h
   ImageViewBase.h
   ImageView.h
@@ -37,6 +48,7 @@ set( HEADERS
 )
 
 set( SOURCES 
+  ${OPENCV_SOURCES}
   Filter.cc
   ImageResource.cc
   Interpolation.cc

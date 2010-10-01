@@ -22,7 +22,7 @@
 
 namespace vw {
 
-  class VW_FILEIO_DECL DiskImageResourcePNG : public DiskImageResource {
+  class DiskImageResourcePNG : public DiskImageResource {
   public:
 
     // Forward declare the options structure, which gets defined later on.
@@ -112,8 +112,6 @@ namespace vw {
     virtual Vector2i block_size() const { return m_block_size; }
 
   private:
-    DiskImageResourcePNG(DiskImageResourcePNG&);
-    DiskImageResourcePNG& operator=(DiskImageResourcePNG&);
 
     // vw_png_context is declared in the cc file, and unused elsewhere, 
     // but we have a pointer to it. So forward declare.

@@ -35,6 +35,9 @@
 #include <vw/Math/Matrix.h>
 #include <vw/Core/Cache.h>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+
 // Forward declarations
 class GDALDataset;
 namespace vw {
@@ -45,7 +48,7 @@ namespace vw {
 
   // GdalDatasetGenerator reopens a read-only GDAL Dataset if we have to
   // invalidate one in our cache.
-  class VW_FILEIO_DECL GdalDatasetGenerator {
+  class GdalDatasetGenerator {
     std::string m_filename;
   public:
     typedef GDALDataset value_type;
@@ -60,7 +63,7 @@ namespace vw {
   };
 
 
-  class VW_FILEIO_DECL DiskImageResourceGDAL : public DiskImageResource {
+  class DiskImageResourceGDAL : public DiskImageResource {
   public:
 
     typedef std::map<std::string,std::string> Options;
@@ -68,7 +71,6 @@ namespace vw {
     DiskImageResourceGDAL( std::string const& filename )
       : DiskImageResource( filename )
     {
-      m_convert_jp2 = false;
       open( filename );
     }
 
@@ -77,7 +79,6 @@ namespace vw {
                            Vector2i block_size = Vector2i(-1,-1) )
       : DiskImageResource( filename )
     {
-      m_convert_jp2 = false;
       create( filename, format, block_size );
     }
 
@@ -87,7 +88,6 @@ namespace vw {
                            Options const& options )
       : DiskImageResource( filename )
     {
-      m_convert_jp2 = false;
       create( filename, format, block_size, options );
     }
 
@@ -95,6 +95,7 @@ namespace vw {
 
     /// Returns the type of disk image resource.
     static std::string type_static() { return "GDAL"; }
+    static void set_gdal_cache_size(int size);  // Set GDAL cache size in bytes
 
     /// Returns the type of disk image resource.
     virtual std::string type() { return type_static(); }
@@ -125,9 +126,7 @@ namespace vw {
                  ImageFormat const& format,
                  Vector2i block_size = Vector2i(-1,-1) )
     {
-      std::string::size_type dot = filename.find_last_of('.');
-      std::string extension = filename.substr( dot );
-      boost::to_lower(extension);
+      std::string extension = boost::to_lower_copy(boost::filesystem::extension(filename));
       if ( extension == ".tif" || extension == ".tiff" ) {
         // TIFF should use LZW by default
         Options tiff_options;
@@ -165,14 +164,13 @@ namespace vw {
 
     std::string m_filename;
     boost::shared_ptr<GDALDataset> m_write_dataset_ptr;
-    bool m_convert_jp2;
     std::vector<PixelRGBA<uint8> > m_palette;
     Vector2i m_blocksize;
     Options m_options;
     Cache::Handle<GdalDatasetGenerator> m_dataset_cache_handle;
   };
 
-  VW_FILEIO_DECL void UnloadGDAL();
+  void UnloadGDAL();
 
 } // namespace vw
 

@@ -9,15 +9,14 @@
 #define __VW_PLATEFILE_LOCAL_INDEX_H__
 
 #include <vw/Core/FundamentalTypes.h>
-#include <vw/Core/Log.h>
 #include <vw/Image/PixelTypeInfo.h>
-
 #include <vw/Plate/PagedIndex.h>
-#include <vw/Plate/BlobManager.h>
-#include <vw/Plate/ProtoBuffers.pb.h>
 
 namespace vw {
 namespace platefile {
+
+  class BlobManager;
+  class TileHeader;
 
   // ----------------------------------------------------------------------
   //                         LOCAL INDEX PAGE
@@ -33,8 +32,8 @@ namespace platefile {
 
   public:
     /// Create or open a page file.
-    LocalIndexPage(std::string filename, 
-                   int level, int base_col, int base_row, 
+    LocalIndexPage(std::string filename,
+                   int level, int base_col, int base_row,
                    int page_width, int page_height);
 
     virtual ~LocalIndexPage();
@@ -51,15 +50,14 @@ namespace platefile {
   //                       LOCAL INDEX PAGE GENERATOR
   // ----------------------------------------------------------------------
 
-  // IndexPageGenerator loads a index page from disk.
+  // loads a index page from disk.
   class LocalPageGenerator : public PageGeneratorBase {
     std::string m_filename;
     int m_level, m_base_col, m_base_row;
     int m_page_width, m_page_height;
 
   public:
-    typedef IndexPage value_type;
-    LocalPageGenerator( std::string filename, int level, int base_col, int base_row, 
+    LocalPageGenerator( std::string filename, int level, int base_col, int base_row,
                         int page_width, int page_height );
     virtual ~LocalPageGenerator() {}
 
@@ -74,19 +72,21 @@ namespace platefile {
     std::string m_plate_filename;
 
   public:
-    LocalPageGeneratorFactory(std::string plate_filename) : 
+    LocalPageGeneratorFactory(std::string plate_filename) :
       m_plate_filename(plate_filename) {}
     virtual ~LocalPageGeneratorFactory() {}
 
-    virtual boost::shared_ptr<IndexPageGenerator> create(int level, int base_col, int base_row, 
-                                                         int page_width, int page_height);
+    virtual boost::shared_ptr<PageGeneratorBase> create(int level, int base_col, int base_row,
+                                                        int page_width, int page_height);
+
+    virtual std::string who() const;
   };
 
   // -------------------------------------------------------------------
   //                            LOCAL INDEX
   // -------------------------------------------------------------------
 
-  class LocalIndex : public PagedIndex { 
+  class LocalIndex : public PagedIndex {
     std::string m_plate_filename;
     IndexHeader m_header;
     boost::shared_ptr<BlobManager> m_blob_manager;
@@ -107,7 +107,7 @@ namespace platefile {
 
     /// Destructor
     virtual ~LocalIndex() {}
-    
+
     // Rebuild an index from blob file entries.  You should only do
     // this if you lose or corrupt an index.  This may take a long
     // time.
@@ -132,7 +132,7 @@ namespace platefile {
     // unlock the blob id.
     virtual void write_update(TileHeader const& header, IndexRecord const& record);
 
-    /// Writing, pt. 3: Signal the completion 
+    /// Writing, pt. 3: Signal the completion
     virtual void write_complete(int blob_id, uint64 blob_offset);
 
     // ----------------------- PROPERTIES  ----------------------
@@ -144,8 +144,8 @@ namespace platefile {
     virtual std::string tile_filetype() const { return m_header.tile_filetype(); }
     virtual int32 num_levels() const { return m_header.num_levels(); }
 
-    virtual PixelFormatEnum pixel_format() const { 
-      return PixelFormatEnum(m_header.pixel_format()); 
+    virtual PixelFormatEnum pixel_format() const {
+      return PixelFormatEnum(m_header.pixel_format());
     }
     virtual ChannelTypeEnum channel_type() const {
       return ChannelTypeEnum(m_header.channel_type());
@@ -163,7 +163,7 @@ namespace platefile {
     // work to the mosaic by issuding a transaction_complete method.
     virtual void transaction_complete(int32 transaction_id, bool update_read_cursor);
 
-    // If a transaction fails, we may need to clean up the mosaic.  
+    // If a transaction fails, we may need to clean up the mosaic.
     virtual void transaction_failed(int32 transaction_id);
 
     // Return the current location of the transaction cursor.  This

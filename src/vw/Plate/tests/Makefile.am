@@ -9,18 +9,30 @@
 # sources
 ########################################################################
 
+check_SCRIPTS  =
+
 if MAKE_MODULE_PLATE
 
-TestBlobManager_SOURCES  = TestBlobManager.oldtest
-TestBlobIO_SOURCES       = TestBlobIO.oldtest
-TestBlobIterator_SOURCES = TestBlobIterator.oldtest
-TestIndexPage_SOURCES        = TestIndexPage.oldtest
-TestLocalIndex_SOURCES        = TestLocalIndex.oldtest
-TestAmqp_SOURCES        = TestAmqp.oldtest
-#TestPlateIndexServer_SOURCES        = TestPlateIndexServer.oldtest
+TestBlobManager_SOURCES       = TestBlobManager.cxx
+TestBlobIO_SOURCES            = TestBlobIO.cxx
+TestIndexPage_SOURCES         = TestIndexPage.cxx
+TestLocalIndex_SOURCES        = TestLocalIndex.cxx
+TestAmqp_SOURCES              = TestAmqp.cxx
+TestTileManipulation_SOURCES  = TestTileManipulation.cxx
+TestModPlate_SOURCES          = TestModPlate.cxx
+TestHTTPUtils_SOURCES         = TestHTTPUtils.cxx
 
-TESTS = TestBlobManager TestBlobIO TestBlobIterator TestLocalIndex	\
-	TestIndexPage TestAmqp
+if HAVE_PYTHON
+check_SCRIPTS  += TestModPlateRegression.py
+endif
+
+check_PROGRAMS = TestBlobManager TestBlobIO TestLocalIndex TestIndexPage TestAmqp \
+				 TestTileManipulation TestModPlate TestHTTPUtils
+
+
+if MAKE_MODPLATE
+MORE_FLAGS = -DVW_HAVE_APACHE=1
+endif
 
 #include $(top_srcdir)/config/instantiate.am
 
@@ -30,11 +42,11 @@ endif
 # general
 ########################################################################
 
-AM_CPPFLAGS = @VW_CPPFLAGS@ $(TEST_CPPFLAGS)
-AM_LDFLAGS  = @VW_LDFLAGS@ @PKG_IMAGE_LIBS@ @PKG_MATH_LIBS@ @PKG_CORE_LIBS@ @PKG_PLATE_LIBS@
+AM_CPPFLAGS = @VW_CPPFLAGS@ @APXS_CFLAGS@ $(MORE_FLAGS)
+AM_LDFLAGS  = @VW_LDFLAGS@ @APXS_LDFLAGS@ @PKG_IMAGE_LIBS@ @PKG_MATH_LIBS@ @PKG_CORE_LIBS@ @PKG_PLATE_LIBS@
 
-check_PROGRAMS = $(TESTS)
-CLEANFILES = $(TESTS:%=%.cxx)
+TESTS = $(check_PROGRAMS)
+CLEANFILES =
 
 include $(top_srcdir)/config/rules.mak
-include $(top_srcdir)/config/tests_old.am
+include $(top_srcdir)/config/tests.am

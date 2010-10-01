@@ -21,7 +21,7 @@ camerabbox_headers = CameraBBox.h
 camerabbox_sources = CameraBBox.cc
 endif
 
-include_HEADERS = FileIO.h GeoReferenceBase.h GeoReference.h            \
+include_HEADERS = GeoReferenceBase.h GeoReference.h                     \
                   GeoTransform.h Datum.h SimplePointImageManipulation.h \
                   PointImageManipulation.h                              \
                   OrthoImageView.h GeoReferenceResourcePDS.h            \
@@ -43,7 +43,7 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@
-AM_LDFLAGS = @VW_LDFLAGS@ -version-info @LIBTOOL_VERSION@
+AM_LDFLAGS = @VW_LDFLAGS@ $(LIBTOOL_LIB_FLAGS)
 
 SUBDIRS = . tests
 

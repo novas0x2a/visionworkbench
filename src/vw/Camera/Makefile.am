@@ -11,26 +11,31 @@
 
 if MAKE_MODULE_CAMERA
 
+protocol_headers =
+protocol_sources =
+
+include_HEADERS =
+
+if HAVE_PKG_PROTOBUF
+protocol_headers += TsaiFile.pb.h
+protocol_sources += TsaiFile.pb.cc
+BUILT_SOURCES   = $(protocol_sources)
+include_HEADERS += $(protocol_headers)
+endif
+
 if HAVE_PKG_LAPACK
 lsm_headers = Extrinsics.h LinescanModel.h LinearPushbroomModel.h       \
               OrbitingPushbroomModel.h PinholeModelCalibrate.h          \
               LensDistortion.h CameraGeometry.h
 endif
 
-ba_headers = BundleAdjust.h BundleAdjustModelBase.h                     \
-             BundleAdjustReport.h BundleAdjustmentBase.h                \
-             BundleAdjustmentRef.h BundleAdjustmentRobustRef.h          \
-             BundleAdjustmentSparse.h BundleAdjustmentRobustSparse.h
-
-ba_sources = BundleAdjustReport.cc
-
-include_HEADERS = CameraModel.h CAHVModel.h CAHVORModel.h               \
-                  CameraTransform.h Exif.h ExifData.h BayerFilter.h     \
-                  ControlNetwork.h PinholeModel.h $(lsm_headers) $(ba_headers)
+include_HEADERS += CameraModel.h CAHVModel.h CAHVORModel.h               \
+             CameraTransform.h Exif.h ExifData.h BayerFilter.h          \
+             PinholeModel.h $(lsm_headers)
 
 libvwCamera_la_SOURCES = PinholeModel.cc CAHVModel.cc CAHVORModel.cc    \
-                         Exif.cc ExifData.cc ControlNetwork.cc          \
-                         LensDistortion.cc $(ba_sources)
+             Exif.cc ExifData.cc LensDistortion.cc $(protocol_sources)  \
+             CameraModel.cc
 
 libvwCamera_la_LIBADD = @MODULE_CAMERA_LIBS@
 
@@ -43,11 +48,16 @@ endif
 ########################################################################
 
 AM_CPPFLAGS = @VW_CPPFLAGS@
-AM_LDFLAGS = @VW_LDFLAGS@ -version-info @LIBTOOL_VERSION@
+AM_LDFLAGS = @VW_LDFLAGS@ $(LIBTOOL_LIB_FLAGS)
 
 SUBDIRS = . tests
+CLEANFILES = $(protocol_headers) $(protocol_sources)
+EXTRA_DIST = TsaiFile.proto
 
 includedir = $(prefix)/include/vw/Camera
 
 include $(top_srcdir)/config/rules.mak
+if HAVE_PKG_PROTOBUF
+include $(top_srcdir)/thirdparty/protobuf.mak
+endif
 

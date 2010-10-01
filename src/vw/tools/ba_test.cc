@@ -102,12 +102,12 @@ namespace fs = boost::filesystem;
 
 #include <vw/Camera/CAHVORModel.h>
 #include <vw/Camera/PinholeModel.h>
-#include <vw/Camera/BundleAdjust.h>
-#include <vw/Camera/BundleAdjustReport.h>
+#include <vw/BundleAdjustment.h>
 #include <vw/Math.h>
 
 using namespace vw;
 using namespace vw::camera;
+using namespace vw::ba;
 
 #include <cstdlib>
 #include <iostream>
@@ -505,10 +505,16 @@ CameraVector load_camera_models(std::vector<fs::path> const &camera_files,
     fs::path file = *iter;
     // If no parent path is provided for camera files, assume we read them from
     // the data directory
-    if (!file.has_branch_path()) file = dir / file;
+#if (BOOST_VERSION >= 103600)
+    if (!file.has_parent_path())
+#else
+    if (!file.has_branch_path())
+#endif
+    { file = dir / file; }
+
     vw_out(VerboseDebugMessage) << "\t" << file << endl;
     boost::shared_ptr<PinholeModel> cam(new PinholeModel());
-    cam->read_file(file.string());
+    cam->read(file.string());
     camera_models.push_back(cam);
   }
 
@@ -536,7 +542,7 @@ void write_adjustments(std::string const& filename, Vector3 const& position_corr
 
 /* {{{ BundleAdjustmentModel */
 // Bundle adjustment functor
-class BundleAdjustmentModel : public camera::BundleAdjustmentModelBase<BundleAdjustmentModel, 6, 3> {
+class BundleAdjustmentModel : public ba::ModelBase<BundleAdjustmentModel, 6, 3> {
 
 /* {{{ private members */
   typedef Vector<double,6> camera_vector_t;
@@ -555,8 +561,8 @@ class BundleAdjustmentModel : public camera::BundleAdjustmentModelBase<BundleAdj
   // -- that might be a pain).
   std::vector<camera_vector_t> a; // camera parameter adjustments
   std::vector<point_vector_t>  b; // point coordinates
-  std::vector<camera_vector_t> a_initial;
-  std::vector<point_vector_t>  b_initial;
+  std::vector<camera_vector_t> a_target;
+  std::vector<point_vector_t>  b_target;
   int m_num_pixel_observations;
 
   double m_camera_position_sigma;
@@ -577,8 +583,8 @@ public:
     m_network(network),
     a(cameras.size()),
     b(network->size()),
-    a_initial(cameras.size()),
-    b_initial(network->size()),
+    a_target(cameras.size()),
+    b_target(network->size()),
     m_camera_position_sigma(camera_position_sigma),
     m_camera_pose_sigma(camera_pose_sigma),
     m_gcp_sigma(gcp_sigma)
@@ -599,15 +605,15 @@ public:
     for (unsigned i = 0; i < network->size(); ++i)
       m_num_pixel_observations += (*network)[i].size();
 
-    // a and a_initial start off with every element all zeros.
+    // a and a_target start off with every element all zeros.
     for (unsigned j = 0; j < m_cameras.size(); ++j) {
-      a_initial[j] = camera_vector_t();
+      a_target[j] = camera_vector_t();
       a[j]         = camera_vector_t();
     }
 
-    // b and b_initial start off with the initial positions of the 3d points
+    // b and b_target start off with the initial positions of the 3d points
     for (unsigned i = 0; i < network->size(); ++i) {
-      b_initial[i] = point_vector_t((*m_network)[i].position());
+      b_target[i] = point_vector_t((*m_network)[i].position());
       b[i]         = point_vector_t((*m_network)[i].position());
     }
   }
@@ -616,11 +622,11 @@ public:
 /* {{{ camera, point and pixel accessors */
   // Return a reference to the camera and point parameters.
   camera_vector_t A_parameters(int j) const { return a[j]; }
-  camera_vector_t A_initial(int j)    const { return a_initial[j]; }
+  camera_vector_t A_target(int j)    const { return a_target[j]; }
   void set_A_parameters(int j, camera_vector_t const& a_j) { a[j] = a_j; }
 
   point_vector_t B_parameters(int i) const { return b[i]; }
-  point_vector_t B_initial(int i)    const { return b_initial[i]; }
+  point_vector_t B_target(int i)    const { return b_target[i]; }
   void set_B_parameters(int i, point_vector_t const& b_i) { b[i] = b_i; }
 
   CameraVector cameras() { return m_cameras; }
@@ -724,7 +730,7 @@ public:
   void camera_position_errors( std::vector<double>& camera_position_errors ) {
     camera_position_errors.clear();
     for (unsigned j=0; j < this->num_cameras(); ++j) {
-      Vector3 position_initial = subvector(a_initial[j],0,3);
+      Vector3 position_initial = subvector(a_target[j],0,3);
       Vector3 position_now = subvector(a[j],0,3);
       camera_position_errors.push_back(norm_2(position_initial-position_now));
     }
@@ -735,7 +741,7 @@ public:
   void camera_pose_errors( std::vector<double>& camera_pose_errors ) {
     camera_pose_errors.clear();
     for (unsigned j=0; j < this->num_cameras(); ++j) {
-      Vector3 pi = subvector(a_initial[j],3,3);
+      Vector3 pi = subvector(a_target[j],3,3);
       Vector3 pn = subvector(a[j],3,3);
       Quaternion<double> pose_initial = vw::math::euler_to_quaternion(pi[0],pi[1],pi[2],"xyz");
       Quaternion<double> pose_now = vw::math::euler_to_quaternion(pn[0],pn[1],pn[2],"xyz");
@@ -754,7 +760,7 @@ public:
     gcp_errors.clear();
     for (unsigned i=0; i < this->num_points(); ++i) {
       if ((*m_network)[i].type() == ControlPoint::GroundControlPoint)
-        gcp_errors.push_back(norm_2(b_initial[i] - b[i]));
+        gcp_errors.push_back(norm_2(b_target[i] - b[i]));
     }
   }
 /* }}} */
@@ -1011,27 +1017,27 @@ int main(int argc, char* argv[]) {
   // Run bundle adjustment according to user-specified type
   switch (config.bundle_adjustment_type) {
     case REF:
-      adjust_bundles<BundleAdjustmentRef<BundleAdjustmentModel, L2Error>, L2Error >
+      adjust_bundles<AdjustRef<BundleAdjustmentModel, L2Error>, L2Error >
         (ba_model, L2Error(), config, "Reference");
       break;
     case SPARSE:
-      adjust_bundles<BundleAdjustmentSparse<BundleAdjustmentModel, L2Error>, L2Error >
+      adjust_bundles<AdjustSparse<BundleAdjustmentModel, L2Error>, L2Error >
         (ba_model, L2Error(), config, "Sparse");
       break;
     case SPARSE_HUBER:
-      adjust_bundles<BundleAdjustmentSparse<BundleAdjustmentModel, HuberError>, HuberError >
+      adjust_bundles<AdjustSparse<BundleAdjustmentModel, HuberError>, HuberError >
         (ba_model, HuberError(config.huber_param), config, "Sparse Huber");
       break;
     case SPARSE_CAUCHY:
-      adjust_bundles<BundleAdjustmentSparse<BundleAdjustmentModel, CauchyError>, CauchyError >
+      adjust_bundles<AdjustSparse<BundleAdjustmentModel, CauchyError>, CauchyError >
         (ba_model, CauchyError(config.cauchy_param), config, "Sparse Cauchy");
       break;
     case ROBUST_REF:
-      adjust_bundles<BundleAdjustmentRobustRef<BundleAdjustmentModel, L2Error>, L2Error >
+      adjust_bundles<AdjustRobustRef<BundleAdjustmentModel, L2Error>, L2Error >
         (ba_model, L2Error(), config, "Robust Reference");
       break;
     case ROBUST_SPARSE:
-      adjust_bundles<BundleAdjustmentRobustSparse<BundleAdjustmentModel, L2Error>, L2Error >
+      adjust_bundles<AdjustRobustSparse<BundleAdjustmentModel, L2Error>, L2Error >
         (ba_model, L2Error(), config, "Robust Sparse");
       break;
   }
@@ -1039,7 +1045,7 @@ int main(int argc, char* argv[]) {
   // Do covariance calculation:
   // a. set lambda = 0
   // b. run bundle adjustment for one iteration
-  // c. run adjuster.covCalc() 
+  // c. run adjuster.covCalc()
   //        covCalc will return a vector (length = numCameras)
   //        of 6x6 covariance matrices
   //        (may need to do this inside adjust_bundles, in which

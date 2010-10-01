@@ -4,7 +4,6 @@ set( HEADERS
   ${EXPORT_H}
   CameraBBox.h
   Datum.h
-  FileIO.h
   GeoReference.h
   GeoReferenceBase.h
   GeoReferenceResourcePDS.h

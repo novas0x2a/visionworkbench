@@ -13,6 +13,7 @@
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
@@ -27,14 +28,6 @@ namespace fs = boost::filesystem;
 
 using namespace vw;
 using namespace vw::stereo;
-
-static std::string prefix_from_filename(std::string const& filename) {
-  std::string result = filename;
-  int index = result.rfind(".");
-  if (index != -1)
-    result.erase(index, result.size());
-  return result;
-}
 
 int main( int argc, char *argv[] ) {
   try {
@@ -54,20 +47,20 @@ int main( int argc, char *argv[] ) {
     po::options_description desc("Options");
     desc.add_options()
       ("help,h", "Display this help message")
-      ("left", po::value<std::string>(&left_file_name), "Explicitly specify the \"left\" input file")
-      ("right", po::value<std::string>(&right_file_name), "Explicitly specify the \"right\" input file")
-      ("slog", po::value<float>(&slog)->default_value(1.0), "Apply SLOG filter with the given sigma, or 0 to disable")
-      ("log", po::value<float>(&log)->default_value(0.0), "Apply LOG filter with the given sigma, or 0 to disable")
-      ("h-corr-min", po::value<int>(&h_corr_min)->default_value(0), "Minimum horizontal disparity")
-      ("h-corr-max", po::value<int>(&h_corr_max)->default_value(0), "Maximum horizontal disparity")
-      ("v-corr-min", po::value<int>(&v_corr_min)->default_value(5), "Minimum vertical disparity")
-      ("v-corr-max", po::value<int>(&v_corr_max)->default_value(5), "Maximum vertical disparity")
-      ("xkernel", po::value<int>(&xkernel)->default_value(15), "Horizontal correlation kernel size")
-      ("ykernel", po::value<int>(&ykernel)->default_value(15), "Vertical correlation kernel size")
-      ("lrthresh", po::value<int>(&lrthresh)->default_value(2), "Left/right correspondence threshold")
-      ("csthresh", po::value<float>(&corrscore_thresh)->default_value(1.0), "Correlation score rejection threshold (1.0 is Off <--> 2.0 is Aggressive outlier rejection")
-      ("cost-blur", po::value<int>(&cost_blur)->default_value(1), "Kernel size for bluring the cost image")
-      ("correlator-type", po::value<int>(&correlator_type)->default_value(0), "0 - Abs difference; 1 - Sq Difference; 2 - NormXCorr")
+      ("left", po::value(&left_file_name), "Explicitly specify the \"left\" input file")
+      ("right", po::value(&right_file_name), "Explicitly specify the \"right\" input file")
+      ("slog", po::value(&slog)->default_value(1.0), "Apply SLOG filter with the given sigma, or 0 to disable")
+      ("log", po::value(&log)->default_value(0.0), "Apply LOG filter with the given sigma, or 0 to disable")
+      ("h-corr-min", po::value(&h_corr_min)->default_value(0), "Minimum horizontal disparity")
+      ("h-corr-max", po::value(&h_corr_max)->default_value(0), "Maximum horizontal disparity")
+      ("v-corr-min", po::value(&v_corr_min)->default_value(5), "Minimum vertical disparity")
+      ("v-corr-max", po::value(&v_corr_max)->default_value(5), "Maximum vertical disparity")
+      ("xkernel", po::value(&xkernel)->default_value(15), "Horizontal correlation kernel size")
+      ("ykernel", po::value(&ykernel)->default_value(15), "Vertical correlation kernel size")
+      ("lrthresh", po::value(&lrthresh)->default_value(2), "Left/right correspondence threshold")
+      ("csthresh", po::value(&corrscore_thresh)->default_value(1.0), "Correlation score rejection threshold (1.0 is Off <--> 2.0 is Aggressive outlier rejection")
+      ("cost-blur", po::value(&cost_blur)->default_value(1), "Kernel size for bluring the cost image")
+      ("correlator-type", po::value(&correlator_type)->default_value(0), "0 - Abs difference; 1 - Sq Difference; 2 - NormXCorr")
       ("hsubpix", "Enable horizontal sub-pixel correlation")
       ("vsubpix", "Enable vertical sub-pixel correlation")
       ("affine-subpix", "Enable affine adaptive sub-pixel correlation (slower, but more accurate)")
@@ -102,12 +95,11 @@ int main( int argc, char *argv[] ) {
       return 1;
     }
 
-    if ( fs::exists( prefix_from_filename( left_file_name ) + "__" +
-                     prefix_from_filename( right_file_name ) + ".match" ) ) {
+    std::string match_filename = fs::path( left_file_name ).replace_extension().string() + "__" + fs::path( right_file_name ).stem() + ".match";
+    if ( fs::exists( match_filename ) ) {
       vw_out() << "Found a match file. Using it to pre-align images.\n";
       std::vector<ip::InterestPoint> matched_ip1, matched_ip2;
-      ip::read_binary_match_file( prefix_from_filename( left_file_name ) + "__" +
-                                  prefix_from_filename( right_file_name ) + ".match",
+      ip::read_binary_match_file( match_filename,
                                   matched_ip1, matched_ip2 );
       std::vector<Vector3> ransac_ip1 = ip::iplist_to_vectorlist(matched_ip1);
       std::vector<Vector3> ransac_ip2 = ip::iplist_to_vectorlist(matched_ip2);

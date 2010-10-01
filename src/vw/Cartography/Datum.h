@@ -12,7 +12,6 @@
 #include <ostream>
 #include <cmath>
 
-#include <vw/Cartography/CartographyExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Math/Matrix.h>
 
@@ -33,7 +32,7 @@ namespace cartography {
   /// all distances are measured in meters.  This class incorporates a
   /// prime meridian offset, which is not usually strictly considered
   /// part of the datum but which has no better place to be right now.
-  class VW_CARTOGRAPHY_DECL Datum {
+  class Datum {
     std::string m_name;
     std::string m_spheroid_name;
     std::string m_meridian_name;
@@ -113,7 +112,7 @@ namespace cartography {
     Vector3 cartesian_to_geodetic( Vector3 const& p ) const;
   };
 
-  VW_CARTOGRAPHY_DECL std::ostream& operator<<(std::ostream& os, const Datum& datum);
+  std::ostream& operator<<(std::ostream& os, const Datum& datum);
 
 
 }} // namespace vw::cartography

@@ -5,36 +5,45 @@ PROTOBUF_GENERATE_CPP( PROTO_SOURCES PROTO_HEADERS ProtoBuffers.proto )
 set( HEADERS 
   ${EXPORT_H}
   ${PROTO_HEADERS}
-  Amqp.h
+  AmqpConnection.h
   Blob.h 
   BlobManager.h 
-  Exception.h 
+  common.h
+  Exception.h
+  HTTPUtils.h 
   Index.h
-  IndexManagerService.h
-  IndexService.h 
-  KmlPlateManager.h
-  LocalIndex.h 
+  IndexPage.h
+  LocalIndex.h
+  PagedIndex.h 
   PlateFile.h 
   PlateManager.h 
   PlateView.h
   RemoteIndex.h 
-  RpcServices.h 
+  RpcServices.h
+  SnapshotManager.h
+  TileManipulation.h
+  ToastDem.h 
   ToastPlateManager.h 
-  Tree.h 
 )
 
 set( SOURCES
   ${PROTO_SOURCES}
-  Amqp.cc 
+  AmqpConnection.cc 
   Blob.cc 
-  BlobManager.cc 
+  BlobManager.cc
+  HTTPUtils.cc 
   Index.cc 
-  IndexManagerService.cc
   IndexService.cc 
   LocalIndex.cc	
+  PagedIndex.cc
+  PlateCarreePlateManager.cc
   PlateFile.cc 
+  PlateManager.cc
   RemoteIndex.cc 
   RpcServices.cc
+  SnapshotManager.cc
+  TileManipulation.cc
+  ToastDem.cc
   ToastPlateManager.cc
 )
 

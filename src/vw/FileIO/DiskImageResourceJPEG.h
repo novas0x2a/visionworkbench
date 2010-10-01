@@ -14,7 +14,6 @@
 
 #include <cstdio>
 #include <string>
-#include <csetjmp>
 #include <boost/shared_ptr.hpp>
 
 #include <vw/FileIO/DiskImageResource.h>
@@ -22,7 +21,7 @@
 
 namespace vw {
 
-  class VW_FILEIO_DECL DiskImageResourceJPEG : public DiskImageResource {
+  class DiskImageResourceJPEG : public DiskImageResource {
   public:
 
     DiskImageResourceJPEG( std::string const& filename,
@@ -79,6 +78,11 @@ namespace vw {
       // Cloes and reopen the file with the new subsampling factor
       flush();
       open(m_filename, subsample_factor);
+    }
+
+    /// Set the default subsampling factor
+    static void set_default_subsample_factor(int subsample_factor) {
+      default_subsampling_factor = subsample_factor;
     }
 
     void open( std::string const& filename,

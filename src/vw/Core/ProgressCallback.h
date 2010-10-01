@@ -15,25 +15,18 @@
 #include <cmath>
 #include <string>
 
-#include <vw/Core/CoreExport.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/Exception.h>
 #include <vw/Core/Thread.h>
+#include <vw/Core/Features.h>
 
 #include <boost/algorithm/string/replace.hpp>
 
-#include <vw/config.h>
-
-#if defined(VW_COMPILER_HAS_ATTRIBUTE_DEPRECATED) && (VW_COMPILER_HAS_ATTRIBUTE_DEPRECATED==1)
-#define DEPRECATED __attribute__((deprecated))
-#else
-#define DEPRECATED
-#endif
 
 namespace vw {
 
   /// The base class for progress monitoring.
-  class VW_CORE_DECL ProgressCallback {
+  class ProgressCallback {
   protected:
     // WARNING:  These may not be valid for some subclasses.  Always access these
     // values through the relevant public functions unless you know what you're doing.
@@ -106,7 +99,7 @@ namespace vw {
 
 
   /// Monitors the progress of a subtask of a task.
-  class VW_CORE_DECL SubProgressCallback : public ProgressCallback {
+  class SubProgressCallback : public ProgressCallback {
   protected:
     const ProgressCallback &m_parent;
     const double m_from;
@@ -137,7 +130,7 @@ namespace vw {
 
 
   /// A progress monitor that prints a progress bar on STDOUT.
-  class VW_CORE_DECL TerminalProgressCallback : public ProgressCallback {
+  class TerminalProgressCallback : public ProgressCallback {
     MessageLevel m_level;
     std::string m_namespace;
     std::string m_pre_progress_text;
@@ -157,7 +150,7 @@ namespace vw {
     }
 
   public:
-    TerminalProgressCallback( MessageLevel level = InfoMessage, std::string pre_progress_text = "", uint32_t precision = 0 ) DEPRECATED;
+    TerminalProgressCallback( MessageLevel level = InfoMessage, std::string pre_progress_text = "", uint32_t precision = 0 ) VW_DEPRECATED;
 
     TerminalProgressCallback( std::string log_namespace, std::string progress_text, MessageLevel log_level = InfoMessage, uint32_t precision = 0) :
       m_level(log_level), m_namespace(log_namespace), m_pre_progress_text(progress_text), m_last_reported_progress(-1), m_precision(precision), m_step(std::pow(10., -(int32_t(precision)+2))) {

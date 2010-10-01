@@ -1,6 +1,16 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 #-----------------------------
+if( PROTOBUF_FOUND )
+  set( PROTOCOL_HEADERS
+	TsaiFile.pb.h
+  )
+  set( PROTOCOL_SOURCES
+	TsaiFile.pb.cc
+  )
+endif( PROTOBUF_FOUND )
+
+#-----------------------------
 if( LAPACK_FOUND )
   set( LSM_HEADERS
     Extrinsics.h 
@@ -16,19 +26,6 @@ if( LAPACK_FOUND )
     LensDistortion.cc 
   )
   
-  set( BA_HEADERS
-    BundleAdjust.h 
-    BundleAdjustmentBase.h
-    BundleAdjustmentRef.h 
-    BundleAdjustmentRobustRef.h
-    BundleAdjustmentRobustSparse.h
-    BundleAdjustmentSparse.h 
-    BundleAdjustModelBase.h
-    BundleAdjustReport.h 
-  )
-  set( BA_SOURCES
-    BundleAdjustReport.cc
-  )
   
   add_definitions( ${LAPACK_DEFINITIONS} )
   link_libraries(  ${LAPACK_LIBRARIES} )
@@ -38,8 +35,8 @@ endif( LAPACK_FOUND )
 #-----------------------------
 set( HEADERS
   ${EXPORT_H}
-  ${BA_HEADERS}
   ${LSM_HEADERS} 
+  ${PROTOCOL_HEADERS}
   BayerFilter.h
   CAHVModel.h 
   CAHVORModel.h
@@ -52,13 +49,15 @@ set( HEADERS
 )
 
 set( SOURCES 
-  ${BA_SOURCES}
   ${LSM_SOURCES}
+  ${PROTOCOL_SOURCES}
   CAHVModel.cc 
   CAHVORModel.cc
-  ControlNetwork.cc
+  CameraModel.cc
   Exif.cc 
   ExifData.cc 
+  LensDistortion.cc
+  PinholeModel.cc
 )
 
 link_libraries( 

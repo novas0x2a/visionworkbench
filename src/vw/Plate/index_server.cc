@@ -109,11 +109,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::string queue_name = AmqpRpcClient::UniqueQueueName("index_server");
-
   boost::shared_ptr<AmqpConnection> connection( new AmqpConnection(hostname, port) );
-  boost::shared_ptr<AmqpRpcServer> server( new AmqpRpcServer(connection, exchange_name, 
-                                                             queue_name, vm.count("debug")) );
+  boost::shared_ptr<AmqpRpcServer> server( new AmqpRpcServer(connection, exchange_name,
+                                                             "index_server", vm.count("debug")) );
   g_service.reset( new IndexServiceImpl(root_directory) );
   server->bind_service(g_service, "index");
 
@@ -127,7 +125,7 @@ int main(int argc, char** argv) {
   signal(SIGINT,  sig_unexpected_shutdown);
   signal(SIGUSR1, sig_sync);
 
-  std::cout << "\n\n";
+  std::cout << "Starting index server\n\n";
   long long t0 = Stopwatch::microtime();
 
   long long sync_interval_seconds = uint64(sync_interval * 60);
@@ -147,7 +145,7 @@ int main(int argc, char** argv) {
 
     // Check to see if our sync timeout has occurred.
     if (seconds_until_sync-- <= 0) {
-      std::cout << "\nAutomatic sync of index started (interval = " << sync_interval << ")\n";
+      std::cout << "\nAutomatic sync of index started (interval = " << sync_interval << " minutes).\n";
       long long sync_t0 = Stopwatch::microtime();
       g_service->sync();
       float sync_dt = float(Stopwatch::microtime() - sync_t0) / 1e6;
@@ -167,8 +165,8 @@ int main(int argc, char** argv) {
 
     std::cout << "[index_server] : "
               << float(queries/dt) << " qps    "
-              << float(bytes/dt)/1000.0 << " kB/sec    " 
-              << n_outstanding_messages << " outstanding messages                          \r" 
+              << float(bytes/dt)/1000.0 << " kB/sec    "
+              << n_outstanding_messages << " outstanding messages                          \r"
               << std::flush;
     sleep(1.0);
   }

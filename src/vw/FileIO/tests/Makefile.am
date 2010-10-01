@@ -11,15 +11,15 @@
 
 if MAKE_MODULE_FILEIO
 
-TestDiskImageResource_SOURCES = TestDiskImageResource.oldtest
-TestDiskImageView_SOURCES     = TestDiskImageView.oldtest
-TestEndianness_SOURCES        = TestEndianness.oldtest
-TestBlockFileIO_SOURCES       = TestBlockFileIO.oldtest
-TestExtTester_SOURCES         = TestExtTester.oldtest
+TestDiskImageResource_SOURCES = TestDiskImageResource.cxx
+TestDiskImageView_SOURCES     = TestDiskImageView.cxx
+TestEndianness_SOURCES        = TestEndianness.cxx
+TestBlockFileIO_SOURCES       = TestBlockFileIO.cxx
 
-TESTS = TestDiskImageResource TestDiskImageView TestEndianness TestBlockFileIO TestExtTester
+TESTS = TestDiskImageResource TestDiskImageView TestEndianness \
+        TestBlockFileIO
 
-include $(top_srcdir)/config/instantiate.am
+#include $(top_srcdir)/config/instantiate.am
 
 endif
 
@@ -34,7 +34,7 @@ check_PROGRAMS = $(TESTS)
 
 EXTRA_DIST = rgb2x2.png rgb2x2.tif rgb2x2.jpg png16.png mural.png mural.jpg
 
-CLEANFILES = $(TESTS:%=%.cxx) tmp.png tmp.tif rwtest.* test-png16.png cropped.mural.* mural.tif
+CLEANFILES = tmp.png tmp.tif rwtest.* test-png16.png cropped.mural.* mural.tif
 
 include $(top_srcdir)/config/rules.mak
-include $(top_srcdir)/config/tests_old.am
+include $(top_srcdir)/config/tests.am

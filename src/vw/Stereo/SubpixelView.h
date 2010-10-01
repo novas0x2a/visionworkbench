@@ -19,18 +19,16 @@ namespace vw {
 namespace stereo {
 
   /// An image view for performing image correlation
-  template <class PreprocFilterT>
-  class SubpixelView : public ImageViewBase<SubpixelView<PreprocFilterT> > {
+  template <class PreprocFilterT, class ImageT>
+  class SubpixelView : public ImageViewBase<SubpixelView<PreprocFilterT, ImageT> > {
 
     ImageViewRef<PixelMask<Vector2f> > m_disparity_map;
-    ImageViewRef<float> m_left_image;
-    ImageViewRef<float> m_right_image;
+    ImageT m_left_image, m_right_image;
 
     // General Settings
-    int m_kern_width, m_kern_height;
+    Vector2i m_kernel_size;
     bool m_do_h_subpixel, m_do_v_subpixel;
-    //bool m_do_affine_subpixel;
-    int m_do_affine_subpixel;
+    int m_which_subpixel;
     PreprocFilterT m_preproc_filter;
     bool m_verbose;
 
@@ -38,195 +36,23 @@ namespace stereo {
     typedef PixelMask<Vector2f> pixel_type;
     typedef pixel_type result_type;
     typedef ProceduralPixelAccessor<SubpixelView> pixel_accessor;
-      
 
-    //image subsampling by two
-    ImageView<float> subsample_img_by_two(ImageView<float> &img) const {
-
-      //determine the new size of the image
-      int new_width = img.cols()/2;
-      int new_height = img.rows()/2;
-
-      ImageView<float> outImg(new_width, new_height, img.planes());
-      ImageViewRef<float> interpImg = interpolate(img);
-
-      for (vw::int32 p = 0; p < outImg.planes(); p++)
-        for (vw::int32 i = 0; i < outImg.cols(); i++)
-          for (vw::int32 j = 0; j < outImg.rows(); j++)
-            outImg(i,j,p) = interpImg(2.0*i, 2.0*j, p);
-
-      #if 0
-      ImageView<float> g_img;
-      g_img = gaussian_filter(img, 1.5);
-      vw_out() << "Gaussian blurring\n";
-
-      for (vw::int32 p = 0; p < outImg.planes(); p++)
-        for (vw::int32 i = 0; i < outImg.cols(); i++)
-          for (vw::int32 j = 0; j < outImg.rows(); j++)
-            outImg(i,j,p) = g_img(2*i, 2*j, p);
-
-      #endif
-
-      return outImg;
-    }
-
-    // disparity map down-sampling by two
-    VW_STEREO_DECL ImageView<PixelMask<Vector2f> >
-    subsample_disp_map_by_two(ImageView<PixelMask<Vector2f> > const& input_disp) const {
-
-      // determine the new size of the image
-      int new_width = input_disp.cols()/2;
-      int new_height = input_disp.rows()/2;
-
-      ImageView<PixelMask<Vector2f> > outDisp(new_width, new_height);
-      ImageViewRef<PixelMask<Vector2f> > disp = edge_extend(input_disp, ConstantEdgeExtension() );
-
-      for (vw::int32 j = 0; j < outDisp.rows(); j++) {
-        for (vw::int32 i = 0; i < outDisp.cols(); i++) {
-
-          vw::int32 old_i = i*2;
-          vw::int32 old_j = j*2;
-
-          PixelMask<Vector2f> sum(0,0);
-          int num_valid = 0;
-
-          if ( is_valid(disp(old_i,old_j)) ) {
-            sum += disp(old_i,old_j);
-            num_valid++;
-          }
-          if ( is_valid(disp(old_i,old_j+1)) ) {
-            sum += disp(old_i,old_j+1);
-            num_valid++;
-          }
-          if ( is_valid(disp(old_i+1,old_j)) ) {
-            sum += disp(old_i+1,old_j);
-            num_valid++;
-          }
-          if ( is_valid(disp(old_i+1,old_j+1)) ) {
-            sum += disp(old_i+1,old_j+1);
-            num_valid++;
-          }
-
-          if (num_valid == 0)
-            invalidate( outDisp(i,j) );
-          else
-            outDisp(i,j) = sum/float(2*num_valid);
-        }
-      }
-
-      return outDisp;
-    }
-
-    // disparity map up-sampling by two
-    VW_STEREO_DECL ImageView<PixelMask<Vector2f> >
-    upsample_disp_map_by_two(ImageView<PixelMask<Vector2f> > const& input_disp,
-                             int up_width, int up_height) const {
-
-      ImageView<PixelMask<Vector2f> > outDisp(up_width, up_height);
-      ImageViewRef<PixelMask<Vector2f> > disp = edge_extend(input_disp, ConstantEdgeExtension());
-
-      for (vw::int32 j = 0; j < outDisp.rows(); ++j) {
-        for (vw::int32 i = 0; i < outDisp.cols(); ++i) {
-          float x = math::impl::_floor(float(i)/2.0), y = math::impl::_floor(float(j)/2.0);
-
-          if ( i%2 == 0 && j%2 == 0) {
-            if ( !is_valid(disp(x,y)) )
-              invalidate( outDisp(i,j) );
-            else
-              outDisp(i,j) = 2 * disp(x,y);
-          }
-
-          else if (j%2 == 0) {
-            if ( !is_valid(disp(x,y)) && !is_valid(disp(x+1,y)) )
-              invalidate(outDisp(i,j));
-            else {
-              if ( is_valid(disp(x,y)) && is_valid(disp(x+1,y)) ) {
-                outDisp(i,j) = disp(x,y) + disp(x+1,y);
-              } else if ( is_valid(disp(x,y)) && !is_valid(disp(x+1,y)) ) {
-                outDisp(i,j) = 2 * disp(x,y);
-              } else if ( !is_valid(disp(x,y)) && is_valid(disp(x+1,y)) ) {
-                outDisp(i,j) = 2 * disp(x+1,y);
-              }
-            }
-          }
-
-          else if (i%2 == 0) {
-            if ( !is_valid(disp(x,y)) && !is_valid(disp(x,y+1)) )
-              invalidate( outDisp(i,j) );
-            else {
-              if ( is_valid(disp(x,y)) && is_valid(disp(x,y+1)) ) {
-                outDisp(i,j) = disp(x,y) + disp(x,y+1);
-              } else if ( is_valid(disp(x,y)) && !is_valid(disp(x,y+1)) ) {
-                outDisp(i,j) = 2*disp(x,y);
-              } else if ( !is_valid(disp(x,y)) && is_valid(disp(x,y+1)) ) {
-                outDisp(i,j) = 2*disp(x,y+1);
-              }
-            }
-          }
-
-          else {
-            if ( is_valid(disp(x,y)) && is_valid(disp(x,y+1)) &&
-                 is_valid(disp(x+1,y)) && is_valid(disp(x+1,y+1)) ) {
-
-              // All good pixels
-              float normx = float(i)/2.0-x, normy = float(j)/2.0-y, norm1mx = 1.0-normx, norm1my = 1.0-normy;
-              outDisp(i,j) = PixelMask<Vector2f>( 2 * (disp(x  ,y  )[0] * norm1mx*norm1my +
-                                                       disp(x+1,y  )[0] * normx*norm1my +
-                                                       disp(x  ,y+1)[0] * norm1mx*normy +
-                                                       disp(x+1,y+1)[0] * normx*normy),
-                                                  2 * (disp(x  ,y  )[1] * norm1mx*norm1my +
-                                                       disp(x+1,y  )[1] * normx*norm1my +
-                                                       disp(x  ,y+1)[1] * norm1mx*normy +
-                                                       disp(x+1,y+1)[1] * normx*normy) );
-
-            } else if ( !is_valid(disp(x,y)) && !is_valid(disp(x,y+1)) &&
-                        !is_valid(disp(x+1,y)) && !is_valid(disp(x+1,y+1)) ) {
-              // no good pixels
-              invalidate( outDisp(i,j) );
-
-            } else {
-              // some good & some bad pixels
-              //
-              // We fudge things a little bit here by picking the
-              // first good pixel.  This isn't exactly correct, but
-              // it's close enough in the handful of cases where we
-              // are near some missing pixels, and we just need an
-              // approximately valid value.  The subpixel refinement
-              // will correct any minor mistakes we introduce here.
-              if ( is_valid(disp(x,y)) ) {
-                outDisp(i,j) = 2*disp(x,y);
-              } else if ( is_valid(disp(x+1,y)) ) {
-                outDisp(i,j) = 2*disp(x+1,y);
-              } else if ( is_valid(disp(x,y+1)) ) {
-                outDisp(i,j) = 2*disp(x,y+1);
-              } else if ( is_valid(disp(x+1,y+1)) ) {
-                outDisp(i,j) = 2*disp(x+1,y+1);
-              }
-            }
-          }
-        }
-      }
-
-      return outDisp;
-    }
-
-    template <class DisparityViewT, class InputViewT>
+    template <class DisparityViewT>
     SubpixelView(DisparityViewT const& disparity_map,
-                 InputViewT const& left_image,
-                 InputViewT const& right_image,
+                 ImageT const& left_image,
+                 ImageT const& right_image,
                  int kern_width, int kern_height,
                  bool do_horizontal_subpixel,
                  bool do_vertical_subpixel,
-                 //bool do_affine_subpixel,
-                 int do_affine_subpixel,
+                 int which_subpixel,
                  PreprocFilterT preproc_filter,
                  bool verbose) : m_disparity_map(disparity_map),
                                  m_left_image(left_image),
                                  m_right_image(right_image),
-                                 m_kern_width(kern_width), m_kern_height(kern_height),
+                                 m_kernel_size(Vector2i(kern_width,kern_height)),
                                  m_do_h_subpixel(do_horizontal_subpixel),
                                  m_do_v_subpixel(do_vertical_subpixel),
-                                 m_do_affine_subpixel(do_affine_subpixel),
+                                 m_which_subpixel(which_subpixel),
                                  m_preproc_filter(preproc_filter),
                                  m_verbose(verbose) {
       // Basic assertions
@@ -248,7 +74,7 @@ namespace stereo {
 
     inline pixel_accessor origin() const { return pixel_accessor( *this, 0, 0 ); }
 
-    inline pixel_type operator()(float x, float y, int32 p = 0) const {
+    inline pixel_type operator()(float /*x*/, float /*y*/, int32 /*p*/ = 0) const {
       vw_throw(NoImplErr() << "SubpixelView::operator() is not yet implemented.");
       return PixelMask<Vector2f>(); // Never reached
     }
@@ -277,42 +103,33 @@ namespace stereo {
       // search bbox will always be larger than the given left image
       // bbox, so we just make the left bbox the same size as the
       // right bbox.
-      left_crop_bbox.max() = left_crop_bbox.min() + Vector2i(right_crop_bbox.width(), right_crop_bbox.height());
+      left_crop_bbox.max() = left_crop_bbox.min() + right_crop_bbox.size();
 
       // Finally, we must adjust both bounding boxes to account for
       // the size of the kernel itself.
-      right_crop_bbox.min() -= Vector2i(m_kern_width, m_kern_height);
-      right_crop_bbox.max() += Vector2i(m_kern_width, m_kern_height);
-      left_crop_bbox.min() -= Vector2i(m_kern_width, m_kern_height);
-      left_crop_bbox.max() += Vector2i(m_kern_width, m_kern_height);
+      right_crop_bbox.min() -= m_kernel_size;
+      right_crop_bbox.max() += m_kernel_size;
+      left_crop_bbox.min() -=  m_kernel_size;
+      left_crop_bbox.max() +=  m_kernel_size;
 
       // We crop the images to the expanded bounding box and edge
       // extend in case the new bbox extends past the image bounds.
       ImageView<float> left_image_patch, right_image_patch;
-      if (m_do_affine_subpixel > 1) {
-        // affine subpixel does its own pre-processing
-        left_image_patch = crop(edge_extend(m_left_image,ZeroEdgeExtension()),
-                                left_crop_bbox);
-        right_image_patch = crop(edge_extend(m_right_image,ZeroEdgeExtension()),
-                                 right_crop_bbox);
-      } else {
-        // parabola subpixel does the same preprocessing as the pyramid correlator
-        left_image_patch = m_preproc_filter(crop(edge_extend(m_left_image,ZeroEdgeExtension()),
-                                                 left_crop_bbox));
-        right_image_patch = m_preproc_filter(crop(edge_extend(m_right_image,ZeroEdgeExtension()),
-                                                  right_crop_bbox));
-      }
-      ImageView<PixelMask<Vector2f> > disparity_map_patch = crop(edge_extend(m_disparity_map, ZeroEdgeExtension()),
-                                                                 left_crop_bbox);
+      // parabola subpixel does the same preprocessing as the pyramid correlator
+      left_image_patch = m_preproc_filter(crop(edge_extend(m_left_image,ZeroEdgeExtension()),
+                                               left_crop_bbox));
+      right_image_patch = m_preproc_filter(crop(edge_extend(m_right_image,ZeroEdgeExtension()),
+                                                right_crop_bbox));
+      ImageView<PixelMask<Vector2f> > disparity_map_patch =
+        crop(edge_extend(m_disparity_map, ZeroEdgeExtension()),
+             left_crop_bbox);
 
       // Adjust the disparities to be relative to the cropped
       // image pixel locations
-      for (int v = 0; v < disparity_map_patch.rows(); ++v)
-        for (int u = 0; u < disparity_map_patch.cols(); ++u)
-          if ( is_valid(disparity_map_patch(u,v)) )
-            remove_mask(disparity_map_patch(u,v)) -= search_range.min();
+      PixelMask<Vector2f> disparity_patch_translation( search_range.min() );
+      disparity_map_patch -= disparity_patch_translation;
 
-      switch (m_do_affine_subpixel){
+      switch (m_which_subpixel){
 
       case 0 : // No Subpixel
         break;
@@ -320,81 +137,86 @@ namespace stereo {
         subpixel_correlation_parabola(disparity_map_patch,
                                       left_image_patch,
                                       right_image_patch,
-                                      m_kern_width, m_kern_height,
+                                      m_kernel_size[0], m_kernel_size[1],
                                       m_do_h_subpixel, m_do_v_subpixel,
                                       m_verbose);
         break;
       case 2: // Bayes EM  Subpixel
         {
+          const int pyramid_levels = 2;
+          std::vector< ImageView<float> > l_patches, r_patches;
+          std::vector<BBox2i> rois;
+          ImageView<PixelMask<Vector2f> > d_subpatch;
 
-          int pyramid_levels = 3;
-
-          // create the pyramid first
-          std::vector<ImageView<float> > left_pyramid(pyramid_levels), right_pyramid(pyramid_levels);
-          std::vector<BBox2i> regions_of_interest(pyramid_levels);
-          left_pyramid[0] = channels_to_planes(left_image_patch);
-          right_pyramid[0] = channels_to_planes(right_image_patch);
-          regions_of_interest[0] = BBox2i(m_kern_width,m_kern_height,
-                                          bbox.width(),bbox.height());
-
-          std::vector<ImageView<PixelMask<Vector2f> > > disparity_map_pyramid(pyramid_levels);
-          std::vector<ImageView<PixelMask<Vector2f> > > disparity_map_upsampled(pyramid_levels);
-          disparity_map_pyramid[0] = disparity_map_patch;
-
-          // downsample the disparity map and the image pair
-          for (int i = 1; i < pyramid_levels; i++) {
-            left_pyramid[i] = subsample_img_by_two(left_pyramid[i-1]);
-            right_pyramid[i] = subsample_img_by_two(right_pyramid[i-1]);
-            disparity_map_pyramid[i] = subsample_disp_map_by_two(disparity_map_pyramid[i-1]);
-            regions_of_interest[i] = BBox2i(regions_of_interest[i-1].min()/2, regions_of_interest[i-1].max()/2);
+          // I'd like for image subsampling to use a gaussian when
+          // downsampling however it was introducing some edge effects
+          // that I couldn't figure out within a reasonable time frame.
+          for ( int i = 0; i < pyramid_levels; i++ ) {
+            if ( i > 0 ) {
+              // Building all other levels
+              l_patches.push_back( subsample( l_patches.back(), 2 ) );
+              r_patches.push_back( subsample( r_patches.back(), 2 ) );
+              ImageView<PixelMask<Vector2f> > d_subpatch_buf =
+                disparity_subsample( d_subpatch );
+              d_subpatch = d_subpatch_buf;
+              rois.push_back( rois.back()/2 );
+            } else {
+              // First step down from native resolution
+              l_patches.push_back( subsample( left_image_patch, 2 ) );
+              r_patches.push_back( subsample( right_image_patch, 2 ) );
+              d_subpatch = disparity_subsample( disparity_map_patch );
+              rois.push_back( BBox2i( m_kernel_size[0], m_kernel_size[1],
+                                      bbox.width(), bbox.height() ) );
+            }
           }
 
-          subpixel_correlation_affine_2d_EM(disparity_map_pyramid[pyramid_levels-1],
-                                            left_pyramid[pyramid_levels-1],
-                                            right_pyramid[pyramid_levels-1],
-                                            m_kern_width, m_kern_height,
-                                            regions_of_interest[pyramid_levels-1],
+          for ( int i = pyramid_levels-1; i >= 0; i-- ) {
+            subpixel_optimized_affine_2d_EM(d_subpatch,
+                                            l_patches[i], r_patches[i],
+                                            m_kernel_size[0], m_kernel_size[1],
+                                            rois[i],
                                             m_do_h_subpixel, m_do_v_subpixel,
                                             m_verbose);
-          disparity_map_upsampled[pyramid_levels-1] = disparity_map_pyramid[pyramid_levels-1];
-
-          for (int i = pyramid_levels-2; i >= 0; i--) {
-
-            int up_width = left_pyramid[i].cols();
-            int up_height = left_pyramid[i].rows();
-            disparity_map_upsampled[i] = upsample_disp_map_by_two(disparity_map_upsampled[i+1], up_width, up_height);
-
-            subpixel_correlation_affine_2d_EM(disparity_map_upsampled[i],
-                                              left_pyramid[i],
-                                              right_pyramid[i],
-                                              m_kern_width, m_kern_height,
-                                              regions_of_interest[i],
-                                              m_do_h_subpixel, m_do_v_subpixel,
-                                              m_verbose);
+            BBox2i crop_bbox;
+            if ( i > 0 )
+              crop_bbox = BBox2i(0,0,l_patches[i-1].cols(),
+                                 l_patches[i-1].rows());
+            else
+              crop_bbox = BBox2i(0,0,left_image_patch.cols(),
+                                 left_image_patch.rows());
+            ImageView<PixelMask<Vector2f> > d_subpatch_buf =
+              crop(disparity_upsample(edge_extend(d_subpatch)), crop_bbox);
+            d_subpatch = d_subpatch_buf;
           }
 
-          disparity_map_patch = disparity_map_upsampled[0];
+          disparity_map_patch = d_subpatch;
 
+          // Perfrom final pass at native resolution
+          subpixel_optimized_affine_2d_EM(disparity_map_patch,
+                                          left_image_patch,
+                                          right_image_patch,
+                                          m_kernel_size[0], m_kernel_size[1],
+                                          BBox2i(m_kernel_size[0],m_kernel_size[1],
+                                                 bbox.width(), bbox.height()),
+                                          m_do_h_subpixel, m_do_v_subpixel,
+                                          m_verbose);
         }
         break;
       default:
-        vw_throw(ArgumentErr() << "Unknown subpixel correlation type: " << m_do_affine_subpixel << ".");
+        vw_throw(ArgumentErr() << "Unknown subpixel correlation type: " << m_which_subpixel << ".");
         break;
       }
 
       // Undo the above adjustment
-      for (int v = 0; v < disparity_map_patch.rows(); ++v)
-        for (int u = 0; u < disparity_map_patch.cols(); ++u)
-          if ( is_valid(disparity_map_patch(u,v)) )
-            remove_mask(disparity_map_patch(u,v)) += search_range.min();
+      disparity_map_patch += disparity_patch_translation;
 
       // This may seem confusing, but we must crop here so that the
       // good pixel data is placed into the coordinates specified by
       // the bbox.  This allows rasterize to touch those pixels
       // using the coordinates inside the bbox.  The pixels outside
       // those coordinates are invalid, and they never get accessed.
-      return crop(disparity_map_patch, BBox2i(m_kern_width-bbox.min().x(),
-                                              m_kern_height-bbox.min().y(),
+      return crop(disparity_map_patch, BBox2i(m_kernel_size[0]-bbox.min()[0],
+                                              m_kernel_size[1]-bbox.min()[1],
                                               m_left_image.cols(),
                                               m_left_image.rows() ));
     }
@@ -403,8 +225,39 @@ namespace stereo {
       vw::rasterize(prerasterize(bbox), dest, bbox);
     }
     /// \endcond
-
   };
+
+  template <class PreprocFilterT, class ImageT, class DisparityT>
+  SubpixelView<PreprocFilterT, ImageT>
+  subpixel_refine( ImageViewBase<DisparityT> const& disparity_map,
+                   ImageViewBase<ImageT> const& left_image,
+                   ImageViewBase<ImageT> const& right_image,
+                   int kern_width, int kern_height,
+                   bool do_horizontal, bool do_vertical,
+                   int which_subpixel, PreprocFilterT const& filter,
+                   bool verbose = false ) {
+    typedef SubpixelView<PreprocFilterT,ImageT> result_type;
+    return result_type( disparity_map.impl(), left_image.impl(),
+                        right_image.impl(), kern_width, kern_height,
+                        do_horizontal, do_vertical, which_subpixel, filter,
+                        verbose );
+  }
+
+  template <class PreprocFilterT, class ImageT, class DisparityT>
+  SubpixelView<PreprocFilterT, ImageT>
+  subpixel_refine( ImageViewBase<DisparityT> const& disparity_map,
+                   ImageViewBase<ImageT> const& left_image,
+                   ImageViewBase<ImageT> const& right_image,
+                   Vector2i const& kernel_size,
+                   bool do_horizontal, bool do_vertical,
+                   int which_subpixel, PreprocFilterT const& filter,
+                   bool verbose = false ) {
+    typedef SubpixelView<PreprocFilterT,ImageT> result_type;
+    return result_type( disparity_map.impl(), left_image.impl(),
+                        right_image.impl(), kernel_size[0], kernel_size[1],
+                        do_horizontal, do_vertical, which_subpixel, filter,
+                        verbose );
+  }
 
 }} // namespace vw::stereo
 

@@ -136,15 +136,11 @@ namespace vw {
   // Only one thread can be writing to the ImageResource at any given
   // time, however several threads can be rasterizing simultaneously.
   //
-  class ThreadedBlockWriter {
+  class ThreadedBlockWriter : private boost::noncopyable {
     
     boost::shared_ptr<FifoWorkQueue> m_rasterize_work_queue;
     boost::shared_ptr<OrderedWorkQueue> m_write_work_queue;
     CountingSemaphore m_write_queue_limit;
-
-    // Disable copy
-    ThreadedBlockWriter(ThreadedBlockWriter& /*copy*/) {}
-    void operator=(ThreadedBlockWriter& /*copy*/) {}
 
     // ----------------------------- TASK TYPES (2) --------------------------
 
@@ -216,7 +212,7 @@ namespace vw {
     void add_rasterize_task(boost::shared_ptr<Task> task) { m_rasterize_work_queue->add_task(task); }
 
   public:
-    ThreadedBlockWriter() : m_write_queue_limit() {
+    ThreadedBlockWriter() : m_write_queue_limit(vw_settings().write_pool_size()) {
       m_rasterize_work_queue = boost::shared_ptr<FifoWorkQueue>( new FifoWorkQueue() );
       m_write_work_queue = boost::shared_ptr<OrderedWorkQueue>( new OrderedWorkQueue(1) );
     }
@@ -307,6 +303,10 @@ namespace vw {
     int total_num_blocks = ((resource.rows()-1)/block_size.y()+1) * ((resource.cols()-1)/block_size.x()+1);
     for (int32 j = 0; j < (int32)resource.rows(); j+= block_size.y()) {
       for (int32 i = 0; i < (int32)resource.cols(); i+= block_size.x()) {
+
+        vw_out(DebugMessage, "fileio") << "ImageIO writing block at [" << i << " " << j << "]/[" 
+                                       << resource.rows() << " " << resource.cols()
+                                       << "]    size = " << block_size.x() << " x " <<  block_size.y() << "\n";
 
         // Update the progress callback.
         if (progress_callback.abort_requested())

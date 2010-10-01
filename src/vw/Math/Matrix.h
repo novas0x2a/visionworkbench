@@ -306,6 +306,16 @@ namespace math {
       for( ; i!=end(); ++i ) *i = ElemT();
     }
 
+    /// Constructs a matrix whose first 9 elements are as given.
+    Matrix( ElemT e1, ElemT e2, ElemT e3, ElemT e4, ElemT e5,
+            ElemT e6, ElemT e7, ElemT e8, ElemT e9 ) {
+      BOOST_STATIC_ASSERT( RowsN*ColsN >= 4 );
+      iterator i=begin();
+      *(i++)=e1; *(i++)=e2; *(i++)=e3; *(i++)=e4;
+      *(i++)=e5; *(i++)=e6; *(i++)=e7; *(i++)=e8; *(i++)=e9;
+      for( ; i!=end(); ++i ) *i = ElemT();
+    }
+
     /// Constructs a matrix from given densely-packed row-mjor data.
     /// This constructor copies the data.  If you wish to make a
     /// shallow proxy object instead, see vw::MatrixProxy.
@@ -611,7 +621,7 @@ namespace math {
 
     /// Change the size of the matrix.
     /// Elements in memory are preserved when specified.
-    void set_size( unsigned new_rows, unsigned new_cols, bool preserve = false ) {
+    void set_size( unsigned new_rows, unsigned new_cols, bool /*preserve*/ = false ) {
       VW_ASSERT( new_rows==rows() && new_cols==cols(),
                  ArgumentErr() << "Cannot resize matrix proxy." );
     }
@@ -731,7 +741,7 @@ namespace math {
 
     /// Change the size of the matrix.
     /// Elements in memory are preserved when specified.
-    void set_size( unsigned new_rows, unsigned new_cols, bool preserve = false ) {
+    void set_size( unsigned new_rows, unsigned new_cols, bool /*preserve*/ = false ) {
       VW_ASSERT( new_rows==rows() && new_cols==cols(),
                  ArgumentErr() << "Cannot resize matrix proxy." );
     }
@@ -859,7 +869,7 @@ namespace math {
 
     /// Change the size of the matrix.
     /// Elements in memory are preserved when specified.
-    void set_size( unsigned new_rows, unsigned new_cols, bool preserve = false ) {
+    void set_size( unsigned new_rows, unsigned new_cols, bool /*preserve*/ = false ) {
       VW_ASSERT( new_rows==rows() && new_cols==cols(),
                  ArgumentErr() << "Cannot resize matrix transpose." );
     }
@@ -964,10 +974,18 @@ namespace math {
       return *this;
     }
 
+    // For the transposed vctor object
+    template <class OtherT>
+    MatrixRow& operator=( VectorTranspose<OtherT> const& v ) {
+      VW_ASSERT( v.size() == size(), ArgumentErr() << "Vectors must have same size in matrix row assignment.");
+      std::copy( v.begin(), v.end(), begin() );
+      return *this;
+    }
+
     /// Temporary-free generalized assignment operator, from arbitrary VW vector expressions.
     /// This is a performance-optimizing function to be used with caution!
     template <class OtherT>
-    MatrixRow& operator=( VectorNoTmp<OtherT> const& v ) { 
+    MatrixRow& operator=( VectorNoTmp<OtherT> const& v ) {
       VW_ASSERT( v.impl().size()==size(), ArgumentErr() << "Vectors must have same size in matrix row assignment." );
       std::copy( v.impl().begin(), v.impl().end(), begin() );
       return *this;
@@ -1504,6 +1522,12 @@ namespace math {
     return MatrixUnaryFunc<MatrixT, ArgNegationFunctor>( m.impl() );
   }
 
+  /// Absolute of a matrix
+  template <class MatrixT>
+  MatrixUnaryFunc<MatrixT, ArgAbsFunctor >
+  inline abs( MatrixBase<MatrixT> const& m ) {
+    return MatrixUnaryFunc<MatrixT, ArgAbsFunctor>( m.impl() );
+  }
 
   /// Elementwise sum of two matrices.
   template <class Matrix1T, class Matrix2T>

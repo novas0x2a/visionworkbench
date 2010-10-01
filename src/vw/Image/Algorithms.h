@@ -302,12 +302,17 @@ namespace vw {
   void grassfire( ImageViewBase<SourceT> const& src, ImageView<OutputT>& dst ) {
     int32 cols = src.impl().cols(), rows = src.impl().rows();
     dst.set_size( cols, rows );
-    typename SourceT::pixel_accessor srow = src.impl().origin();
-    typename ImageView<OutputT>::pixel_accessor drow = dst.origin();
+
+    typedef typename SourceT::pixel_accessor src_accessor;
+    typedef typename ImageView<OutputT>::pixel_accessor dst_accessor;
+
+    src_accessor srow = src.impl().origin();
+    dst_accessor drow = dst.origin();
     const typename SourceT::pixel_type zero = typename SourceT::pixel_type();
+
     { // First row
-      typename SourceT::pixel_accessor scol = srow;
-      typename ImageView<OutputT>::pixel_accessor dcol = drow;
+      src_accessor scol = srow;
+      dst_accessor dcol = drow;
       for( int32 col=cols; col; --col ) {
         *dcol = ((*scol)==zero)?0:1;
         scol.next_col();
@@ -317,15 +322,15 @@ namespace vw {
       drow.next_row();
     }
     for( int32 row=rows-2; row; --row ) {
-      typename SourceT::pixel_accessor scol = srow;
-      typename ImageView<OutputT>::pixel_accessor dcol = drow;
+      src_accessor scol = srow;
+      dst_accessor dcol = drow;
       *dcol = ((*scol)==zero)?0:1;
       scol.next_col();
       dcol.next_col();
       for( int32 col=cols-2; col; --col ) {
         if( (*scol)==zero ) (*dcol)=0;
         else {
-          typename ImageView<OutputT>::pixel_accessor s1 = dcol, s2 = dcol;
+          dst_accessor s1 = dcol, s2 = dcol;
           (*dcol) = 1 + std::min( *(s1.prev_col()), *(s2.prev_row()) );
         }
         scol.next_col();
@@ -336,8 +341,8 @@ namespace vw {
       drow.next_row();
     }
     { // Last row
-      typename SourceT::pixel_accessor scol = srow;
-      typename ImageView<OutputT>::pixel_accessor dcol = drow;
+      src_accessor scol = srow;
+      dst_accessor dcol = drow;
       for( int32 col=cols; col; --col ) {
         *dcol = ((*scol)==zero)?0:1;
         scol.next_col();
@@ -346,10 +351,10 @@ namespace vw {
     }
     drow.advance(cols-2,-1);
     for( int32 row=rows-2; row; --row ) {
-      typename ImageView<OutputT>::pixel_accessor dcol = drow;
+      dst_accessor dcol = drow;
       for( int32 col=cols-2; col; --col ) {
         if( (*dcol)!=0 ) {
-          typename ImageView<OutputT>::pixel_accessor s1 = dcol, s2 = dcol;
+          dst_accessor s1 = dcol, s2 = dcol;
           int32 m = std::min( *(s1.next_col()), *(s2.next_row()) );
           if( m < *dcol ) *dcol = m + 1;
         }
@@ -428,15 +433,15 @@ namespace vw {
 
   template <class ImageT>
   bool is_opaque_helper( ImageT const& image, true_type ) {
-    typename PixelChannelType<typename ImageT::pixel_type>::type maxval = ChannelRange<typename ImageT::pixel_type>::max();
     for( int32 y=0; y<image.rows(); ++y )
       for( int32 x=0; x<image.cols(); ++x )
-        if( image(x,y)[PixelNumChannels<typename ImageT::pixel_type>::value-1] < maxval ) return false;
+        if( ! (is_opaque( image(x,y) ) ) )
+          return false;
     return true;
   }
 
   template <class ImageT>
-  bool is_opaque_helper( ImageT const& image, false_type ) {
+  bool is_opaque_helper( ImageT const& /*image*/, false_type ) {
     return true;
   }
 
@@ -461,7 +466,7 @@ namespace vw {
   }
 
   template <class ImageT>
-  bool is_transparent_helper( ImageT const& image, false_type ) {
+  bool is_transparent_helper( ImageT const& /*image*/, false_type ) {
     return false;
   }
 
@@ -472,6 +477,63 @@ namespace vw {
     return is_transparent_helper( image.impl(), typename PixelHasAlpha<typename ImageT::pixel_type>::type() );
   }
 
+
+  // *******************************************************************
+  // clear_nonopaque_pixels()
+  //
+  // This filter is useful for eliminating fringe effects along the
+  // edges of images with some transparent or nodata values that have
+  // be transformed with bilinear or bicubic interpolation.
+  // *******************************************************************
+  template <class PixelT>
+  class ClearNonOpaqueFunctor: public UnaryReturnSameType {
+  public:
+    ClearNonOpaqueFunctor() {}
+
+    PixelT operator()( PixelT const& value ) const {
+      if (is_opaque(value)) return value;
+      else return PixelT();
+    }
+  };
+
+  /// Zero out any pixels that aren't completely opaque. 
+  template <class ImageT>
+  UnaryPerPixelView<ImageT,ClearNonOpaqueFunctor<typename ImageT::pixel_type> >
+  inline clear_nonopaque_pixels( ImageViewBase<ImageT> const& image ) {
+    typedef ClearNonOpaqueFunctor<typename ImageT::pixel_type> func_type;
+    return UnaryPerPixelView<ImageT,func_type>( image.impl(), func_type() );
+  }
+
+  // *******************************************************************
+  // remap_pixel_value()
+  //
+  // This filter can be used to map one pixel value to another.  This
+  // can be useful in many situations, for example when you need to
+  // remap the nodata value used in a DEM.
+  // *******************************************************************
+  template <class PixelT>
+  class RemapPixelFunctor: public UnaryReturnSameType {
+    typename PixelChannelType<PixelT>::type m_src_val, m_dst_val;
+  public:
+    RemapPixelFunctor(typename PixelChannelType<PixelT>::type src_val,
+                      typename PixelChannelType<PixelT>::type dst_val) :
+      m_src_val(src_val), m_dst_val(dst_val) {}
+
+    PixelT operator()( PixelT const& value ) const {
+      if (value == m_src_val) return m_dst_val;
+      else return value;
+    }
+  };
+
+  /// Zero out any pixels that aren't completely opaque. 
+  template <class ImageT>
+  UnaryPerPixelView<ImageT,RemapPixelFunctor<typename ImageT::pixel_type> >
+  inline remap_pixel_value( ImageViewBase<ImageT> const& image, 
+                            typename PixelChannelType<typename ImageT::pixel_type>::type src_val,
+                            typename PixelChannelType<typename ImageT::pixel_type>::type dst_val) {
+    typedef RemapPixelFunctor<typename ImageT::pixel_type> func_type;
+    return UnaryPerPixelView<ImageT,func_type>( image.impl(), func_type(src_val, dst_val) );
+  }
 
   // *******************************************************************
   // image_blocks()
@@ -512,180 +574,156 @@ namespace vw {
   /// important that you use pixel mask, or the entire image will be
   /// numbered one. This is for the most part a clone of bwlabel.
   ///
-  /// By using the BlobIndex directly, the user can access std::list
-  /// of Vector2i than list all the pixels involved in a blob. Thisis useful
-  /// for growing bounding boxes on them.
 
-  class BlobIndex {
-     std::vector<std::list<Vector2i> > m_blob;
-     uint32 m_blob_count;
+  template <class SourceT>
+  void blob_index( ImageViewBase<SourceT> const& src,
+                   ImageView<uint32>& dst ) {
 
-  public:
-    // Constructor performs processing
-    template <class SourceT>
-    BlobIndex( ImageViewBase<SourceT> const& src,
-               ImageView<uint32>& dst,
-               bool save_pixels=false ) {
+    if ( src.impl().planes() > 1 )
+      vw_throw( NoImplErr() << "Blob index currently only works with 2D images." );
+    dst.set_size( src.impl().cols(),
+                  src.impl().rows() );
+    fill(dst,0);
 
-      if ( src.impl().planes() > 1 )
-        vw_throw( NoImplErr() << "Blob index currently only works with 2D images." );
-      dst.set_size( src.impl().cols(),
-                    src.impl().rows() );
-      fill(dst,0);
+    // Initialize Graph used to pair blobs
+    typedef boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> Graph;
+    Graph connections;
+    uint32 m_blob_count=1;
 
-      // Initialize Graph used to pair blobs
-      typedef boost::adjacency_list<boost::vecS,boost::vecS,boost::undirectedS> Graph;
-      Graph connections;
-      m_blob_count=1;
+    { // Initial Pass
+      typename SourceT::pixel_accessor s_acc = src.impl().origin();
+      typename SourceT::pixel_accessor p_s_acc = src.impl().origin(); // previous
+      typename ImageView<uint32>::pixel_accessor d_acc = dst.origin();
+      typename ImageView<uint32>::pixel_accessor p_d_acc = dst.origin(); // previous
 
-      { // Initial Pass
-        typename SourceT::pixel_accessor s_acc = src.impl().origin();
-        typename SourceT::pixel_accessor p_s_acc = src.impl().origin(); // previous
-        typename ImageView<uint32>::pixel_accessor d_acc = dst.origin();
-        typename ImageView<uint32>::pixel_accessor p_d_acc = dst.origin(); // previous
-
-        // Top Corner
-        if ( is_valid(*s_acc) ) {
-          *d_acc = m_blob_count;
-          m_blob_count++;
-        }
-
-        // Top Row
-        s_acc.next_col();
-        d_acc.next_col();
-        for ( int32 i = 1; i < dst.cols(); i++ ) {
-          if ( is_valid(*s_acc) ) {
-            if ( is_valid(*p_s_acc) ) {
-              *d_acc = *p_d_acc;
-            } else {
-              *d_acc = m_blob_count;
-              m_blob_count++;
-            }
-          }
-          s_acc.next_col();
-          d_acc.next_col();
-          p_s_acc.next_col();
-          p_d_acc.next_col();
-        }
+      // Top Corner
+      if ( is_valid(*s_acc) ) {
+        *d_acc = m_blob_count;
+        m_blob_count++;
       }
 
-      { // Everything else (9 connected)
-        typename SourceT::pixel_accessor s_acc_row = src.impl().origin();
-        typename ImageView<uint32>::pixel_accessor d_acc_row = dst.origin();
-        s_acc_row.advance(0,1);
-        d_acc_row.advance(0,1);
+      // Top Row
+      s_acc.next_col();
+      d_acc.next_col();
+      for ( int32 i = 1; i < dst.cols(); i++ ) {
+        if ( is_valid(*s_acc) ) {
+          if ( is_valid(*p_s_acc) ) {
+            *d_acc = *p_d_acc;
+          } else {
+            *d_acc = m_blob_count;
+            m_blob_count++;
+          }
+          }
+        s_acc.next_col();
+        d_acc.next_col();
+        p_s_acc.next_col();
+        p_d_acc.next_col();
+      }
+    }
 
-        for (int j = dst.rows()-1; j; --j ) { // Not for indexing
-          typename SourceT::pixel_accessor s_acc = s_acc_row;
-          typename SourceT::pixel_accessor p_s_acc = s_acc_row;
-          typename ImageView<uint32>::pixel_accessor d_acc = d_acc_row;
-          typename ImageView<uint32>::pixel_accessor p_d_acc = d_acc_row;
+    { // Everything else (9 connected)
+      typename SourceT::pixel_accessor s_acc_row = src.impl().origin();
+      typename ImageView<uint32>::pixel_accessor d_acc_row = dst.origin();
+      s_acc_row.advance(0,1);
+      d_acc_row.advance(0,1);
 
-          // Process
-          for ( int i = dst.cols(); i; --i ) {
-            if ( is_valid(*s_acc) ) {
-              if ( i != dst.cols() ) {
-                // Left
-                p_s_acc.advance(-1,0);
-                p_d_acc.advance(-1,0);
-                if ( is_valid(*p_s_acc) ) {
-                  if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
-                    boost::add_edge(*p_d_acc,*d_acc,connections);
-                  } else
-                    *d_acc = *p_d_acc;
-                }
-                // Upper Left
-                p_s_acc.advance(0,-1);
-                p_d_acc.advance(0,-1);
-                if ( is_valid(*p_s_acc) ) {
-                  if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
-                    boost::add_edge(*p_d_acc,*d_acc,connections);
-                  } else
-                    *d_acc = *p_d_acc;
-                }
-              } else {
-                p_s_acc.advance(-1,-1);
-                p_d_acc.advance(-1,-1);
-              }
-              // Upper
-              p_s_acc.advance(1,0);
-              p_d_acc.advance(1,0);
+      for (int j = dst.rows()-1; j; --j ) { // Not for indexing
+        typename SourceT::pixel_accessor s_acc = s_acc_row;
+        typename SourceT::pixel_accessor p_s_acc = s_acc_row;
+        typename ImageView<uint32>::pixel_accessor d_acc = d_acc_row;
+        typename ImageView<uint32>::pixel_accessor p_d_acc = d_acc_row;
+
+        // Process
+        for ( int i = dst.cols(); i; --i ) {
+          if ( is_valid(*s_acc) ) {
+            if ( i != dst.cols() ) {
+              // Left
+              p_s_acc.advance(-1,0);
+              p_d_acc.advance(-1,0);
               if ( is_valid(*p_s_acc) ) {
                 if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
                   boost::add_edge(*p_d_acc,*d_acc,connections);
                 } else
                   *d_acc = *p_d_acc;
               }
-              // Upper Right
-              p_s_acc.advance(1,0);
-              p_d_acc.advance(1,0);
-              if ( i != 1 )
-                if ( is_valid(*p_s_acc) ) {
-                  if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
-                    boost::add_edge(*p_d_acc,*d_acc,connections);
-                  } else
-                    *d_acc = *p_d_acc;
-                }
-              // Setting if not
-              p_s_acc.advance(-1,1);
-              p_d_acc.advance(-1,1);
-              if ( *d_acc == 0 ) {
-                *d_acc = m_blob_count;
-                m_blob_count++;
+              // Upper Left
+              p_s_acc.advance(0,-1);
+              p_d_acc.advance(0,-1);
+              if ( is_valid(*p_s_acc) ) {
+                if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
+                  boost::add_edge(*p_d_acc,*d_acc,connections);
+                } else
+                  *d_acc = *p_d_acc;
               }
+            } else {
+              p_s_acc.advance(-1,-1);
+              p_d_acc.advance(-1,-1);
             }
-            s_acc.next_col();
-            p_s_acc.next_col();
-            d_acc.next_col();
-            p_d_acc.next_col();
-          } // end row process
-
-          s_acc_row.next_row();
-          d_acc_row.next_row();
-        }
-      }
-
-      // Making sure connections has vertices for all indexes made
-      add_edge(m_blob_count-1,m_blob_count-1,connections);
-      std::vector<uint32> component(boost::num_vertices(connections));
-      m_blob_count = boost::connected_components(connections, &component[0])-1;
-
-      { // Update index map to optimal numbering
-        ImageView<uint32>::pixel_accessor p_d_acc = dst.origin(); // previous
-
-        for ( int32 r = 0; r < dst.rows(); r++ ) {
-          ImageView<uint32>::pixel_accessor d_acc = p_d_acc;
-          for ( int32 c = 0; c < dst.cols(); c++ ) {
-            if ( (*d_acc) != 0 ) {
-
-              *d_acc = component[*d_acc];
-
-              if ( save_pixels ) {
-                if ( *d_acc > m_blob.size() )
-                  m_blob.resize( *d_acc );
-                m_blob[*d_acc-1].push_back( Vector2i(c,r) );
+            // Upper
+            p_s_acc.advance(1,0);
+            p_d_acc.advance(1,0);
+            if ( is_valid(*p_s_acc) ) {
+              if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
+                boost::add_edge(*p_d_acc,*d_acc,connections);
+              } else
+                *d_acc = *p_d_acc;
+            }
+            // Upper Right
+            p_s_acc.advance(1,0);
+            p_d_acc.advance(1,0);
+            if ( i != 1 )
+              if ( is_valid(*p_s_acc) ) {
+                if ( (*d_acc != 0) && (*d_acc != *p_d_acc) ) {
+                  boost::add_edge(*p_d_acc,*d_acc,connections);
+                } else
+                  *d_acc = *p_d_acc;
               }
+            // Setting if not
+            p_s_acc.advance(-1,1);
+            p_d_acc.advance(-1,1);
+            if ( *d_acc == 0 ) {
+              *d_acc = m_blob_count;
+              m_blob_count++;
             }
-            d_acc.next_col();
           }
-          p_d_acc.next_row();
-        }
+          s_acc.next_col();
+          p_s_acc.next_col();
+          d_acc.next_col();
+          p_d_acc.next_col();
+        } // end row process
+
+        s_acc_row.next_row();
+        d_acc_row.next_row();
       }
     }
 
-    // Access points to intersting information
-    uint32 num_blobs() const { return m_blob_count; }
+    // Making sure connections has vertices for all indexes made
+    add_edge(m_blob_count-1,m_blob_count-1,connections);
+    std::vector<uint32> component(boost::num_vertices(connections));
+    m_blob_count = boost::connected_components(connections, &component[0])-1;
 
-    // Access to blobs
-    std::list<Vector2i> const& blob( uint32 const& index ) const { return m_blob[index]; }
+    { // Update index map to optimal numbering
+      ImageView<uint32>::pixel_accessor p_d_acc = dst.origin(); // previous
 
-  };
+      for ( int32 r = 0; r < dst.rows(); r++ ) {
+        ImageView<uint32>::pixel_accessor d_acc = p_d_acc;
+        for ( int32 c = 0; c < dst.cols(); c++ ) {
+          if ( (*d_acc) != 0 ) {
+
+            *d_acc = component[*d_acc];
+          }
+          d_acc.next_col();
+        }
+        p_d_acc.next_row();
+      }
+    }
+  }
 
   // Simple interface
   template <class SourceT>
   ImageView<uint32> blob_index( ImageViewBase<SourceT> const& src ) {
     ImageView<uint32> result( src.impl().cols(), src.impl().rows() );
-    BlobIndex( src, result );
+    blob_index( src, result );
     return result;
   }
 

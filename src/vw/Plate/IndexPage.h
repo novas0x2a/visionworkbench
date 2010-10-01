@@ -8,13 +8,11 @@
 #ifndef __VW_PLATEFILE_INDEX_PAGE_H__
 #define __VW_PLATEFILE_INDEX_PAGE_H__
 
-#include <vw/Core/FundamentalTypes.h>
-#include <vw/Core/Log.h>
-#include <vw/Math/BBox.h>
 #include <vw/Plate/ProtoBuffers.pb.h>
-#include <vw/Plate/Exception.h>
-
 #include <vw/Plate/google/sparsetable>
+#include <vw/Math/BBox.h>
+#include <vw/Core/FundamentalTypes.h>
+
 #include <string>
 #include <list>
 
@@ -36,15 +34,15 @@ namespace platefile {
     int m_page_width, m_page_height;
     google::sparsetable<multi_value_type> m_sparse_table;
 
-    void append_if_in_region( std::list<vw::platefile::TileHeader> &results, 
+    void append_if_in_region( std::list<vw::platefile::TileHeader> &results,
                               multi_value_type const& candidates,
                               int col, int row, BBox2i const& region, int min_num_matches) const;
 
 
   public:
-  
+
     /// Create or open a page file.
-    IndexPage(int level, int base_col, int base_row, 
+    IndexPage(int level, int base_col, int base_row,
               int page_width, int page_height);
 
     virtual ~IndexPage();
@@ -69,13 +67,13 @@ namespace platefile {
     /// Return the IndexRecord for a the given transaction_id at
     /// this location.  By default this routine returns the record with
     /// the greatest transaction id that is less than or equal to the
-    /// requested transaction_id.  
+    /// requested transaction_id.
     ///
     /// Exceptions to the above behavior:
     ///
     ///   - A transaction_id == -1 will return the most recent
     ///   transaction id.
-    /// 
+    ///
     ///   - Setting exact_match to true forces an exact transaction_id
     ///   match.
     ///
@@ -90,19 +88,19 @@ namespace platefile {
     /// IndexRecord.
     ///
     /// Note: this function is mostly used when creating snapshots.
-    multi_value_type multi_get(int col, int row, 
+    multi_value_type multi_get(int col, int row,
                                int begin_transaction_id, int end_transaction_id) const;
 
     /// Return the number of valid entries in this page.  (Remember
     /// that this is a sparse store of IndexRecords.)
     int sparse_size() { return m_sparse_table.num_nonempty(); }
 
-    /// Returns a list of valid tiles in this IndexPage.  
+    /// Returns a list of valid tiles in this IndexPage.
     ///
     /// Note: this function is mostly used when creating snapshots.
-    std::list<TileHeader> search_by_region(vw::BBox2i const& region, 
-                                           int start_transaction_id, 
-                                           int end_transaction_id, 
+    std::list<TileHeader> search_by_region(vw::BBox2i const& region,
+                                           int start_transaction_id,
+                                           int end_transaction_id,
                                            int min_num_matches,
                                            bool fetch_one_additional_entry) const;
 
@@ -115,10 +113,10 @@ namespace platefile {
     /// IndexRecord.
     ///
     /// Note: this function is mostly used when creating snapshots.
-    std::list<TileHeader> search_by_location(int col, int row, 
+    std::list<TileHeader> search_by_location(int col, int row,
                                              int start_transaction_id, int end_transaction_id,
                                              bool fetch_one_additional_entry) const;
-    
+
   };
 
   // ----------------------------------------------------------------------
@@ -128,42 +126,23 @@ namespace platefile {
   /// Subclasess of PageGeneratorBase load and unload index pages.
   class PageGeneratorBase {
   public:
+    typedef IndexPage value_type;
+    virtual size_t size() const { return 1; }
     virtual ~PageGeneratorBase() {};
     virtual boost::shared_ptr<IndexPage> generate() const = 0;
   };
 
-  /// The sole purpose of the IndexPageGenerator class is to hold a
-  /// pointer to an instance of the PageGeneratorBase class.  This is
-  /// necessary because the VW caching system doesn't store the
-  /// generator as a pointer, which prevents us from using the caching
-  /// system to store polymorphic index generator types.  So, although
-  /// it ain't pretty, this is really necessary for now.
-  class IndexPageGenerator {
-    boost::shared_ptr<PageGeneratorBase> m_page_gen;
-
-  public:
-    typedef IndexPage value_type;
-
-    IndexPageGenerator(boost::shared_ptr<PageGeneratorBase> page_gen) : 
-      m_page_gen(page_gen) {}
-
-    size_t size() const { return 1; }
-
-    /// Generate an IndexPage.  If no file exists with the name
-    /// m_filename, then an empty IndexPage is generated.
-    boost::shared_ptr<IndexPage> generate() const {
-      return m_page_gen->generate();
-    }
-  };
-
   // PageGeneratorFactory is the base class for entities that can
-  // generate PageGenerators.  
+  // generate PageGenerators.
   class PageGeneratorFactory {
-    
+
   public:
     virtual ~PageGeneratorFactory() {}
-    virtual boost::shared_ptr<IndexPageGenerator> create(int level, int base_col, int base_row, 
-                                                         int page_width, int page_height) = 0;
+    virtual boost::shared_ptr<PageGeneratorBase>
+      create(int level, int base_col, int base_row,
+             int page_width, int page_height) = 0;
+    // Who is this factory manufacturing pages for? (human-readable)
+    virtual std::string who() const = 0;
   };
 
 }} // namespace vw::platefile

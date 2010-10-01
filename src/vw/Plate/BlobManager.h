@@ -8,7 +8,6 @@
 #ifndef __VW_PLATE_BLOB_MANAGER__
 #define __VW_PLATE_BLOB_MANAGER__
 
-#include <string>
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Core/Log.h>
 
@@ -28,16 +27,16 @@ namespace platefile {
   ///
   /// The BlobManager is thread safe.
   class BlobManager {
-    
-    struct BlobRecord {
+
+    struct BlobCacheRecord {
       bool locked;
       uint64 current_blob_offset;
       //      time_t lock_time;
 
       // Note: with the end_of_file_ptr written at the beginning of
-      // the blob file, the initial blob_offset should be 
+      // the blob file, the initial blob_offset should be
       // 3 * 8 bytes = 24 bytes.
-      BlobRecord() : locked(false), current_blob_offset(0) {}
+      BlobCacheRecord() : locked(false), current_blob_offset(0) {}
 
       void lock() {
         this->locked = true;
@@ -50,7 +49,7 @@ namespace platefile {
       //     this->locked = false;
       //   }
       // }
-      
+
       void unlock(int current_blob_offset) {
         this->current_blob_offset = current_blob_offset;
         this->locked = false;
@@ -59,16 +58,16 @@ namespace platefile {
 
     vw::uint64 m_max_blob_size;
     unsigned int m_max_blobs;
-    std::vector<BlobRecord> m_blob_locks;
+    std::vector<BlobCacheRecord> m_blob_locks;
     int m_blob_index;
     vw::Mutex m_mutex;
 
     // A method to poll for an available blob.  Returns -1 if there
-    // are no blobs available.  
+    // are no blobs available.
     int get_next_available_blob();
-    
+
     // Helper function for incrementing blob ids, and wrapping around the end.
-    void increment_blob_index(int &blob_index);  
+    void increment_blob_index(int &blob_index);
 
   public:
 

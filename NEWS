@@ -1,7 +1,184 @@
-*** RELEASE 2.0_beta5 ***
+*** RELEASE 2.1.0, 1 SEPTEMBER 2010 ***
+CORE
+ - Add hit/miss/evict data collection for Cache
+ - Change CacheLine::value() to also take shared_ptrs
+ - Fix Log::add to use the given RuleSet (bug reported by Rodrigo Benenson)
+ - Fix some multithread bugs in logging code
+MATH
+ - Add abs overloads for Matrix and Vector
+ - Add CDF Accumulator support for arbitrary quantile count and stddev approx
+ - Fix a possible infinite loop in ConjugateGradient
+ - Fix lapack use on osx 64-bit
+ - Fix VectorTranspose assignment to MatrixRow
+ - Remove incomplete Fundamental Matrix solver in favor of new one in Camera
+IMAGE
+ - Add a config setting (write_pool) for thread pool size for io-blocked threads
+ - Add an ImageResource for OpenCV's cv::Mat
+ - Add non-in-place pixel accessors
+ - Add PerPixelIndexView as an abstraction for pure-functional views
+ - Add remap_pixel_value which... remaps pixel values!
+ - Fix assignment to select_(col|row)
+ - Fix is_opaque to return true iff every channel is completely opaque
+ - Fix many bugs related to PixelMask math operations
+ - Replace BlobIndex class with blob_index function
+FILEIO
+ - Fix DiskImageResourceJPEG's error-handling to avoid setjmp
+ - Fix DiskImageResourcePNG's  error-handling to avoid setjmp
+ - Fix DiskImageResourcePNG to write data on write() rather than destructor
+ - Fix minor windows incompatibility (unlink)
+ - Fix DiskImageResourcePNG distructor to not throw
+ - Fix DiskImageResourceGDAL to use vw::Log for message-handling
+ - Fix nonexistent and invalid file-handling for all DiskImageResources
+BUNDLE ADJUSTMENT
+ - Refactor quite a bit
+CAMERA
+ - Add accessor for PinholeModel's camera matrix
+ - Add Adjustable Tsai lens distortion model
+ - Add Brown-Conrady lens distortion model
+ - Add Fundamental Matrix 8p solver
+ - Add Fundamental Matrix ML solver
+ - Add new EXIF tag names to spec, and make it an enum
+ - Change IO to use protocol buffers instead of a custom binary format
+ - Refactor PinholeModel and CameraModel for more model types
+CARTOGRAPHY
+ - Fix polar singularity issues by drawing an X across the pole
+ - Fix read_georeference to return a bool about success
+INTERESTPOINT
+ - Improve memory use with iterators instead of copies
+ - Refactor Descriptor
+TOOLS
+ - ba_test: fix brokeness with boost filesystem 1.36
+ - grassfirealpha: many improvements
+ - image2qtree: support arbitrary spherical datums
+ - image2qtree: allow user-override of georeference info
+ - ipalign: improve defaults, allow saving of intermediates
+ - ipfind: improve defaults
+MISC
+ - Use boost::noncopyable instead of the private copy constructor idiom
+ - Fix gccisms for clang++
+ - Many more tests
+ - Remove TestInstantiate stuff (cool experiment, but too fragile)
+ - Switch from libtool's -version-info to -release numbering. Binary
+   compatibility is Too Hard.
+
+
+
+================================================================================
+*** RELEASE 2.0.0, 7 APRIL 2010 ***
+
+CORE
+ - Add Stopwatch ability to pull CPU time or Calendar time.
+ - Add name() method to VW exceptions to stringify the exception type.
+ - Add general.tmp_directory config file key.
+ - Fix mutex lock inside Condition::timed_wait().
+ - Add concurrent-safe queue class (ThreadQueue).
+ - Remove TerminationHandler, it was really fragile.
+ - Change Warning/ErrorMessage behavior; they prepend "Warning: " or "Error: "
+ - Change ProgressBars to use a *.progress log namespace.
+ - Change ProgressBars to enforce 80-char width.
+ - Change values of ErrorMessage and InfoMessage, swapping them back to the
+   beta1 way.
+ - Change vwrc log filters to support limited wildcarding.
+
+MATH
+ - Extend AffineFittingFunctor, SimilarityFittingFunctor,
+   TranslationRotationFittingFunctor, and TranslationFittingFunctor to work in
+   N-dimensions.
+ - Add Homogeneous error metric.
+ - Add CDFAccumulator.
+ - Rename SparseSkylineMatrix to MatrixSparseSkyline.
+ - Change MatrixSparseSkyline to inherit from MatrixBase.
+ - Add VectorReorganize and MatrixReorganize to re-map indices.
+ - Add Cuthill McKee ordering algorithm for MatrixSparseSkyline.
+ - Add Fundamental Matrix solvers.
+ - Rename Null to Nullspace.
+ - Add Rank and Nullity matrix operations.
+ - Fix excessive logging inside LevenbergMarquardt; improves speed.
+ - Add function to convert XYZ Euler angles to quaternions.
+
 IMAGE
  - Fix rounding bug with premultipliying (bugfix from William Rucklidge)
+ - Add alpha_to_mask() function.
+ - Fix PixelWithAlpha to properly noop if input already has an alpha channel.
 
+FILEIO
+ - Add DiskCacheImageView constructor parameter to choose the cache directory.
+ - Change DiskImageResourceGDAL to turn on LZW compression by default for
+   TIFFs.
+ - Remove obsolete/broken JP2.h code.
+ - Add DiskImageResourceGDAL::set_gdal_cache_size to set GDAL's internal cache
+   size.
+
+CAMERA
+ - Fix incorrect rotation inside AdjustCameraModel.
+ - Add PinholeModel method to set camera projection matrix.
+ - Add CameraMatrix fitting functor that attempts to solve for camera
+   projection matrix.
+
+BUNDLE ADJUSTMENT
+ - Move Bundle Adjustment code from Camera into its own module.
+ - Add timers for internal functions; see loglevel DebugMessage namespace "ba".
+ - Add RobustSparseKGCP, a robust BA that doesn't deweight Ground Control
+   Points.
+ - Add Camera Relation Network, a new perspective of Control Network. Allows
+   for a Camera major organization.
+ - Add efficient ControlNetworkLoader.
+ - Refactor Sparse Bundle Adjustment to reduce speed by half and to build
+   sparse matrix more efficiently.
+
+CARTOGRAPHY
+ - Fix CameraBBox to work with meters per pixel on projection plane.
+ - Add D_MOON and D_MARS datums as well known datums.
+
+MOSAIC
+ - Add Gigapan viewer support inside image2qtree.
+
+STEREO
+ - Change EM subpixel to switch between Newton method and Gauss-Newton for
+   speed improvements.
+ - Add valid_pad technique that minimizes the cuts into the disparity that
+   happen from the pyramid correlator.
+ - Add Disparity Transform; it transforms an image by using a Disparity Map.
+
+INTEREST POINT
+ - Add Scaled Gradient Descriptor, a new custom and fast descriptor.
+ - Add OBALoG detector code with help from KSU.
+ - Add BoxFilterView which allows for arbitrary box filter application.
+ - Add IntegralDescriptor type for descriptors that use Integral Images.
+ - Add Scaled Gradient Descriptor 2, which is a simple descriptor that uses
+   Integral Images for calculation.
+
+TOOLS
+ - ipfind: culling fix for threaded detection.
+ - ipfind: add gain setting as  standard interface to all algorithms'
+           thresholds.
+ - correlate: modify to mimic Ames Stereo Pipeline's stereo.
+ - colormap: Fix nodata value detection.
+ - grassfirealpha: new tool that provides a grassfire image in the alpha
+   channel.
+ - all: accept -h as an alternative to --help.
+
+BUILD
+ - Add dependency on Boost Graph library.
+ - Switch a large number of tests to use Google Test.
+ - Enable silent build (use --disable-silent-rules or make V=1 to revert).
+ - Disable static libraries by default (use --enable-static to revert)
+ - Rework Boost detection. Again. Ad infinitum?
+ - Add support for autoconf 2.65.
+ - Fix support for really old autoconf.
+ - Fix TIFF-inside-GDAL detection.
+ - Add support for enabling Google perftools' tcmalloc and libprofiler.
+ - Many FreeBSD fixes. VW should compile on FreeBSD now thanks to Steve Wills!
+
+MISC
+ - Add experimental GDB 7.0+ python-based pretty printers for select VW types.
+ - Compiler warning fixes throughout the tree.
+ - Some functions that the comments marked as deprecated will also throw
+   compiler warnings now if you use them.
+
+
+
+================================================================================
 *** RELEASE 2.0_beta4, 26 OCTOBER 2009 ***
 
 CORE

@@ -23,7 +23,7 @@
 #ifndef __VW_CORE_LOG_H__
 #define __VW_CORE_LOG_H__
 
-#include <vw/Core/CoreExport.h>
+#include <vw/Core/Features.h>
 #include <vw/Core/Thread.h>
 
 // Boost Headers
@@ -52,6 +52,7 @@ namespace vw {
 
   // Lower number -> higher priority
   enum MessageLevel {
+    NoMessage = -1,
     ErrorMessage = 0,
     WarningMessage = 10,
     InfoMessage = 20,
@@ -206,26 +207,25 @@ namespace vw {
     // streambuf.  In practice, characters are fed in batches using
     // xputn() below.
     virtual int_type overflow(int_type c) {
-      {
-        Mutex::Lock lock(m_mutex);
-        if(!traits::eq_int_type(c, traits::eof())) {
-          m_buffers[ Thread::id() ].push_back(c);
-        }
+      Mutex::Lock lock(m_mutex);
+      buffer_type& buffer = m_buffers[ Thread::id() ];
+
+      if(!traits::eq_int_type(c, traits::eof())) {
+        buffer.push_back(c);
       }
 
       // If the last character is a newline or cairrage return, then
       // we force a call to sync().
       if ( c == '\n' || c == '\r' )
-        sync();
+        locked_sync(buffer);
       return traits::not_eof(c);
     }
 
     virtual std::streamsize xsputn(const CharT* s, std::streamsize num) {
+      Mutex::Lock lock(m_mutex);
       buffer_type& buffer = m_buffers[ Thread::id() ];
-      {
-        Mutex::Lock lock(m_mutex);
-        std::copy(s, s + num, std::back_inserter<buffer_type>( buffer ));
-      }
+
+      std::copy(s, s + num, std::back_inserter<buffer_type>( buffer ));
 
       // This is a bit of a hack that forces a sync whenever the
       // character string *ends* with a newline, thereby flushing the
@@ -235,18 +235,25 @@ namespace vw {
 
         if ( buffer[last_char_position] == '\n' ||
              buffer[last_char_position] == '\r' )
-          sync();
+          locked_sync(buffer);
       }
       return num;
     }
 
+    // You must call this with the lock already held!
+    int locked_sync(buffer_type& buffer) {
+      if(!buffer.empty() && m_out ) {
+        m_out->sputn(&buffer[0], static_cast<std::streamsize>(buffer.size()));
+        m_out->pubsync();
+        buffer.clear();
+      }
+      return 0;
+    }
+
     virtual int sync() {
       Mutex::Lock lock(m_mutex);
-      if(!m_buffers[ Thread::id() ].empty() && m_out ) {
-        m_out->sputn(&m_buffers[ Thread::id() ][0], static_cast<std::streamsize>(m_buffers[ Thread::id() ].size()));
-        m_out->pubsync();
-        m_buffers[ Thread::id() ].clear();
-      }
+      if (m_buffers.count(Thread::id()))
+        return locked_sync(m_buffers[ Thread::id() ]);
       return 0;
     }
 
@@ -313,7 +320,7 @@ namespace vw {
     return o.str();
   }
 
-  class VW_CORE_DECL LogRuleSet {
+  class LogRuleSet {
     // The ruleset determines what log messages are sent to the VW system log file
     typedef std::pair<int, std::string> rule_type;
     typedef std::list<rule_type> rules_type;
@@ -321,97 +328,26 @@ namespace vw {
     Mutex m_mutex;
 
     // Help functions
-    inline bool has_leading_wildcard( std::string const& exp ) {
-      size_t index = exp.rfind("*");
-      if ( index == std::string::npos )
-        return false;
-      return size_t(exp.size())-1 > index;
-    }
-
-    inline std::string after_wildcard( std::string const& exp ) {
-      int index = exp.rfind("*");
-      if ( index != -1 ) {
-        index++;
-        return exp.substr(index,exp.size()-index);
-      }
-      return "";
-    }
+    bool has_leading_wildcard( std::string const& exp );
+    std::string after_wildcard( std::string const& exp );
 
   public:
-
-    // Ensure Copyable semantics
-    LogRuleSet( LogRuleSet const& copy_log) {
-      m_rules = copy_log.m_rules;
-    }
-
-    LogRuleSet& operator=( LogRuleSet const& copy_log) {
-      m_rules = copy_log.m_rules;
-      return *this;
-    }
-
-
     // by default, the LogRuleSet is set up to pass "console" messages
-    // at level vw::WarningMessage or higher priority.
-    LogRuleSet() {
-      m_rules.push_back(rule_type(vw::InfoMessage, "console"));
-    }
+    // at level vw::InfoMessage or higher priority.
+    LogRuleSet();
+    virtual ~LogRuleSet();
 
-    virtual ~LogRuleSet() {}
+    // Ensure Copyable semantics (Mutex is not copyable, so we create our own
+    // mutex and copy the internal rules)
+    LogRuleSet( LogRuleSet const& copy_log);
+    LogRuleSet& operator=( LogRuleSet const& copy_log);
 
-    void add_rule(int log_level, std::string log_namespace) {
-      Mutex::Lock lock(m_mutex);
-      m_rules.push_front(rule_type(log_level, boost::to_lower_copy(log_namespace)));
-    }
-
-    void clear() {
-      Mutex::Lock lock(m_mutex);
-      m_rules.clear();
-    }
+    void add_rule(int log_level, std::string log_namespace);
+    void clear();
 
     // You can overload this method from a subclass to change the
     // behavior of the LogRuleSet.
-    virtual bool operator() (int log_level, std::string log_namespace) {
-      Mutex::Lock lock(m_mutex);
-
-      std::string lower_namespace = boost::to_lower_copy(log_namespace);
-
-      for (rules_type::iterator it = m_rules.begin(); it != m_rules.end(); ++it) {
-
-        // Pass through rule for complete wildcard
-        if ( (*it).second == "*" &&
-             ( (*it).first == vw::EveryMessage ||
-               log_level <= (*it).first ) )
-          return true;
-
-        // For explicit matching on namespace
-        if ( (*it).second == lower_namespace ) {
-          if ( log_level <= (*it).first )
-            return true;
-          else
-            return false;
-        }
-
-        // Evaluation of half wild card
-        if ( has_leading_wildcard( (*it).second )  &&
-             boost::iends_with(lower_namespace,after_wildcard((*it).second)) ) {
-          if ( log_level <= (*it).first )
-            return true;
-          else
-            return false;
-        }
-      }
-
-      // Progress bars get a free ride at InfoMessage level unless a
-      // rule above modifies that.
-      if ( boost::iends_with(lower_namespace,".progress") &&
-           log_level == vw::InfoMessage )
-        return true;
-
-      // We reach this line if all of the rules have failed, in
-      // which case we return a NULL stream, which will result in
-      // nothing being logged.
-      return false;
-    }
+    virtual bool operator() (int log_level, std::string log_namespace);
   };
 
 
@@ -419,15 +355,11 @@ namespace vw {
   //                         LogInstance
   // -------------------------------------------------------
   //
-  class VW_CORE_DECL LogInstance {
+  class LogInstance : private boost::noncopyable {
     PerThreadBufferedStream<char> m_log_stream;
     std::ostream *m_log_ostream_ptr;
     bool m_prepend_infostamp;
     LogRuleSet m_rule_set;
-
-    // Ensure non-copyable semantics
-    LogInstance( LogInstance const& );
-    LogInstance& operator=( LogInstance const& );
 
   public:
 
@@ -468,7 +400,7 @@ namespace vw {
   /// Log::system_log() static method, which access a singleton
   /// instance of the system log class.  You should not need to create
   /// a log object yourself.
-  class VW_CORE_DECL Log {
+  class Log : private boost::noncopyable {
 
     // Pointers to various log instances that are currently being
     // managed by the system log.
@@ -492,10 +424,6 @@ namespace vw {
     // it can be safely de-allocated.
     std::map<int, boost::shared_ptr<multi_ostream> > m_multi_ostreams;
 
-    // Ensure non-copyable semantics
-    Log( Log const& );
-    Log& operator=( Log const& );
-
   public:
 
     /// You should probably not create an instance of Log on your own
@@ -513,9 +441,11 @@ namespace vw {
 
     /// Add a stream to the Log manager.  You may optionally specify a
     /// LogRuleSet.
-    void add(std::ostream &stream, LogRuleSet /*rule_set*/ = LogRuleSet()) {
+    void add(std::ostream &stream, LogRuleSet rule_set = LogRuleSet(), bool prepend_infostamp = true) {
       Mutex::Lock lock(m_system_log_mutex);
-      m_logs.push_back( boost::shared_ptr<LogInstance>(new LogInstance(stream)) );
+      boost::shared_ptr<LogInstance> li(new LogInstance(stream, prepend_infostamp));
+      li->rule_set() = rule_set;
+      m_logs.push_back(li);
     }
 
     // Add an already existing LogInstance to the system log manager.
@@ -555,23 +485,23 @@ namespace vw {
   ///
   ///     vw_log().console_log() << "Some text\n";
   ///
-  VW_CORE_DECL Log& vw_log();
+  Log& vw_log();
 
   /// The vision workbench logging operator.  Use this to generate a
   /// message in the system log using the given log_level and
   /// log_namespace.
-  VW_CORE_DECL std::ostream& vw_out( int log_level = vw::InfoMessage,
+  std::ostream& vw_out( int log_level = vw::InfoMessage,
                         std::string log_namespace = "console" );
 
   /// Deprecated: Set the debug level for the system console log.  You
   /// can exercise much more fine grained control over the system log
   /// by manipulating the Log::system_log().console_log().rule_set().
-  VW_CORE_DECL void set_debug_level( int log_level );
+  void set_debug_level( int log_level ) VW_DEPRECATED;
 
   /// Deprecated: Set the output stream for the system console log to
   /// an arbitrary C++ ostream.  You should use
   /// Log::system_log().set_console_stream() instead.
-  VW_CORE_DECL void set_output_stream( std::ostream& stream );
+  void set_output_stream( std::ostream& stream ) VW_DEPRECATED;
 
 } // namespace vw
 

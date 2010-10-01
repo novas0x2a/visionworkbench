@@ -18,13 +18,13 @@ struct vw::gui::TextureRequest {
   virtual void process_request() = 0;
 };
 
-// Allocate Texture Request 
+// Allocate Texture Request
 class AllocateTextureRequest : public TextureRequest {
   boost::shared_ptr<TextureRecordBase> m_record;
   boost::shared_ptr<ViewImageResource> m_tile;
   CachedTextureRenderer* m_parent;
 public:
-  AllocateTextureRequest( boost::shared_ptr<TextureRecordBase> texture_record, 
+  AllocateTextureRequest( boost::shared_ptr<TextureRecordBase> texture_record,
                           boost::shared_ptr<ViewImageResource> tile,
                           CachedTextureRenderer* parent) :
     m_record(texture_record), m_tile(tile), m_parent(parent) {}
@@ -35,7 +35,7 @@ public:
   }
 };
 
-// Deallocate Texture Request 
+// Deallocate Texture Request
 class DeallocateTextureRequest : public TextureRequest {
   boost::shared_ptr<TextureRecordBase> m_record;
   CachedTextureRenderer* m_parent;
@@ -55,10 +55,10 @@ public:
 //                     CachedTextureRenderer
 // --------------------------------------------------------------
 
-void CachedTextureRenderer::request_allocation(boost::shared_ptr<TextureRecordBase> texture_record, 
+void CachedTextureRenderer::request_allocation(boost::shared_ptr<TextureRecordBase> texture_record,
                                                boost::shared_ptr<ViewImageResource> tile) {
   vw::Mutex::Lock lock(m_request_mutex);
-  m_requests.push_back( boost::shared_ptr<TextureRequest>(new AllocateTextureRequest(texture_record, tile, this)) ); 
+  m_requests.push_back( boost::shared_ptr<TextureRequest>(new AllocateTextureRequest(texture_record, tile, this)) );
   m_needs_redraw = true;
 }
 
@@ -67,13 +67,13 @@ void CachedTextureRenderer::request_deallocation(boost::shared_ptr<TextureRecord
   m_requests.push_back( boost::shared_ptr<TextureRequest>(new DeallocateTextureRequest(texture_record, this)) );
   m_needs_redraw = true;
 }
-  
+
 void CachedTextureRenderer::process_allocation_requests() {
   vw::Mutex::Lock lock(m_request_mutex);
-  
+
   boost::shared_ptr<TextureRequest> r;
-  
-  while (m_requests.size() != 0) {
+
+  while (!m_requests.empty()) {
     r = m_requests.front();
     m_requests.pop_front();
     r->process_request();
@@ -83,32 +83,32 @@ void CachedTextureRenderer::process_allocation_requests() {
 // --------------------------------------------------------------
 //                     TextureFetchTask
 // --------------------------------------------------------------
-  
+
 class vw::gui::TextureFetchTask {
   bool terminate;
   vw::Mutex &m_request_mutex;
   std::list<boost::shared_ptr<TextureRecord> > &m_requests;
-  
+
 public:
-  TextureFetchTask(vw::Mutex &request_queue_mutex, 
-                   std::list<boost::shared_ptr<TextureRecord> > &request_queue) : 
+  TextureFetchTask(vw::Mutex &request_queue_mutex,
+                   std::list<boost::shared_ptr<TextureRecord> > &request_queue) :
     terminate(false), m_request_mutex(request_queue_mutex), m_requests(request_queue) {}
-  
+
   void operator()() {
     while (!terminate) {
-      
+
       // Drain the request queue
       bool found = false;
       boost::shared_ptr<TextureRecord> r;
       {
         vw::Mutex::Lock lock(m_request_mutex);
-        if (m_requests.size() != 0) {
+        if (!m_requests.empty()) {
           r = m_requests.front();
           m_requests.pop_front();
           found = true;
-        } 
+        }
       }
-      
+
       if (found) {
 
         // Force the texture to regenerate.  Doing so will cause the
@@ -127,7 +127,7 @@ public:
       }
     }
   }
-  
+
   void kill() { terminate = true; }
 };
 
@@ -140,10 +140,9 @@ vw::gui::GlTextureCache::GlTextureCache(boost::shared_ptr<TileGenerator> tile_ge
   m_tile_generator(tile_generator) {
 
   // Create the texture cache
-  int gl_texture_cache_size = 128 * 1024 * 1024 * 4; // Use 128-MB of
-                                                     // texture cache
-                                                     // assuming an 8-bit
-                                                     // RGBA image.
+  int gl_texture_cache_size = 256 * 1024 * 1024; // Use 128-MB of
+                                                 // texture cache
+
   m_gl_texture_cache_ptr = new vw::Cache( gl_texture_cache_size );
 
   // Start the texture fetch thread
@@ -161,7 +160,7 @@ vw::gui::GlTextureCache::~GlTextureCache() {
   m_texture_fetch_task->kill();
   m_texture_fetch_thread->join();
   delete m_texture_fetch_thread;
-  
+
   // Free up remaining texture handles, and then the cache itself.
   m_requests.clear();
   delete m_gl_texture_cache_ptr;
@@ -177,7 +176,7 @@ void vw::gui::GlTextureCache::clear() {
 }
 
 GLuint vw::gui::GlTextureCache::get_texture_id(vw::gui::TileLocator const& tile_info,
-                                               CachedTextureRenderer* requestor) {    
+                                               CachedTextureRenderer* requestor) {
   // Bail early if the tile_info request is totally invalid.
   if (!tile_info.is_valid())
     return 0;
@@ -194,10 +193,10 @@ GLuint vw::gui::GlTextureCache::get_texture_id(vw::gui::TileLocator const& tile_
   try {
 
     // First, see if the texture record is already in the cache.
-    boost::shared_ptr<TextureRecord> rec = m_texture_records->search(tile_info.col, 
-                                                                     tile_info.row, 
+    boost::shared_ptr<TextureRecord> rec = m_texture_records->search(tile_info.col,
+                                                                     tile_info.row,
                                                                      tile_info.level,
-                                                                     tile_info.transaction_id, 
+                                                                     tile_info.transaction_id,
                                                                      false);
 
     // If the shared pointer for this record is empty, then this node
@@ -205,7 +204,7 @@ GLuint vw::gui::GlTextureCache::get_texture_id(vw::gui::TileLocator const& tile_
     // but this node does not itself contain any data yet.  To
     // populate it with data, we throw an exception to run the code
     // below.
-    if ( !rec ) 
+    if ( !rec )
       vw_throw(gui::TileNotFoundErr() << "invalid record. regenerating...");
 
     // If the texture_id of this record is 0, then we need to send a
@@ -233,17 +232,16 @@ GLuint vw::gui::GlTextureCache::get_texture_id(vw::gui::TileLocator const& tile_
     new_record->handle = m_gl_texture_cache_ptr->insert( GlTextureGenerator(m_tile_generator,
                                                                             tile_info,
                                                                             new_record_ptr) );
-    
+
     // Place this cache handle into the tree for later access.
-    m_texture_records->insert( new_record_ptr, tile_info.col, tile_info.row, 
+    m_texture_records->insert( new_record_ptr, tile_info.col, tile_info.row,
                                tile_info.level, tile_info.transaction_id );
 
     Mutex::Lock lock(m_request_mutex);
     m_requests.push_back( new_record_ptr );
     return 0;
 
-  } 
+  }
 
   return 0; // never reached
 }
-

@@ -16,6 +16,7 @@
 #include <vw/FileIO.h>
 #include <vw/Math.h>
 #include <vw/Mosaic/ImageComposite.h>
+#include <vw/Camera/CameraGeometry.h>
 
 using namespace vw;
 using namespace vw::ip;
@@ -23,13 +24,8 @@ using namespace vw::ip;
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
-static std::string prefix_from_filename(std::string const& filename) {
-  std::string result = filename;
-  int index = result.rfind(".");
-  if (index != -1)
-    result.erase(index, result.size());
-  return result;
-}
+#include <boost/filesystem/path.hpp>
+namespace fs = boost::filesystem;
 
 // Duplicate matches for any given interest point probably indicate a
 // poor match, so we cull those out here.
@@ -63,7 +59,7 @@ static void write_match_image(std::string out_file_name,
                               std::vector<InterestPoint> matched_ip1,
                               std::vector<InterestPoint> matched_ip2) {
   // Skip image pairs with no matches.
-  if (matched_ip1.size() == 0)
+  if (matched_ip1.empty())
     return;
 
   DiskImageView<PixelRGB<uint8> > src1(file1);
@@ -97,15 +93,15 @@ int main(int argc, char** argv) {
   std::vector<std::string> input_file_names;
   double matcher_threshold;
   std::string ransac_constraint;
-  int inlier_threshold;
+  float inlier_threshold;
 
   po::options_description general_options("Options");
   general_options.add_options()
     ("help,h", "Display this help message")
     ("matcher-threshold,t", po::value<double>(&matcher_threshold)->default_value(0.6), "Threshold for the interest point matcher.")
     ("non-kdtree", "Use an implementation of the interest matcher that is not reliant on a KDTree algorithm")
-    ("ransac-constraint,r", po::value<std::string>(&ransac_constraint)->default_value("similarity"), "RANSAC constraint type.  Choose one of: [similarity, homography, or none].")
-    ("inlier-threshold,i", po::value<int>(&inlier_threshold)->default_value(10), "RANSAC inlier threshold.")
+    ("ransac-constraint,r", po::value(&ransac_constraint)->default_value("similarity"), "RANSAC constraint type.  Choose one of: [similarity, homography, fundamental, or none].")
+    ("inlier-threshold,i", po::value(&inlier_threshold)->default_value(10), "RANSAC inlier threshold.")
     ("debug-image,d", "Write out debug images.");
 
   po::options_description hidden_options("");
@@ -150,8 +146,8 @@ int main(int argc, char** argv) {
 
       // Read each file off disk
       std::vector<InterestPoint> ip1, ip2;
-      ip1 = read_binary_ip_file(prefix_from_filename(input_file_names[i])+".vwip");
-      ip2 = read_binary_ip_file(prefix_from_filename(input_file_names[j])+".vwip");
+      ip1 = read_binary_ip_file(fs::path(input_file_names[i]).replace_extension("vwip").string() );
+      ip2 = read_binary_ip_file(fs::path(input_file_names[j]).replace_extension("vwip").string() );
       vw_out() << "Matching between " << input_file_names[i] << " (" << ip1.size() << " points) and " << input_file_names[j] << " (" << ip2.size() << " points).\n";
 
       std::vector<InterestPoint> matched_ip1, matched_ip2;
@@ -179,27 +175,32 @@ int main(int argc, char** argv) {
         // of points.  Points that don't meet this geometric
         // contstraint are rejected as outliers.
         if (ransac_constraint == "similarity") {
-          vw::math::RandomSampleConsensus<vw::math::SimilarityFittingFunctor, vw::math::InterestPointErrorMetric> ransac( vw::math::SimilarityFittingFunctor(),
-                                                                                                                  vw::math::InterestPointErrorMetric(),
-                                                                                                                  inlier_threshold ); // inlier_threshold
+          math::RandomSampleConsensus<math::SimilarityFittingFunctor, math::InterestPointErrorMetric> ransac( math::SimilarityFittingFunctor(),
+                                                                                                              math::InterestPointErrorMetric(),
+                                                                                                              inlier_threshold ); // inlier_threshold
           Matrix<double> H(ransac(ransac_ip1,ransac_ip2));
           std::cout << "\t--> Similarity: " << H << "\n";
           indices = ransac.inlier_indices(H,ransac_ip1,ransac_ip2);
         } else if (ransac_constraint == "homography") {
-          vw::math::RandomSampleConsensus<vw::math::HomographyFittingFunctor, vw::math::InterestPointErrorMetric> ransac( vw::math::HomographyFittingFunctor(),
-                                                                                                                  vw::math::InterestPointErrorMetric(),
-                                                                                                                  inlier_threshold ); // inlier_threshold
+          math::RandomSampleConsensus<math::HomographyFittingFunctor, math::InterestPointErrorMetric> ransac( math::HomographyFittingFunctor(),
+                                                                                                              math::InterestPointErrorMetric(),
+                                                                                                              inlier_threshold ); // inlier_threshold
           Matrix<double> H(ransac(ransac_ip1,ransac_ip2));
           std::cout << "\t--> Homography: " << H << "\n";
           indices = ransac.inlier_indices(H,ransac_ip1,ransac_ip2);
+        } else if (ransac_constraint == "fundamental") {
+          math::RandomSampleConsensus<camera::FundamentalMatrix8PFittingFunctor, camera::FundamentalMatrixDistanceErrorMetric> ransac( camera::FundamentalMatrix8PFittingFunctor(), camera::FundamentalMatrixDistanceErrorMetric(), inlier_threshold );
+          Matrix<double> F(ransac(ransac_ip1,ransac_ip2));
+          std::cout << "\t--> Fundamental: " << F << "\n";
+          indices = ransac.inlier_indices(F,ransac_ip1,ransac_ip2);
         } else if (ransac_constraint == "none") {
           for ( unsigned i = 0; i < matched_ip1.size(); ++i )
             indices.push_back(i);
         } else {
-          std::cout << "Unknown RANSAC constraint type: " << ransac_constraint << ".  Choose one of: [similarity, homography, or none]\n";
+          std::cout << "Unknown RANSAC constraint type: " << ransac_constraint << ".  Choose one of: [similarity, homography, fundamental, or none]\n";
           exit(0);
         }
-      } catch (vw::math::RANSACErr &e) {
+      } catch (vw::math::RANSACErr const& e ) {
         std::cout << "RANSAC Failed: " << e.what() << "\n";
         continue;
       }
@@ -212,14 +213,14 @@ int main(int argc, char** argv) {
       }
 
       std::string output_filename =
-        prefix_from_filename(input_file_names[i]) + "__" +
-        prefix_from_filename(input_file_names[j]) + ".match";
+        fs::path(input_file_names[i]).replace_extension().string() + "__" +
+        fs::path(input_file_names[j]).stem() + ".match";
       write_binary_match_file(output_filename, final_ip1, final_ip2);
 
       if (vm.count("debug-image")) {
         std::string matchimage_filename =
-          prefix_from_filename(input_file_names[i]) + "__" +
-          prefix_from_filename(input_file_names[j]) + ".png";
+          fs::path(input_file_names[i]).replace_extension().string() + "__" +
+          fs::path(input_file_names[j]).stem() + ".png";
         write_match_image(matchimage_filename,
                           input_file_names[i], input_file_names[j],
                           final_ip1, final_ip2);

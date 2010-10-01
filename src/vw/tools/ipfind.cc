@@ -23,13 +23,8 @@ using namespace vw::ip;
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
-static std::string prefix_from_filename(std::string const& filename) {
-  std::string result = filename;
-  int index = result.rfind(".");
-  if (index != -1)
-    result.erase(index, result.size());
-  return result;
-}
+#include <boost/filesystem/path.hpp>
+namespace fs = boost::filesystem;
 
 template <class ImageT, class ValueT>
 void draw_line( ImageViewBase<ImageT>& image,
@@ -110,8 +105,7 @@ int main(int argc, char** argv) {
   std::string interest_operator, descriptor_generator;
   float ip_gain;
   uint32 max_points;
-  int tile_size;
-  int num_threads;
+  int tile_size, num_threads;
   ImageView<double> integral;
 
   const float IDEAL_LOG_THRESHOLD = .03;
@@ -121,23 +115,23 @@ int main(int argc, char** argv) {
   po::options_description general_options("Options");
   general_options.add_options()
     ("help,h", "Display this help message")
-    ("num-threads", po::value<int>(&num_threads)->default_value(0), "Set the number of threads for interest point detection.  Setting the num_threads to zero causes ipfind to use the visionworkbench default number of threads.")
-    ("tile-size,t", po::value<int>(&tile_size), "Specify the tile size for processing interest points. (Useful when working with large images). VW usually picks 1024 px.")
+    ("num-threads", po::value(&num_threads)->default_value(0), "Set the number of threads for interest point detection.  Setting the num_threads to zero causes ipfind to use the visionworkbench default number of threads.")
+    ("tile-size,t", po::value(&tile_size), "Specify the tile size for processing interest points. (Useful when working with large images). VW usually picks 1024 px.")
     ("lowe,l", "Save the interest points in an ASCII data format that is compatible with the Lowe-SIFT toolchain.")
     ("debug-image,d", "Write out debug images.")
 
     // Interest point detector options
-    ("interest-operator", po::value<std::string>(&interest_operator)->default_value("LoG"), "Choose an interest point metric from [LoG, Harris, OBALoG]")
-    ("gain,g", po::value<float>(&ip_gain)->default_value(1.0), "Increasing this number will increase that gain at which interest points are detected.")
-    ("max-points", po::value<uint32>(&max_points)->default_value(0), "Set the maximum number of interest points you want returned.  The most \"interesting\" points are selected.")
+    ("interest-operator", po::value(&interest_operator)->default_value("OBALoG"), "Choose an interest point metric from [LoG, Harris, OBALoG]")
+    ("gain,g", po::value(&ip_gain)->default_value(1.0), "Increasing this number will increase the gain at which interest points are detected.")
+    ("max-points", po::value(&max_points)->default_value(0), "Set the maximum number of interest points you want returned.  The most \"interesting\" points are selected.")
     ("single-scale", "Turn off scale-invariant interest point detection.  This option only searches for interest points in the first octave of the scale space.")
 
     // Descriptor generator options
-    ("descriptor-generator", po::value<std::string>(&descriptor_generator)->default_value("patch"), "Choose a descriptor generator from [patch,pca,sgrad,sgrad2]");
+    ("descriptor-generator", po::value(&descriptor_generator)->default_value("sgrad"), "Choose a descriptor generator from [patch,pca,sgrad,sgrad2]");
 
   po::options_description hidden_options("");
   hidden_options.add_options()
-    ("input-files", po::value<std::vector<std::string> >(&input_file_names));
+    ("input-files", po::value(&input_file_names));
 
   po::options_description options("Allowed Options");
   options.add(general_options).add(hidden_options);
@@ -201,7 +195,7 @@ int main(int argc, char** argv) {
   for (unsigned i = 0; i < input_file_names.size(); ++i) {
 
     vw_out() << "Finding interest points in \"" << input_file_names[i] << "\".\n";
-    std::string file_prefix = prefix_from_filename(input_file_names[i]);
+    std::string file_prefix = fs::path(input_file_names[i]).replace_extension().string();
     DiskImageResource *image_rsrc = DiskImageResource::open( input_file_names[i] );
     DiskImageView<PixelGray<float> > image(image_rsrc);
 
@@ -327,7 +321,7 @@ int main(int argc, char** argv) {
     // Write Debug image
     if (vm.count("debug-image")) {
       std::string output_file_name =
-        prefix_from_filename(input_file_names[i]) + "_debug.jpg";
+        file_prefix + "_debug.jpg";
       write_debug_image( output_file_name,
                          input_file_names[i],
                          ip );
