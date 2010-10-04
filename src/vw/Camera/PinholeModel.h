@@ -12,6 +12,7 @@
 #ifndef __VW_CAMERAMODEL_PINHOLE_H__
 #define __VW_CAMERAMODEL_PINHOLE_H__
 
+#include <vw/Core/Log.h>
 #include <vw/Math/Quaternion.h>
 #include <vw/Camera/CameraModel.h>
 #include <vw/Camera/LensDistortion.h>

@@ -21,6 +21,7 @@
 #include <vw/Core/Features.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/ProgressCallback.h>
+#include <vw/FileIO/FileIOExport.h>
 #include <vw/Image/ImageResource.h>
 #include <vw/Image/ImageView.h>
 #include <vw/Image/ImageIO.h>

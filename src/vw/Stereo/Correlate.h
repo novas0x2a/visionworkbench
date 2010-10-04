@@ -12,6 +12,8 @@
 #include <vw/Image/ImageViewBase.h>
 #include <vw/Image/ImageMath.h>
 #include <vw/Stereo/DisparityMap.h>
+#include <vw/Stereo/StereoExport.h>
+#include <limits.h>
 #include <limits.h>
 
 namespace vw {

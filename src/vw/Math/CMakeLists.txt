@@ -38,7 +38,6 @@ set( HEADERS
                         
 set( SOURCES
   MinimumSpanningTree.cc
-  RANSAC.cc
 )
 
 link_libraries( vwCore )

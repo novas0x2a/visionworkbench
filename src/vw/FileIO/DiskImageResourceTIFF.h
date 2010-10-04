@@ -15,6 +15,7 @@
 #include <string>
 
 #include <vw/FileIO/DiskImageResource.h>
+#include <vw/FileIO/FileIOExport.h>
 
 namespace vw {
 
