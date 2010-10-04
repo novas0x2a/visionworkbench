@@ -17,6 +17,7 @@
 #include <vw/Image/Transform.h>
 #include <vw/FileIO/DiskImageResource.h>
 #include <vw/InterestPoint/InterestData.h>
+#include <vw/InterestPoint/InterestPointExport.h>
 #include <vw/InterestPoint/MatrixIO.h>
 #include <vw/InterestPoint/VectorIO.h>
 #include <vw/InterestPoint/IntegralImage.h>

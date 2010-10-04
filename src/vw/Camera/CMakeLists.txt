@@ -42,7 +42,6 @@ set( HEADERS
   CAHVORModel.h
   CameraModel.h 
   CameraTransform.h 
-  ControlNetwork.h
   ExifData.h 
   Exif.h 
   PinholeModel.h

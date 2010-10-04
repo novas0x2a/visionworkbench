@@ -2,13 +2,11 @@ vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 if( LAPACK_FOUND )
   set( LAPACK_HEADERS 
-    FundamentalMatrix.h
     Geometry.h  
     LapackExports.h
     LevenbergMarquardt.h 
     LinearAlgebra.h 
     PoseEstimation.h 
-    FundamentalMatrix.h
   )
   add_definitions( ${LAPACK_DEFINITIONS} )
   link_libraries(  ${LAPACK_LIBRARIES} )
