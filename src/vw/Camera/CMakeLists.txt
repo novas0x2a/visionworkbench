@@ -1,14 +1,15 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
 #-----------------------------
-if( PROTOBUF_FOUND )
-  set( PROTOCOL_HEADERS
-	TsaiFile.pb.h
-  )
-  set( PROTOCOL_SOURCES
-	TsaiFile.pb.cc
-  )
-endif( PROTOBUF_FOUND )
+# HACK: this should be in here but breaks builds - DW 10/07/10
+#if( PROTOBUF_FOUND )
+#  set( PROTOCOL_HEADERS
+#	TsaiFile.pb.h
+#  )
+#  set( PROTOCOL_SOURCES
+#	TsaiFile.pb.cc
+#  )
+#endif( PROTOBUF_FOUND )
 
 #-----------------------------
 if( LAPACK_FOUND )
