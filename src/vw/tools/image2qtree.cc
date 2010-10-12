@@ -372,7 +372,7 @@ void do_mosaic(const Options& opt, const ProgressCallback *progress)
     if( opt.normalize )
       source = pixel_cast<PixelT>(channel_cast_rescale<ChannelT>( normalize_retain_alpha(DiskImageView<PixelRGBA<float> >( filename ), lo_value, hi_value, 0.0, 1.0) ) );
 
-    BBox2i bbox = geotx.forward_bbox( BBox2i(0,0,source.cols(),source.rows()) );
+    BBox2 bbox = geotx.forward_bbox( BBox2(0,0,source.cols(),source.rows()) );
     if (global) {
       vw_out() << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
       source = crop( transform( source, geotx, source.cols(), source.rows(), CylindricalEdgeExtension() ), bbox );
