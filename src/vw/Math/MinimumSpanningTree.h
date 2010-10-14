@@ -11,6 +11,8 @@
 #ifndef __VW_MATH__MINIMUM_SPANNING_TREE_H__
 #define __VW_MATH__MINIMUM_SPANNING_TREE_H__
 
+#include <vw/Math/MathExport.h>
+
 // This is an implementation of Kruskal's algorithm. It is able to handle
 // graphs with multiple connected components.
 
@@ -25,7 +27,7 @@
 namespace vw {
 namespace math {
 
-  class EdgePrimitive {
+  class VW_MATH_DECL EdgePrimitive {
   public:
     EdgePrimitive() : default_cost(1.0) {}
     virtual ~EdgePrimitive() {}
@@ -36,13 +38,13 @@ namespace math {
     double default_cost;
   };
 
-  class EdgePrimitiveFunctor {
+  class VW_MATH_DECL EdgePrimitiveFunctor {
   public:
     virtual ~EdgePrimitiveFunctor() {}
     virtual void operator()(EdgePrimitive *prim, int node_toward_root) = 0;
   };
 
-  class MinimumSpanningTree {
+  class VW_MATH_DECL MinimumSpanningTree {
   public:
     MinimumSpanningTree(int num_primitives_, EdgePrimitive **prims_);
 

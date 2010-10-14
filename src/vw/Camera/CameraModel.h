@@ -14,6 +14,7 @@
 #define __VW_CAMERA_CAMERAMODEL_H__
 
 #include <fstream>
+#include <vw/Camera/CameraExport.h>
 #include <vw/Math/Quaternion.h>
 
 namespace vw {
@@ -132,11 +133,11 @@ namespace camera {
   std::ostream& operator<<(std::ostream&, AdjustedCameraModel const&);
 
   /// Error during projection of a 3D point onto the image plane.
-  VW_DEFINE_EXCEPTION(PointToPixelErr, vw::Exception);
+  VW_DEFINE_EXCEPTION(PointToPixelErr, vw::Exception, VW_CAMERA_DECL);
 
   /// Error during reverse projection of a pixel to a pointing vector
   /// from the camera center.
-  VW_DEFINE_EXCEPTION(PixelToRayErr, vw::Exception);
+  VW_DEFINE_EXCEPTION(PixelToRayErr, vw::Exception, VW_CAMERA_DECL);
 
 }} // namespace vw::camera
 

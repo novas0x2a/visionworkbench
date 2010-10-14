@@ -22,7 +22,7 @@
 
 namespace vw {
 
-  class DiskImageResourcePNG : public DiskImageResource {
+  class VW_FILEIO_DECL DiskImageResourcePNG : public DiskImageResource {
   public:
 
     // Forward declare the options structure, which gets defined later on.

@@ -8,6 +8,7 @@
 #ifndef __VW_STEREO_CORRELATE_H__
 #define __VW_STEREO_CORRELATE_H__
 
+#include <vw/Stereo/StereoExport.h>
 #include <vw/Image/ImageView.h>
 #include <vw/Image/ImageViewBase.h>
 #include <vw/Image/ImageMath.h>
@@ -48,7 +49,7 @@ namespace stereo {
     return std::numeric_limits<accum_type>::max();
   }
 
-VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception);
+VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception, VW_STEREO_DECL);
 
   // Sign of the Laplacian of the Gaussian pre-processing
   //
@@ -342,7 +343,7 @@ VW_DEFINE_EXCEPTION(CorrelatorErr, vw::Exception);
 
   /// This routine cross checks L2R and R2L, placing the final version
   /// of the disparity map in L2R.
-  void cross_corr_consistency_check(ImageView<PixelMask<Vector2f> > &L2R,
+  VW_STEREO_DECL void cross_corr_consistency_check(ImageView<PixelMask<Vector2f> > &L2R,
                                     ImageView<PixelMask<Vector2f> > const& R2L,
                                     double cross_corr_threshold, bool verbose = false);
 

@@ -19,6 +19,7 @@
 #include <boost/format.hpp>
 
 #include <vw/Core/Features.h>
+#include <vw/FileIO/FileIOExport.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/ProgressCallback.h>
 #include <vw/Image/ImageResource.h>
@@ -35,8 +36,8 @@ namespace vw {
 
   /// Base class from which specific file handlers derive.
   /// Noncopyable because every impl is noncopyable
-  class DiskImageResource : public ImageResource,
-                            private boost::noncopyable {
+  class VW_FILEIO_DECL DiskImageResource : public ImageResource,
+                                           private boost::noncopyable {
   public:
 
     virtual ~DiskImageResource() {};

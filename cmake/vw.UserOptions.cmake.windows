@@ -1,0 +1,45 @@
+######################################################
+## 
+## Default VisionWorkbench options file for Windows 
+##
+######################################################
+
+# By default, install to $source_root/$platform_string
+# To override, set VW_INSTALL_PREFIX
+######################################################
+# set( VW_INSTALL_PREFIX C:/devel/VisionWorkbench-roversw )
+
+# Tell the find scripts exactly where to find the
+# dependencies on Windows
+######################################################
+set( VW_DEPS_ROOT        "C:/devel"   )
+
+if( MSVC80 ) # Visual Studio 2005 (vc80)
+  set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost-1.41-vc80 )
+  set( PROJ4_ROOT_DIR       ${VW_DEPS_ROOT}/proj4 )
+  set( GDAL_ROOT_DIR        ${VW_DEPS_ROOT}/gdal151-vc8 )
+  set( OPENEXR_ROOT_DIR     ${VW_DEPS_ROOT}/openexr-1.4.0-vs2005 )
+  set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/clapack-3.2.1-vc80 )
+  set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty ) 
+  set( PROTOBUF_ROOT_DIR    ${VW_DEPS_ROOT}/protobuf-2.2.0a-vc80 )
+endif( MSVC80 )
+
+if( MSVC90 ) # Visual Studio 2008 (vc90)
+  set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost-1.41-vc90 )
+  set( PROJ4_ROOT_DIR       ${VW_DEPS_ROOT}/proj4-vc90 )
+  set( GDAL_ROOT_DIR        ${VW_DEPS_ROOT}/gdal160-vc9 )
+  #set( OPENEXR_ROOT_DIR     ${VW_DEPS_ROOT}/openexr-vc90 )
+  set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/clapack-3.2.1-vc90)
+  set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty-vc90 ) 
+endif( MSVC90 )
+
+# Boost setup
+########################
+set( Boost_USE_STATIC_LIBS FALSE )
+set( Boost_USE_MULTITHREAD TRUE )
+
+#add_definitions( -DBOOST_LIB_DIAGNOSTIC )
+
+#- needed for use of boost::bind
+add_definitions( -DBOOST_MEM_FN_ENABLE_CDECL )
+

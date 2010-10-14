@@ -24,7 +24,7 @@ namespace mosaic {
 
   cartography::GeoReference kml_output_georef(uint32 xresolution, uint32 yresolution = 0);
 
-  class KMLQuadTreeConfig : public QuadTreeConfig {
+  class VW_MOSAIC_DECL KMLQuadTreeConfig : public QuadTreeConfig {
   public:
     KMLQuadTreeConfig();
     virtual ~KMLQuadTreeConfig() {}

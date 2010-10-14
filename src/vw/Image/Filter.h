@@ -21,6 +21,7 @@
 #include <boost/type_traits.hpp>
 #include <boost/mpl/logical.hpp>
 
+#include <vw/Image/ImageExport.h>
 #include <vw/Image/ImageView.h>
 #include <vw/Image/Convolution.h>
 

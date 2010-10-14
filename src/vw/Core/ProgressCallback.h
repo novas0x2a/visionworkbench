@@ -15,6 +15,7 @@
 #include <cmath>
 #include <string>
 
+#include <vw/Core/CoreExport.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/Exception.h>
 #include <vw/Core/Thread.h>
@@ -26,7 +27,7 @@
 namespace vw {
 
   /// The base class for progress monitoring.
-  class ProgressCallback {
+  class VW_CORE_DECL ProgressCallback {
   protected:
     // WARNING:  These may not be valid for some subclasses.  Always access these
     // values through the relevant public functions unless you know what you're doing.
@@ -99,7 +100,7 @@ namespace vw {
 
 
   /// Monitors the progress of a subtask of a task.
-  class SubProgressCallback : public ProgressCallback {
+  class VW_CORE_DECL SubProgressCallback : public ProgressCallback {
   protected:
     const ProgressCallback &m_parent;
     const double m_from;
@@ -130,7 +131,7 @@ namespace vw {
 
 
   /// A progress monitor that prints a progress bar on STDOUT.
-  class TerminalProgressCallback : public ProgressCallback {
+  class VW_CORE_DECL TerminalProgressCallback : public ProgressCallback {
     MessageLevel m_level;
     std::string m_namespace;
     std::string m_pre_progress_text;

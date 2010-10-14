@@ -19,6 +19,7 @@
 #include <stack>
 
 // Vision Workbench
+#include <vw/FileIO/FileIOExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Math/Quaternion.h>
 
@@ -36,11 +37,11 @@ namespace vw {
     int count;
   };
 
-  std::ostream& operator<<( std::ostream& os, TabCount const& tab);
+  VW_FILEIO_DECL std::ostream& operator<<( std::ostream& os, TabCount const& tab);
 
   // KMLFile:
   // Class wrapper for KML file.
-  class KMLFile {
+  class VW_FILEIO_DECL KMLFile {
     boost::filesystem::ofstream m_output_file;
     TabCount m_tab;
     std::string m_filename;   // Output filename

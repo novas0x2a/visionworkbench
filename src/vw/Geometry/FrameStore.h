@@ -9,6 +9,7 @@
 #ifndef vw_geometry_FrameStore_h
 #define vw_geometry_FrameStore_h
 
+#include <vw/Geometry/GeometryExport.h>
 #include <vw/Geometry/FrameHandle.h>
 #include <vw/Geometry/FrameTreeNode.h>
 #include <vw/Core/Thread.h>
@@ -19,7 +20,7 @@ namespace vw
 namespace geometry
 {
   // forward declaration
-  class FrameStore;
+  class VW_GEOMETRY_DECL FrameStore;
 
     /**
      * @brief Thread-safe coordinate-frame tree class.
@@ -45,7 +46,7 @@ namespace geometry
      * for membership of the frame to the FrameStore.
 
    */
-  class FrameStore {
+  class VW_GEOMETRY_DECL FrameStore {
 
   public:
     //! @{ Public data types.

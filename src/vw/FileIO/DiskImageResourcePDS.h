@@ -21,7 +21,7 @@
 
 namespace vw {
 
-  class DiskImageResourcePDS : public DiskImageResource {
+  class VW_FILEIO_DECL DiskImageResourcePDS : public DiskImageResource {
   public:
 
     DiskImageResourcePDS( std::string const& filename )

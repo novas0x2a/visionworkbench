@@ -48,7 +48,7 @@ namespace vw {
 
   // GdalDatasetGenerator reopens a read-only GDAL Dataset if we have to
   // invalidate one in our cache.
-  class GdalDatasetGenerator {
+  class VW_FILEIO_DECL GdalDatasetGenerator {
     std::string m_filename;
   public:
     typedef GDALDataset value_type;
@@ -63,7 +63,7 @@ namespace vw {
   };
 
 
-  class DiskImageResourceGDAL : public DiskImageResource {
+  class VW_FILEIO_DECL DiskImageResourceGDAL : public DiskImageResource {
   public:
 
     typedef std::map<std::string,std::string> Options;
@@ -171,7 +171,7 @@ namespace vw {
     Cache::Handle<GdalDatasetGenerator> m_dataset_cache_handle;
   };
 
-  void UnloadGDAL();
+  VW_FILEIO_DECL void UnloadGDAL();
 
 } // namespace vw
 

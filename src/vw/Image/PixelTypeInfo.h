@@ -18,6 +18,7 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/mpl/if.hpp>
 
+#include <vw/Image/ImageExport.h>
 #include <vw/Core/FundamentalTypes.h>
 #include <vw/Core/CompoundTypes.h>
 #include <vw/Core/Functors.h>
@@ -560,11 +561,11 @@ namespace vw {
   template<> struct ChannelTypeID<vw::float64>   { static const ChannelTypeEnum value = VW_CHANNEL_FLOAT64; };
   template<> struct ChannelTypeID<bool>          { static const ChannelTypeEnum value = VW_CHANNEL_BOOL; };
 
-  int32 channel_size( ChannelTypeEnum type );
-  const char *channel_type_name( ChannelTypeEnum type );
-  int32 num_channels( PixelFormatEnum format );
-  const char *pixel_format_name( PixelFormatEnum format );
-  ChannelTypeEnum channel_name_to_enum( const std::string& name );
+  VW_IMAGE_DECL int32 channel_size( ChannelTypeEnum type );
+  VW_IMAGE_DECL const char *channel_type_name( ChannelTypeEnum type );
+  VW_IMAGE_DECL int32 num_channels( PixelFormatEnum format );
+  VW_IMAGE_DECL const char *pixel_format_name( PixelFormatEnum format );
+  VW_IMAGE_DECL ChannelTypeEnum channel_name_to_enum( const std::string& name );
 
 } // namespace vw
 

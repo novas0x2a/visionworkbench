@@ -8,6 +8,7 @@
 #ifndef __VW_CARTOGRAPHY_GEOREFERENCEHELPERGDAL_H__
 #define __VW_CARTOGRAPHY_GEOREFERENCEHELPERGDAL_H__
 
+#include <vw/Cartography/CartographyExport.h>
 #include <vw/FileIO/DiskImageResourceGDAL.h>
 #include <vw/Cartography/GeoReference.h>
 
@@ -17,8 +18,8 @@
 namespace vw {
 namespace cartography {
 
-  bool read_gdal_georeference( GeoReference& georef, DiskImageResourceGDAL const& resource );
-  void write_gdal_georeference( DiskImageResourceGDAL& resource, GeoReference const& georef );
+  VW_CARTOGRAPHY_DECL bool read_gdal_georeference( GeoReference& georef, DiskImageResourceGDAL const& resource );
+  VW_CARTOGRAPHY_DECL void write_gdal_georeference( DiskImageResourceGDAL& resource, GeoReference const& georef );
 
 }} // namespace vw::cartography
 

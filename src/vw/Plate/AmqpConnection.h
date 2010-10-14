@@ -29,9 +29,9 @@ namespace platefile {
   typedef vw::VarArray<uint8> ByteArray;
   typedef boost::shared_ptr<ByteArray> SharedByteArray;
 
-  VW_DEFINE_EXCEPTION(AMQPErr,     PlatefileErr);
-  VW_DEFINE_EXCEPTION(AMQPTimeout, AMQPErr);
-  VW_DEFINE_EXCEPTION(AMQPEof,     AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPErr,     PlatefileErr, VW_PLATE_DECL);
+  VW_DEFINE_EXCEPTION(AMQPTimeout, AMQPErr,      VW_PLATE_DECL);
+  VW_DEFINE_EXCEPTION(AMQPEof,     AMQPErr,      VW_PLATE_DECL);
 
   // These are specified by the spec. They indicate that the server forcibly
   // closed the connection or channel. The channel or connection must be
@@ -41,7 +41,7 @@ namespace platefile {
 
   // This exception denotes a potentially desynchronizing AMQP error. Only
   // recovery mechanism is to recreate the connection.
-  VW_DEFINE_EXCEPTION(AMQPAssertion, AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPAssertion, AMQPErr, VW_PLATE_DECL);
 
   // Forward declaration because amqp.h is gross
   class AmqpChannel;

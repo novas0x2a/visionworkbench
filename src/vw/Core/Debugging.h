@@ -12,6 +12,7 @@
 #ifndef __VW_CORE_DEBUGGING_H__
 #define __VW_CORE_DEBUGGING_H__
 
+#include <vw/Core/CoreExport.h>
 #include <vw/Core/Log.h>
 #include <vw/Core/Features.h>
 #include <boost/current_function.hpp>
@@ -32,7 +33,7 @@ namespace vw {
   // Timing types and functions
   // *******************************************************************
 
-  class Timer {
+  class VW_CORE_DECL Timer {
     std::string m_desc;
     MessageLevel m_level;
     std::string m_log_namespace;

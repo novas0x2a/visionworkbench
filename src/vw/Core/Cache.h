@@ -52,6 +52,7 @@
 #define VW_CACHE_DEBUG(x) x
 //#define VW_CACHE_DEBUG(x)
 
+#include <vw/Core/CoreExport.h>
 #include <vw/Core/Exception.h>
 #include <vw/Core/Thread.h>
 #include <vw/Core/Stopwatch.h>
@@ -90,7 +91,7 @@ namespace vw {
   // shared pointer to CacheLine
 
   // An LRU-based regeneratable-data cache
-  class Cache {
+  class VW_CORE_DECL Cache {
 
     // The abstract base class for all cache line objects.
     class CacheLineBase {
@@ -276,7 +277,7 @@ namespace vw {
   /// Use this method to return a reference to the Vision Workbench
   /// system cache.  This cache is used by default for all new
   /// BlockImageView<>'s such as DiskImageView<>.
-  Cache& vw_system_cache();
+  VW_CORE_DECL Cache& vw_system_cache();
 
 } // namespace vw
 

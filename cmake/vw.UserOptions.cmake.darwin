@@ -1,0 +1,24 @@
+######################################################
+## 
+## Default VisionWorkbench options file for MacOSX 
+##
+######################################################
+
+# By default, install to $source_root/$platform_string
+# To override, set VW_INSTALL_PREFIX
+######################################################
+# set( VW_INSTALL_PREFIX /usr/local/irg/releases/VisionWorkbench-roversw )
+
+# IRG_PREFIX determines where to look for external 
+# dependencies. 
+######################################################
+#set( IRG_PREFIX /irg )
+set( IRG_PREFIX /usr/local/irg )
+
+# Build type options:
+#   Debug Release RelWithDebInfo MinSizeRel
+######################################################
+set( VW_BUILD_TYPE RelWithDebInfo )
+
+
+

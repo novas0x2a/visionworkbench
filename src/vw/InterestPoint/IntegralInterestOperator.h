@@ -22,6 +22,7 @@
 #include <vw/InterestPoint/BoxFilter.h>
 #include <vw/InterestPoint/InterestTraits.h>
 #include <vw/InterestPoint/InterestData.h>
+#include <vw/InterestPoint/InterestPointExport.h>
 
 namespace vw {
 namespace ip {
@@ -50,7 +51,7 @@ namespace ip {
 
   // OBALoG Interest Operator
   // _____________________________________________________________
-  class OBALoGInterestOperator {
+  class VW_INTERESTPOINT_DECL OBALoGInterestOperator {
 
     // Predefined functions
     static const double SCALE_LOG_SIGMA[10];     // For reference

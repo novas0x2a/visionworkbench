@@ -12,6 +12,7 @@
 #ifndef __INTEREST_DATA_H__
 #define __INTEREST_DATA_H__
 
+#include <vw/InterestPoint/InterestPointExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Math/Functors.h>
 #include <vw/Image/ImageViewBase.h>
@@ -25,7 +26,7 @@ namespace vw {
 namespace ip {
 
   /// A class for storing information about an interest point.
-  struct InterestPoint {
+  struct VW_INTERESTPOINT_DECL InterestPoint {
     typedef vw::Vector<float> descriptor_type;
     typedef descriptor_type::iterator iterator;
     typedef descriptor_type::const_iterator const_iterator;
@@ -92,18 +93,18 @@ namespace ip {
   // Utility function converts from a list of interest points to a
   // vector of interest point locations.  (Useful when preping data
   // far RANSAC...)
-  std::vector<Vector3> iplist_to_vectorlist(std::vector<InterestPoint> const& iplist);
-  std::vector<InterestPoint> vectorlist_to_iplist(std::vector<Vector3> const& veclist);
+  VW_INTERESTPOINT_DECL std::vector<Vector3> iplist_to_vectorlist(std::vector<InterestPoint> const& iplist);
+  VW_INTERESTPOINT_DECL std::vector<InterestPoint> vectorlist_to_iplist(std::vector<Vector3> const& veclist);
 
   // Routines for reading & writing interest point data files
-  void write_lowe_ascii_ip_file(std::string ip_file, InterestPointList ip);
-  void write_binary_ip_file(std::string ip_file, InterestPointList ip);
-  std::vector<InterestPoint> read_binary_ip_file(std::string ip_file);
+  VW_INTERESTPOINT_DECL void write_lowe_ascii_ip_file(std::string ip_file, InterestPointList ip);
+  VW_INTERESTPOINT_DECL void write_binary_ip_file(std::string ip_file, InterestPointList ip);
+  VW_INTERESTPOINT_DECL std::vector<InterestPoint> read_binary_ip_file(std::string ip_file);
 
   // Routines for reading & writing interest point match files
-  void write_binary_match_file(std::string match_file, std::vector<InterestPoint> const& ip1,
+  VW_INTERESTPOINT_DECL void write_binary_match_file(std::string match_file, std::vector<InterestPoint> const& ip1,
                                std::vector<InterestPoint> const& ip2);
-  void read_binary_match_file(std::string match_file, std::vector<InterestPoint> &ip1,
+  VW_INTERESTPOINT_DECL void read_binary_match_file(std::string match_file, std::vector<InterestPoint> &ip1,
                               std::vector<InterestPoint> &ip2);
 
   /// Select only the interest points that fall within the specified

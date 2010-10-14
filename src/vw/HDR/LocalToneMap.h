@@ -16,12 +16,13 @@
 #ifndef __VW_HDR_LOCALTONEMAP_H__
 #define __VW_HDR_LOCALTONEMAP_H__
 
+#include <vw/HDR/HDRExport.h>
 #include <vw/Image/ImageView.h>
 
 namespace vw {
 namespace hdr {
 
-  ImageView<PixelRGB<double> > ashikhmin_tone_map(ImageView<PixelRGB<double> > hdr_image,
+  VW_HDR_DECL ImageView<PixelRGB<double> > ashikhmin_tone_map(ImageView<PixelRGB<double> > hdr_image,
                                                   double threshold = 0.5);
 
 }} // namespace vw::HDR

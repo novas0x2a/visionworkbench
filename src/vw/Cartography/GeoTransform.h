@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 
+#include <vw/Cartography/CartographyExport.h>
 #include <vw/Math/Vector.h>
 #include <vw/Image/Transform.h>
 #include <vw/Cartography/GeoReference.h>
@@ -18,8 +19,7 @@
 namespace vw {
 namespace cartography {
 
-  class GeoTransform : public TransformHelper<GeoTransform,ContinuousFunction,ContinuousFunction> {
-
+  class VW_CARTOGRAPHY_DECL GeoTransform : public TransformHelper<GeoTransform,ContinuousFunction,ContinuousFunction> {
     GeoReference m_src_georef;
     GeoReference m_dst_georef;
     boost::shared_ptr<ProjContext> m_src_datum;
@@ -173,7 +173,7 @@ namespace cartography {
   ///
   /// Important Note: The convention here is that the Vector3 contains
   /// the ordered triple: (longitude, latitude, altitude).
-  void reproject_point_image(ImageView<Vector3> const& point_image,
+  VW_CARTOGRAPHY_DECL void reproject_point_image(ImageView<Vector3> const& point_image,
                              GeoReference const& src_georef,
                              GeoReference const& dst_georef);
 

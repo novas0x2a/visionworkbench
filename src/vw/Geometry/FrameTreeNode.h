@@ -9,6 +9,7 @@
 #ifndef vw_geometry_FrameTreeNode_h
 #define vw_geometry_FrameTreeNode_h
 
+#include <vw/Geometry/GeometryExport.h>
 #include <vw/Geometry/TreeNode.h>
 #include <vw/Geometry/Frame.h>
 
@@ -36,11 +37,11 @@ namespace vw
      * and source->data().transform() is returned.
      * @param source The source coordinate frame. If NULL, the identity-matrix is returned.
      */
-    Frame::Transform get_transform(FrameTreeNode const * target, FrameTreeNode const * source);
+    VW_GEOMETRY_DECL Frame::Transform get_transform(FrameTreeNode const * target, FrameTreeNode const * source);
     /**
      * Get transform of transform, expressed relative to the source frame, relative to the target frame.
      */
-    Frame::Transform get_transform_of(FrameTreeNode const * target, FrameTreeNode const * source,
+    VW_GEOMETRY_DECL Frame::Transform get_transform_of(FrameTreeNode const * target, FrameTreeNode const * source,
         Frame::Transform const& transform);
     /**
      * Set transform of the frame to the transform specified realtive to the source frame.
@@ -61,7 +62,7 @@ namespace vw
      *    * "..": parent frame
      *    * "...": 0 to n frames down in breadth-first order
      */
-    FrameTreeNode * lookup(FrameTreeNode * start_frame, std::string const& path);
+    VW_GEOMETRY_DECL FrameTreeNode * lookup(FrameTreeNode * start_frame, std::string const& path);
 
     inline
     Frame::Transform
@@ -95,7 +96,7 @@ namespace vw
      *
      * @WARNING: Don't merge trees of nodes from different allocation categories (heap vs stack).
      */
-    void merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree);
+    VW_GEOMETRY_DECL void merge_frame_trees(FrameTreeNode * target_tree, FrameTreeNode * source_tree);
   }
 }
 

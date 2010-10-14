@@ -13,6 +13,7 @@
 #ifndef __VW_HDR_CAMERACURVE_H__
 #define __VW_HDR_CAMERACURVE_H__
 
+#include <vw/HDR/HDRExport.h>
 #include <vw/Image/PerPixelViews.h>
 #include <vw/Image/EdgeExtension.h>
 #include <vw/Image/Statistics.h>
@@ -189,7 +190,7 @@ namespace hdr {
   // Camera Curve Estimation
   // ---------------------------------------------------------------------
 
-  class CameraCurveFn {
+  class VW_HDR_DECL CameraCurveFn {
 
     // The lookup table stores the log luminance values for each pixel
     // value.

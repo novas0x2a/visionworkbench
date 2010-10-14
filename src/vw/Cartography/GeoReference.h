@@ -31,7 +31,7 @@ namespace cartography {
   // ArgumentErr both because that's what used to be thrown here, and also
   // because basically every error proj.4 returns is due to some variety of bad
   // input.
-  VW_DEFINE_EXCEPTION(ProjectionErr, ArgumentErr);
+  VW_DEFINE_EXCEPTION(ProjectionErr, ArgumentErr, VW_CARTOGRAPHY_DECL);
 
   // Macro for checking Proj.4 output, something we do a lot of.
 #define CHECK_PROJ_ERROR if(pj_errno) vw_throw(ProjectionErr() << "Proj.4 error: " << pj_strerrno(pj_errno))
@@ -42,7 +42,7 @@ namespace cartography {
   // here simplies the rest of the GeoReference class considerably, and
   // reduces the possibility of a memory related bug. Implementation
   // code for most of it is in GeoReference.cc.
-  class ProjContext : private boost::noncopyable {
+  class VW_CARTOGRAPHY_DECL ProjContext : private boost::noncopyable {
     // Declare PJconsts as PJ like done in projects.h; sadly, C++ has no
     // forward declaration of typedefs. So if Proj ever changes their
     // names, we get screwed over here and have to change this as well.
@@ -63,7 +63,7 @@ namespace cartography {
   /// The georeference class contains the mapping from image coordinates
   /// (u,v) to geospatial coordinates (typically lat/lon, or possibly
   /// meters in a UTM grid cell, etc.)
-  class GeoReference : public GeoReferenceBase {
+  class VW_CARTOGRAPHY_DECL GeoReference : public GeoReferenceBase {
     Matrix<double,3,3> m_transform, m_inv_transform, m_shifted_transform, m_inv_shifted_transform;
     std::string m_proj_projection_str, m_gml_str;
     boost::shared_ptr<ProjContext> m_proj_context;
@@ -188,6 +188,7 @@ namespace cartography {
   //
 
   /// Read georeferencing information from an image resource.
+  VW_CARTOGRAPHY_DECL
   bool read_georeference( GeoReference& georef, ImageResource const& resource );
 
   /// A convenience function to read georeferencing information from an image file.
@@ -210,7 +211,7 @@ namespace cartography {
 
   /// Write georeferencing information to an image resource.  You should
   /// generally call this prior to writing image data to the resource.
-  void write_georeference( ImageResource& resource, GeoReference const& georef );
+  VW_CARTOGRAPHY_DECL void write_georeference( ImageResource& resource, GeoReference const& georef );
 
   /// A convenience function to write image data and its georeferencing information
   /// to a file.

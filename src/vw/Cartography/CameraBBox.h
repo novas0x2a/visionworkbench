@@ -28,7 +28,7 @@ namespace cartography {
 
   // Return map projected point location (the intermediate between LLA
   // and Pixel)
-  Vector2 geospatial_intersect( Vector2 pix,
+  VW_CARTOGRAPHY_DECL Vector2 geospatial_intersect( Vector2 pix,
                                 GeoReference const& georef,
                                 boost::shared_ptr<camera::CameraModel> camera_model,
                                 double z_scale, bool& did_intersect );
@@ -87,6 +87,7 @@ namespace cartography {
   //////////////////////////////////////////////////////
 
   // Simple Intersection interfaces
+  VW_CARTOGRAPHY_DECL
   BBox2 camera_bbox( GeoReference const& georef,
                      boost::shared_ptr<vw::camera::CameraModel> camera_model,
                      int32 cols, int32 rows, float &scale );

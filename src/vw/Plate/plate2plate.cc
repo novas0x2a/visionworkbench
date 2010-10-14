@@ -147,7 +147,7 @@ struct Options {
     tile_size(0), pixel_format(VW_PIXEL_UNKNOWN), channel_type(VW_CHANNEL_UNKNOWN) {}
 };
 
-VW_DEFINE_EXCEPTION(Usage, Exception);
+VW_DEFINE_EXCEPTION(Usage, Exception, VW_PLATE_DECL);
 
 void handle_arguments(int argc, char *argv[], Options& opt) {
   po::options_description options("Options");
