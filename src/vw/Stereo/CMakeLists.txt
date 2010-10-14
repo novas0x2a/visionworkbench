@@ -1,30 +1,36 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+
+set( HEADERS
   ${EXPORT_H}
-  AffineMixtureComponent.h 
-  Correlate.h 
-  CorrelatorView.h	
-  DisparityMap.h 
-  EMSubpixelCorrelatorView.h 		
+  AffineMixtureComponent.h
+  Correlate.h
+  Correlate.tcc
+  CorrelateResearch.h
+  CorrelateResearch.tcc
+  CorrelatorView.h
+  DisparityMap.h
+  EMSubpixelCorrelatorView.h
   EMSubpixelCorrelatorView.hpp
-  GammaMixtureComponent.h 		
-  GaussianMixtureComponent.h				
-  MixtureComponent.h 
-  OptimizedCorrelator.h 
-  PyramidCorrelator.h 
-  ReferenceCorrelator.h		
-  StereoModel.h	
-  StereoView.h 
-  SubpixelView.h 
-  UniformMixtureComponent.h	
+  GammaMixtureComponent.h
+  GaussianMixtureComponent.h
+  MixtureComponent.h
+  OptimizedCorrelator.h
+  PyramidCorrelator.h
+  ReferenceCorrelator.h
+  StereoModel.h
+  StereoView.h
+  SubpixelView.h
+  UniformMixtureComponent.h
 )
 
-set( SOURCES 
+set( SOURCES
   Correlate.cc
+  CorrelateResearch.cc
+  EMSubpixelCorrelatorView.cc
   OptimizedCorrelator.cc
-  PyramidCorrelator.cc 
-  StereoModel.cc 
+  PyramidCorrelator.cc
+  StereoModel.cc
 )
 
 add_definitions( ${LAPACK_DEFINITIONS} )

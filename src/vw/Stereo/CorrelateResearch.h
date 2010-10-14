@@ -9,29 +9,6 @@
 #define __VW_STEREO_CORRELATE_RESEARCH_H__
 
 #include <vw/Stereo/Correlate.h>
-
-namespace vw {
-namespace stereo {
-
-  template <class ChannelT>
-  void subpixel_correlation_affine_2d(ImageView<PixelMask<Vector2f> > &disparity_map,
-                                      ImageView<ChannelT> const& left_image,
-                                      ImageView<ChannelT> const& right_image,
-                                      int kern_width, int kern_height,
-                                      bool do_horizontal_subpixel = true,
-                                      bool do_vertical_subpixel = true,
-                                      bool verbose = false);
-
-  template <class ChannelT>
-  void subpixel_correlation_affine_2d_bayesian(ImageView<PixelMask<Vector2f> > &disparity_map,
-                                               ImageView<ChannelT> const& left_image,
-                                               ImageView<ChannelT> const& right_image,
-                                               int kern_width, int kern_height,
-                                               bool do_horizontal_subpixel = true,
-                                               bool do_vertical_subpixel = true,
-                                               bool verbose = false);
-
-
-}}
+#include <vw/Stereo/CorrelateResearch.tcc>
 
 #endif//__VW_STEREO_CORRELATE_RESEARCH_H__
