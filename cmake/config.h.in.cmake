@@ -50,9 +50,7 @@
 
 //-- External headers. Are these defines used at all?
 //------------------------------------------------
-#cmakedefine VW_HAVE_CXXABI_H  1
-#cmakedefine VW_HAVE_DLFCN_H  1
-#cmakedefine VW_HAVE_EXECINFO_H  1
+#cmakedefine VW_HAVE_FENV_H 1
 #cmakedefine VW_HAVE_INTTYPES_H 1
 #cmakedefine VW_HAVE_MEMORY_H 1
 #cmakedefine VW_HAVE_PWD_H 1
@@ -67,9 +65,14 @@
 
 //-- Available functions
 //------------------------------------------------
-#cmakedefine VW_HAVE_BACKTRACE 1
+#cmakedefine VW_HAVE_EXP2 1
+#cmakedefine VW_HAVE_FABSL 1
+#cmakedefine VW_HAVE_FEENABLEEXCEPT 1
 #cmakedefine VW_HAVE_GETPID 1
 #cmakedefine VW_HAVE_GETPWUID 1
+#cmakedefine VW_HAVE_LLABS 1
+#cmakedefine VW_HAVE_LOG2 1
+#cmakedefine VW_HAVE_TGAMMA 1
 //cmakedefine VW_COMPILER_HAS_ATTRIBUTE_NORETURN 1
 //cmakedefine VW_HAVE___CXA_CURRENT_EXCEPTION_TYPE 1
 //cmakedefine VW_HAVE___CXA_DEMANGLE 1
@@ -124,7 +127,7 @@
 // include a helper header on win32
 #  include "win32_workarounds.h"
 // stdint.h not available, use boost
-#  include <boost/cstdint.hpp> 
+#  include <boost/cstdint.hpp>
    using namespace boost;
 #endif //_WIN32
 

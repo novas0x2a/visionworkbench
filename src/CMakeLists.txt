@@ -89,9 +89,7 @@ set( VW_HAVE_PKG_LAPACK                 ${LAPACK_FOUND}  )
 ## but do it anyway just for kicks and wiggles
 ##################################################
 include(CheckIncludeFiles)
-check_include_files( cxxabi.h    VW_HAVE_CXXABI_H    )
-check_include_files( dlfcn.h     VW_HAVE_DLFCN_H     )
-check_include_files( execinfo.h  VW_HAVE_EXECINFO_H  )
+check_include_files( fenv.h      VW_HAVE_FENV_H      )
 check_include_files( inttypes.h  VW_HAVE_INTTYPES_H  )
 check_include_files( memory.h    VW_HAVE_MEMORY_H    )
 check_include_files( pwd.h       VW_HAVE_PWD_H       )
@@ -106,9 +104,15 @@ check_include_files( unistd.h    VW_HAVE_UNISTD_H    )
 ## check for some functions
 ##################################################
 include(CheckFunctionExists)
-check_function_exists( backtrace VW_HAVE_BACKTRACE   )
-check_function_exists( getpid    VW_HAVE_GETPID      )
-check_function_exists( getpwuid  VW_HAVE_GETPWUID    )
+check_function_exists( exp2           VW_HAVE_EXP2           )
+check_function_exists( fabsl          VW_HAVE_FABSL          )
+check_function_exists( feenableexcept VW_HAVE_FEENABLEEXCEPT )
+check_function_exists( getpid         VW_HAVE_GETPID         )
+check_function_exists( getpwuid       VW_HAVE_GETPWUID       )
+check_function_exists( llabs          VW_HAVE_LLABS          )
+check_function_exists( log2           VW_HAVE_LOG2           )
+check_function_exists( tgamma         VW_HAVE_TGAMMA         )
+
 
 ## VW Configuration defines for config.h creation
 ##################################################

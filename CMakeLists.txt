@@ -10,8 +10,8 @@ cmake_minimum_required(VERSION 2.6)
 ## than trying to parse that file
 ##################################################
 set( VW_VERSION_MAJOR      2         )
-set( VW_VERSION_MINOR      0         )
-set( VW_VERSION_PATCH      beta5_pre )
+set( VW_VERSION_MINOR      1         )
+set( VW_VERSION_PATCH      0_post    )
 set( VW_VERSION            "${VW_VERSION_MAJOR}.${VW_VERSION_MINOR}.${VW_VERSION_PATCH}")
 set( VW_PACKAGE            "VisionWorkbench"                  )
 set( VW_PACKAGE_BUGREPORT  "vision-workbench@lists.nasa.gov"  )
@@ -20,26 +20,26 @@ set( VW_PACKAGE_STRING     "${VW_PACKAGE_NAME} ${VW_VERSION}" )
 set( VW_PACKAGE_TARNAME    "${VW_PACKAGE}"                    )
 set( VW_PACKAGE_VERSION    "${VW_VERSION}"                    )
 set( VW_PACKAGE_URL        "http://ti.arc.nasa.gov/project/nasa-vision-workbench/")
-set( VW_SOVERSION_MAJOR    4 ) # epoch
-set( VW_SOVERSION_MINOR    0 ) # revision
-set( VW_SOVERSION_PATCH    0 ) # age
-set( VW_SOVERSION          "${VW_SOVERSION_MAJOR}.${VW_SOVERSION_MINOR}.${VW_SOVERSION_PATCH}" ) 
+set( VW_SOVERSION_MAJOR    2 ) # epoch
+set( VW_SOVERSION_MINOR    1 ) # revision
+set( VW_SOVERSION_PATCH    99) # age
+set( VW_SOVERSION          "${VW_SOVERSION_MAJOR}.${VW_SOVERSION_MINOR}.${VW_SOVERSION_PATCH}" )
 
-## if ../cmake/Modules exists, then use that and 
+## if ../cmake/Modules exists, then use that and
 ## set default install dir to ../${ARCHITECTURE}
 ## (used when pulled in as part of roversw)
 ##################################################
-set(ROOTDIR ${PROJECT_SOURCE_DIR} ) 
+set(ROOTDIR ${PROJECT_SOURCE_DIR} )
 if( EXISTS ${PROJECT_SOURCE_DIR}/../cmake/Modules )
   set(ROOTDIR ${PROJECT_SOURCE_DIR}/.. )
 endif( EXISTS ${PROJECT_SOURCE_DIR}/../cmake/Modules )
 
 ## add the irg_cmake modules to the head
-## of our cmake module search path 
+## of our cmake module search path
 ##################################################
 set( CMAKE_MODULE_PATH ${ROOTDIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
 
-## disable strict aliasing 
+## disable strict aliasing
 if( CMAKE_COMPILER_IS_GNUCXX )
   set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing -Wextra" )
 endif( CMAKE_COMPILER_IS_GNUCXX )
@@ -73,17 +73,17 @@ if(VW_BUILD_TYPE)
 endif(VW_BUILD_TYPE)
 
 
-## find the packages we depend on 
+## find the packages we depend on
 ##################################################
-set( VW_BOOST_COMPONENTS 
+set( VW_BOOST_COMPONENTS
         date_time
-        filesystem 
+        filesystem
         graph
-        iostreams 
-        program_options 
+        iostreams
+        program_options
         regex
-        system 
-        thread 
+        system
+        thread
    )
 # boost is a required dep; bail if it's not found
 find_package( Boost REQUIRED COMPONENTS ${VW_BOOST_COMPONENTS} )
@@ -95,31 +95,31 @@ find_package( PNG )
 find_package( TIFF )
 find_package( OpenSceneGraph3rdParty ) # for jpeg, zlib, png & tiff on win32
 find_package( OpenEXR )
-find_package( LAPACK ) 
+find_package( LAPACK )
 find_package( GDAL )
 find_package( Proj4 )
-find_package( Protobuf ) 
+find_package( Protobuf )
 find_package( OpenGL )
 find_package( Qt4 )
 
-minimum_requirements( Boost_FOUND ) 
+minimum_requirements( Boost_FOUND )
 
 ## modify and extend find results where necessary
 ##################################################
-# if gdal has tiff support, disable native tiff 
-if( GDAL_FOUND AND GDAL_HAS_TIFF ) 
+# if gdal has tiff support, disable native tiff
+if( GDAL_FOUND AND GDAL_HAS_TIFF )
   set( TIFF_FOUND FALSE )
   set( TIFF_LIBRARIES "")
   set( VW_HAS_BIGTIFF ${GDAL_HAS_BIGTIFF} )
-else( GDAL_FOUND AND GDAL_HAS_TIFF ) 
+else( GDAL_FOUND AND GDAL_HAS_TIFF )
   if( TIFF_FOUND )
     include( CheckLibraryExists )
     check_library_exists( ${TIFF_LIBRARY} TIFFScanlineSize64 "" VW_HAS_BIGTIFF )
   endif( TIFF_FOUND )
-endif( GDAL_FOUND AND GDAL_HAS_TIFF ) 
+endif( GDAL_FOUND AND GDAL_HAS_TIFF )
 
-## Add the in-source and out-of-source 
-## include paths by default 
+## Add the in-source and out-of-source
+## include paths by default
 ##################################################
 include_directories(
   "${PROJECT_SOURCE_DIR}/src"
@@ -141,10 +141,10 @@ endif( NOT Boost_USE_STATIC_LIBS )
 set( VW_DEFAULT_LIB_TYPE SHARED )
 if( WIN32 )
   #set( VW_DEFAULT_LIB_TYPE STATIC )
-  
+
   set( VW_DEFAULT_LIB_TYPE SHARED )
   add_definitions( -DVW_ALL_DYN_LINK ) # add this if building shared libs
-  
+
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif( WIN32 )
 
