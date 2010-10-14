@@ -1,24 +1,24 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
   ATrans.h
   Box.h
   Frame.h
+  FrameHandle.h
+  FrameStore.h
   FrameTreeNode.h
   PointListIO.h
   Shape.h
-  #SpatialTree.h
+  SpatialTree.h
   Sphere.h
   TreeNode.h
-  FrameHandle.h
-  FrameStore.h
-)                       
-                        
+)
+
 set( SOURCES
-  #SpatialTree.cc
-  FrameTreeNode.cc
   FrameStore.cc
+  FrameTreeNode.cc
+  SpatialTree.cc
 )
 
 link_libraries( vwMath )

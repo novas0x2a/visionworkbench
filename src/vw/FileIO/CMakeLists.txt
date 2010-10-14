@@ -1,28 +1,27 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
-  DiskImageResource.h 
+  DiskImageResource.h
   DiskImageResourcePBM.h
-  DiskImageResourcePDS.h 
-  DiskImageView.h 
-  JP2.h	
-  KML.h 
+  DiskImageResourcePDS.h
+  DiskImageView.h
+  KML.h
 )
 
-set( SOURCES 
+set( SOURCES
   DiskImageResource.cc
   DiskImageResourcePBM.cc
-  DiskImageResourcePDS.cc 
-  KML.cc 
+  DiskImageResourcePDS.cc
+  KML.cc
 )
 
-link_libraries( 
+link_libraries(
   ${Boost_FILESYSTEM_LIBRARY}
   vwImage
 )
 
-set( IO_IMPLS 
+set( IO_IMPLS
   PNG
   JPEG
   TIFF
@@ -33,16 +32,16 @@ set( IO_IMPLS
 
 foreach( IO_IMPL ${IO_IMPLS} )
   string( TOUPPER ${IO_IMPL} IO_IMPL_UPPER )
-  
+
   if( VW_HAVE_PKG_${IO_IMPL_UPPER} )
-  
+
     set( HEADERS ${HEADERS} DiskImageResource${IO_IMPL}.h )
     set( SOURCES ${SOURCES} DiskImageResource${IO_IMPL}.cc )
     include_directories( ${${IO_IMPL_UPPER}_INCLUDE_DIR} )
     link_libraries( ${${IO_IMPL_UPPER}_LIBRARIES} )
-    
+
   endif( VW_HAVE_PKG_${IO_IMPL_UPPER} )
-  
+
 endforeach( IO_IMPL )
 
 if( ZLIB_FOUND )
@@ -65,7 +64,7 @@ add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${SOURCES}
 )
 
-# for windows, *.lib goes in lib, *.dll goes in bin 
+# for windows, *.lib goes in lib, *.dll goes in bin
 #-----------------------------------------------------------
 install_library( ${LIB_NAME} ) # see SetupInstall.cmake
 install_files  ( /include/${MODULE_PREFIX}/${MODULE_NAME} FILES ${HEADERS} )

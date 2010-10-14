@@ -3,67 +3,59 @@ vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 #-----------------------------
 if( LAPACK_FOUND )
   set( LSM_HEADERS
-    Extrinsics.h 
+    CameraGeometry.h
+    Extrinsics.h
     LensDistortion.h
     LinearPushbroomModel.h
-    LinescanModel.h 
-    OrbitingPushbroomModel.h 
-    PinholeModelCalibrate.h 
-    CameraGeometry.h 
+    LinescanModel.h
+    OrbitingPushbroomModel.h
+    PinholeModelCalibrate.h
   )
   set( LSM_SOURCES
-    PinholeModel.cc 
-    LensDistortion.cc 
+    PinholeModel.cc
+    LensDistortion.cc
   )
-  
-  set( BA_HEADERS
-    BundleAdjust.h 
-    BundleAdjustmentBase.h
-    BundleAdjustmentRef.h 
-    BundleAdjustmentRobustRef.h
-    BundleAdjustmentRobustSparse.h
-    BundleAdjustmentSparse.h 
-    BundleAdjustModelBase.h
-    BundleAdjustReport.h 
-  )
-  set( BA_SOURCES
-    BundleAdjustReport.cc
-  )
-  
+
   add_definitions( ${LAPACK_DEFINITIONS} )
   link_libraries(  ${LAPACK_LIBRARIES} )
-  
+
 endif( LAPACK_FOUND )
 
 #-----------------------------
 set( HEADERS
   ${EXPORT_H}
-  ${BA_HEADERS}
-  ${LSM_HEADERS} 
+  ${LSM_HEADERS}
   BayerFilter.h
-  CAHVModel.h 
+  CAHVModel.h
   CAHVORModel.h
-  CameraModel.h 
-  CameraTransform.h 
-  ControlNetwork.h
-  ExifData.h 
-  Exif.h 
+  CameraModel.h
+  CameraTransform.h
+  Exif.h
+  ExifData.h
   PinholeModel.h
 )
 
-set( SOURCES 
-  ${BA_SOURCES}
+set( SOURCES
   ${LSM_SOURCES}
-  CAHVModel.cc 
+  CAHVModel.cc
   CAHVORModel.cc
-  ControlNetwork.cc
-  Exif.cc 
-  ExifData.cc 
+  CameraModel.cc
+  Exif.cc
+  ExifData.cc
 )
 
-link_libraries( 
-  ${Boost_IOSTREAMS_LIBRARY} 
-  vwFileIO 
+if( PROTOBUF_FOUND )
+  PROTOBUF_GENERATE_CPP( PROTO_SOURCES PROTO_HEADERS TsaiFile.proto )
+  set( HEADERS ${HEADERS} ${PROTO_HEADERS} )
+  set( SOURCES ${SOURCES} ${PROTO_SOURCES} )
+  include_directories( ${PROTOBUF_INCLUDE_DIRS} )
+  link_libraries( ${PROTOBUF_LIBRARIES} )
+endif (PROTOBUF_FOUND )
+
+
+link_libraries(
+  ${Boost_IOSTREAMS_LIBRARY}
+  vwFileIO
 )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}

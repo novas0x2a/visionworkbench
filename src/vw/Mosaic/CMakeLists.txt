@@ -1,12 +1,13 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
   CelestiaQuadTreeConfig.h
   GigapanQuadTreeConfig.h
   GMapQuadTreeConfig.h
   ImageComposite.h
   KMLQuadTreeConfig.h
+  QuadTreeConfig.h
   QuadTreeGenerator.h
   TMSQuadTreeConfig.h
   ToastQuadTreeConfig.h
@@ -18,13 +19,15 @@ set( SOURCES
   GigapanQuadTreeConfig.cc
   GMapQuadTreeConfig.cc
   KMLQuadTreeConfig.cc
+  QuadTreeConfig.cc
   QuadTreeGenerator.cc
   TMSQuadTreeConfig.cc
   UniviewQuadTreeConfig.cc
 )
 
-link_libraries( 
+link_libraries(
   vwFileIO
+  vwCartography
 )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}

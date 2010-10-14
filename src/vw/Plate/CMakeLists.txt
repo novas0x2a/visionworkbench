@@ -1,40 +1,57 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-PROTOBUF_GENERATE_CPP( PROTO_SOURCES PROTO_HEADERS ProtoBuffers.proto )
+PROTOBUF_GENERATE_CPP( PROTO_SOURCES PROTO_HEADERS
+    IndexService.proto
+    Rpc.proto
+)
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
   ${PROTO_HEADERS}
-  Amqp.h
-  Blob.h 
-  BlobManager.h 
-  Exception.h 
+  AmqpConnection.h
+  Blob.h
+  BlobManager.h
+  common.h
+  Exception.h
+  HTTPUtils.h
   Index.h
-  IndexManagerService.h
-  IndexService.h 
-  KmlPlateManager.h
-  LocalIndex.h 
-  PlateFile.h 
-  PlateManager.h 
+  IndexPage.h
+  IndexService.h
+  LocalIndex.h
+  PagedIndex.h
+  PlateCarreePlateManager.h
+  PlateFile.h
+  PlateManager.h
   PlateView.h
-  RemoteIndex.h 
-  RpcServices.h 
-  ToastPlateManager.h 
-  Tree.h 
+  PolarStereoPlateManager.h
+  RemoteIndex.h
+  RpcServices.h
+  SnapshotManager.h
+  TileManipulation.h
+  ToastDem.h
+  ToastPlateManager.h
 )
 
 set( SOURCES
   ${PROTO_SOURCES}
-  Amqp.cc 
-  Blob.cc 
-  BlobManager.cc 
-  Index.cc 
-  IndexManagerService.cc
-  IndexService.cc 
-  LocalIndex.cc	
-  PlateFile.cc 
-  RemoteIndex.cc 
+  AmqpConnection.cc
+  Blob.cc
+  BlobManager.cc
+  HTTPUtils.cc
+  Index.cc
+  IndexPage.cc
+  IndexService.cc
+  LocalIndex.cc
+  PagedIndex.cc
+  PlateCarreePlateManager.cc
+  PlateFile.cc
+  PlateManager.cc
+  PolarStereoPlateManager.cc
+  RemoteIndex.cc
   RpcServices.cc
+  SnapshotManager.cc
+  TileManipulation.cc
+  ToastDem.cc
   ToastPlateManager.cc
 )
 
@@ -42,7 +59,7 @@ include_directories(
   ${PROTOBUF_INCLUDE_DIRS}
 )
 
-link_libraries( 
+link_libraries(
   ${PROTOBUF_LIBRARIES}
   vwCore
 )
@@ -53,6 +70,6 @@ add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
 )
 
 #-----------------------------------------------------------
-install_library( ${LIB_NAME} ) 
+install_library( ${LIB_NAME} )
 install_files  ( /include/${MODULE_PREFIX}/${MODULE_NAME} FILES ${HEADERS} )
 

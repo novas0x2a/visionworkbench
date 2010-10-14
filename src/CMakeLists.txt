@@ -10,21 +10,23 @@ set( MODULE_NAMES
   Image
   FileIO
   InterestPoint
-  Mosaic
   Camera
   Cartography
+  Mosaic
   Stereo
+  BundleAdjustment
   HDR
   GPU
   Plate
   Python
+  tools
 )
 
-## Temp variables for build flag defaults. 
+## Temp variables for build flag defaults.
 ## These are used only to initialize the cache
-## The initial values use the same syntax as the 
+## The initial values use the same syntax as the
 ## add_build_* macros so complete boolean expressions
-## can be formed. 
+## can be formed.
 ## So don't use "TRUE" use "BUILD_DEFAULT_TRUE"
 ## and don't dereference FOO_FOUND variables
 ##################################################
@@ -37,9 +39,11 @@ set( InterestPoint_DEFAULT VW_BUILD_FileIO AND LAPACK_FOUND )
 set( Mosaic_DEFAULT        VW_BUILD_FileIO  )
 set( Camera_DEFAULT        VW_BUILD_FileIO  )
 set( Cartography_DEFAULT   VW_BUILD_Camera AND PROJ4_FOUND )
-set( Stereo_DEFAULT        VW_BUILD_Camera AND LAPACK_FOUND ) 
+set( Stereo_DEFAULT        VW_BUILD_Camera AND LAPACK_FOUND )
+set( BundleAdjustment_DEFAULT VW_BUILD_Stereo AND VW_BUILD_Cartography AND VW_BUILD_InterestPoint )
 set( HDR_DEFAULT           VW_BUILD_Camera AND LAPACK_FOUND )
 set( Plate_DEFAULT         PROTOBUF_FOUND AND BUILD_DEFAULT_FALSE ) # needs AMQP
+set( tools_DEFAULT         BUILD_DEFAULT_TRUE )
 
 ## Create options (with roversw naming convention)
 ## to turn modules on/off
@@ -47,9 +51,9 @@ set( Plate_DEFAULT         PROTOBUF_FOUND AND BUILD_DEFAULT_FALSE ) # needs AMQP
 foreach( MODULE_NAME ${MODULE_NAMES} )
   # initialize any modules we've missed with false
   if( NOT ${MODULE_NAME}_DEFAULT )
-    set( ${MODULE_NAME}_DEFAULT BUILD_DEFAULT_FALSE ) 
+    set( ${MODULE_NAME}_DEFAULT BUILD_DEFAULT_FALSE )
   endif( NOT ${MODULE_NAME}_DEFAULT )
-  
+
   add_build_var( ${MODULE_NAME} ${${MODULE_NAME}_DEFAULT} )
 
   # set vw variables based on cache variables
@@ -81,7 +85,7 @@ set( VW_HAVE_PKG_TIFF                   ${TIFF_FOUND}    )
 set( VW_HAVE_PKG_Z                      ${ZLIB_FOUND}    )
 set( VW_HAVE_PKG_LAPACK                 ${LAPACK_FOUND}  )
 
-## check for some headers. Don't think this is necessary 
+## check for some headers. Don't think this is necessary
 ## but do it anyway just for kicks and wiggles
 ##################################################
 include(CheckIncludeFiles)

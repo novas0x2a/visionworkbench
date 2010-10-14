@@ -1,15 +1,32 @@
+vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
+
 # ensure clean variable
 set( TOOLS "" )
 
-## common libs 
-link_libraries( 
-  vwCore 
+# First, the library
+set( LIB_HEADERS Common.h )
+set( LIB_SOURCES Common.cc )
+
+add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
+  ${LIB_HEADERS}
+  ${LIB_SOURCES}
+)
+
+#-----------------------------------------------------------
+install_library( ${LIB_NAME} )
+install_files  ( /include/${MODULE_PREFIX}/${MODULE_NAME} FILES ${LIB_HEADERS} )
+
+
+## common libs
+link_libraries(
+  ${LIB_NAME}
+  vwCore
   vwFileIO
   vwImage
-  vwMath 
+  vwMath
 )
 if( WIN32 )
-  link_libraries( 
+  link_libraries(
     wsock32                    # needed for htonl
     ${Boost_DATE_TIME_LIBRARY} # win32 boost wants to pull this in
   )
@@ -20,7 +37,7 @@ endif( WIN32 )
 if( VW_HAVE_PKG_CAMERA AND VW_HAVE_PKG_LAPACK )
 
   set( PROGS print_exif bayer )
-  
+
   foreach( PROG ${PROGS} )
     add_executable( ${PROG} ${PROG}.cc )
     target_link_libraries( ${PROG} vwCamera )
@@ -31,20 +48,20 @@ endif( VW_HAVE_PKG_CAMERA AND VW_HAVE_PKG_LAPACK )
 
 ## Cartography tools
 ########################################
-if( VW_HAVE_PKG_CARTOGRAPHY ) 
-  
+if( VW_HAVE_PKG_CARTOGRAPHY )
+
   # XXX FIXME : slopemap has ambiguous 'algorithm' symbol (clashes with boost::algorithm)
-  #set( PROGS colormap slopemap ) 
-  set( PROGS colormap grassfirealpha ) 
-  
+  #set( PROGS colormap slopemap )
+  set( PROGS colormap grassfirealpha )
+
   include_directories( ${PROJ4_INCLUDE_DIR} )
-  
+
   if( VW_HAVE_PKG_GDAL )
-  
+
     set( PROGS ${PROGS} georef hillshade)
     include_directories( ${GDAL_INCLUDE_DIR} )
   endif( VW_HAVE_PKG_GDAL )
-  
+
   foreach( PROG ${PROGS} )
     add_executable( ${PROG} ${PROG}.cc )
     target_link_libraries( ${PROG} vwCartography )
@@ -88,11 +105,11 @@ endif( VW_HAVE_PKG_MOSAIC )
 if( VW_HAVE_PKG_MOSAIC AND VW_HAVE_PKG_CARTOGRAPHY AND VW_HAVE_PKG_GDAL )
 
   set( PROGS image2qtree image2toast )
-  
+
   if( VW_HAVE_PKG_LAPACK )
     set( PROGS ${PROGS} geoblend )
   endif( VW_HAVE_PKG_LAPACK )
-    
+
   foreach( PROG ${PROGS} )
     add_executable( ${PROG} ${PROG}.cc )
     target_link_libraries( ${PROG} vwMosaic vwCartography )

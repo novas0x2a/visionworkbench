@@ -1,6 +1,6 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
   BoxFilter.h
   Descriptor.h
@@ -23,6 +23,7 @@ set( HEADERS
   WeightedHistogram.h
 )
 
+
 set( SOURCES
   Descriptor.cc
   IntegralDetector.cc
@@ -32,8 +33,8 @@ set( SOURCES
 
 add_definitions( ${LAPACK_DEFINITIONS} )
 
-link_libraries(  
-  ${LAPACK_LIBRARIES} 
+link_libraries(
+  ${LAPACK_LIBRARIES}
   vwFileIO
 )
 
@@ -42,7 +43,7 @@ add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
   ${SOURCES}
 )
 
-# for windows, *.lib goes in lib, *.dll goes in bin 
+# for windows, *.lib goes in lib, *.dll goes in bin
 #-----------------------------------------------------------
 install_library( ${LIB_NAME} )
 install_files  ( /include/${MODULE_PREFIX}/${MODULE_NAME} FILES ${HEADERS} )

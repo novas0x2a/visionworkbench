@@ -8,6 +8,7 @@
 #ifndef __VW_TOOLS_COMMON_H__
 #define __VW_TOOLS_COMMON_H__
 
+#include <vw/tools/toolsExport.h>
 #include <vw/Core/Exception.h>
 
 #include <boost/preprocessor.hpp>

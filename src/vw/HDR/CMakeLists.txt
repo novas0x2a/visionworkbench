@@ -1,20 +1,19 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
   CameraCurve.h
   GlobalToneMap.h
-  HDRExport.h
   LDRtoHDR.h
   LocalToneMap.h
-)                       
-                        
+)
+
 set( SOURCES
   CameraCurve.cc
   LocalToneMap.cc
 )
 
-link_libraries( 
+link_libraries(
   vwCamera
 )
 

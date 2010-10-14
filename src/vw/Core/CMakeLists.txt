@@ -1,12 +1,13 @@
 vw_setup_lib_vars( ${MODULE_PREFIX} ${MODULE_NAME} )
 
-set( HEADERS 
+set( HEADERS
   ${EXPORT_H}
   Cache.h
   CompoundTypes.h
   ConfigParser.h
   Debugging.h
   Exception.h
+  Features.h
   Functors.h
   FundamentalTypes.h
   Log.h
@@ -15,9 +16,9 @@ set( HEADERS
   Stopwatch.h
   Thread.h
   ThreadPool.h
+  ThreadQueue.h
   TypeDeduction.h
   VarArray.h
-  ThreadQueue.h
 )
 
 set( SOURCES
@@ -32,9 +33,9 @@ set( SOURCES
   Thread.cc
 )
 
-link_libraries( 
-  ${Boost_THREAD_LIBRARY} 
-  ${Boost_PROGRAM_OPTIONS_LIBRARY} 
+link_libraries(
+  ${Boost_THREAD_LIBRARY}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
 )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
