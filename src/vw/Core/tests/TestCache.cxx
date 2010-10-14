@@ -52,7 +52,7 @@ class CacheTest : public ::testing::Test {
 
     CacheTest() :
       cache( num_cache_blocks*dimension*dimension ), cache_handles( num_actual_blocks ) {
-        for (int i = 0; i < num_actual_blocks; ++i) {
+        for (uint8 i = 0; i < num_actual_blocks; ++i) {
           cache_handles[i] = cache.insert( BlockGenerator( dimension, i ) );
         }
     }
@@ -119,7 +119,7 @@ class GenGen : public BlockGenerator {
     GenGen() : BlockGenerator(1, 0) {}
 
     GenGen(const GenGen& obj) :
-      BlockGenerator(obj.m_dimension, obj.m_fill_value+1) {}
+      BlockGenerator(obj.m_dimension, boost::numeric_cast<uint8>(obj.m_fill_value+1)) {}
 };
 
 TEST(Cache, Types) {

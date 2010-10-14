@@ -65,9 +65,20 @@ namespace platefile {
       int tile_size = m_platefile->default_tile_size();
       int resolution = (1<<level)*tile_size;
 
-      cartography::GeoReference output_georef =
-        cartography::output::kml::get_output_georeference(resolution,resolution);
-      return output_georef;
+      cartography::GeoReference r;
+      r.set_pixel_interpretation(cartography::GeoReference::PixelAsArea);
+
+      // Note: the global KML pixel space extends to +/- 180 degrees
+      // latitude as well as longitude.
+      Matrix3x3 transform;
+      transform(0,0) = 360.0 / resolution;
+      transform(0,2) = -180;
+      transform(1,1) = -360.0 / resolution;
+      transform(1,2) = 180;
+      transform(2,2) = 1;
+      r.set_transform(transform);
+
+      return r;
     }
 
     /// Add an image to the plate file. Returns used transaction id.
@@ -107,10 +118,7 @@ namespace platefile {
       // Round the resolution to the nearest power of two.  The
       // base of the pyramid is 2^8 or 256x256 pixels.
       int pyramid_level = (int)ceil(log(resolution) / log(2)) - 8;
-      int tile_size = m_platefile->default_tile_size();
-      resolution = (1<<pyramid_level)*tile_size;
-
-      output_georef = cartography::output::kml::get_output_georeference(resolution,resolution);
+      output_georef = georeference(pyramid_level);
       output_georef.set_datum( input_georef.datum() );
 
       // Set up the KML transform and compute the bounding box of this
@@ -175,16 +183,12 @@ namespace platefile {
       // Add each tile
       progress.report_progress(0);
       for (size_t i = 0; i < tiles.size(); ++i) {
+        typedef WritePlateFileTask<ImageViewRef<typename ViewT::pixel_type> > Job;
         m_queue.add_task(boost::shared_ptr<Task>(
-          new WritePlateFileTask<ImageViewRef<typename ViewT::pixel_type> >(m_platefile,
-                                                                            transaction_id,
-                                                                            tiles[i],
-                                                                            pyramid_level,
-                                                                            kml_view,
-                                                                            tweak_settings_for_terrain,
-                                                                            false,
-                                                                            tiles.size(),
-                                                                            progress)));
+          new Job(m_platefile, transaction_id,
+                  tiles[i], pyramid_level,
+                  kml_view, tweak_settings_for_terrain,
+                  false, tiles.size(), progress)));
       }
       m_queue.join_all();
       progress.report_finished();
@@ -267,7 +271,8 @@ namespace platefile {
 
     /// This function generates a specific mipmap tile at the given
     /// col, row, and level, and transaction_id.
-    void generate_mipmap_tile(int col, int row, int level, int transaction_id, bool preblur) const {
+    void generate_mipmap_tile(int col, int row, int level,
+                              int transaction_id, bool preblur) const {
 
       // Create an image large enough to store all of the child nodes
       int tile_size = m_platefile->default_tile_size();
@@ -315,7 +320,6 @@ namespace platefile {
       }
     }
   };
-
 
 }} // namespace vw::plate
 

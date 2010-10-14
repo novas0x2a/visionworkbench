@@ -41,7 +41,7 @@ namespace mosaic {
     qtree.set_image_path_func( &image_path );
     qtree.set_cull_images( true );
     qtree.set_metadata_func( boost::bind(&GigapanQuadTreeConfigData::metadata_func,m_data,_1,_2) );
-    
+
     if (m_data->m_longlat_bbox.width() != 0 || m_data->m_longlat_bbox.height() != 0) {
       qtree.set_branch_func( boost::bind(&GigapanQuadTreeConfigData::branch_func,m_data,_1,_2,_3) );
     }
@@ -83,9 +83,9 @@ namespace mosaic {
 
   void GigapanQuadTreeConfigData::metadata_func( QuadTreeGenerator const& qtree, QuadTreeGenerator::TileInfo const& info ) const {
     bool root_node = ( info.name.size() == 0 );
-    
-    
-    if ( root_node) { 
+
+
+    if ( root_node) {
       std::ostringstream json;
       fs::path file_path( info.filepath, fs::native );
       fs::path json_path = change_extension( file_path, ".json" );
@@ -97,8 +97,32 @@ namespace mosaic {
            << "}" << std::endl;
 
       fs::ofstream jsonfs(json_path);
-      jsonfs << json.str();  
+      jsonfs << json.str();
     }
+  }
+
+  // TODO: Is this actually the right function for Gigapan?
+  cartography::GeoReference GigapanQuadTreeConfig::output_georef(uint32 xresolution, uint32 yresolution) {
+    if (yresolution == 0)
+      yresolution = xresolution;
+
+    VW_ASSERT(xresolution == yresolution, LogicErr() << "TMS requires square pixels");
+
+    cartography::GeoReference r;
+    r.set_pixel_interpretation(cartography::GeoReference::PixelAsArea);
+
+    // Note: the global TMS pixel space extends from +270 to -90
+    // latitude, so that the lower-left hand corner is tile-
+    // aligned, since TMS uses an origin in the lower left.
+    Matrix3x3 transform;
+    transform(0,0) = 360.0 / xresolution;
+    transform(0,2) = -180;
+    transform(1,1) = -360.0 / yresolution;
+    transform(1,2) = 270;
+    transform(2,2) = 1;
+    r.set_transform(transform);
+
+    return r;
   }
 } // namespace mosaic
 } // namespace vw

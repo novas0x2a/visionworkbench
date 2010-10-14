@@ -24,9 +24,9 @@ namespace vw {
   template<> struct PixelFormatID<Vector3>   { static const PixelFormatEnum value = VW_PIXEL_GENERIC_3_CHANNEL; };
 }
 
-template <int istretch>
+template <int32 istretch>
 class SubPixelCorrelateTest : public ::testing::Test {
-  const int IMAGE_SIZE, HALF_IMAGE_SIZE;
+  const int32 IMAGE_SIZE, HALF_IMAGE_SIZE;
 
 public:
   SubPixelCorrelateTest() : IMAGE_SIZE(100), HALF_IMAGE_SIZE(50) {}
@@ -47,9 +47,10 @@ protected:
                        ZeroEdgeExtension(), BicubicInterpolation());
 
     starting_disp.set_size(IMAGE_SIZE,IMAGE_SIZE);
-    for ( int i = 0; i < IMAGE_SIZE ; i++ ) {
-      int disparity = stretch * i + translation - i;
-      for ( int j = 0; j < IMAGE_SIZE; j++ )
+    for ( int32 i = 0; i < IMAGE_SIZE ; i++ ) {
+      int32 disparity =
+        boost::numeric_cast<int32>(stretch * i + translation - i);
+      for ( int32 j = 0; j < IMAGE_SIZE; j++ )
         starting_disp(i,j) = disparity;
     }
   }
@@ -59,9 +60,9 @@ protected:
                       int32& invalid_count ) {
     ViewT const& disparity = input.impl();
     double error = 0;
-    for ( int i = 0; i < IMAGE_SIZE; i++ ) {
+    for ( int32 i = 0; i < IMAGE_SIZE; i++ ) {
       float expected = stretch * float(i) + translation - i;
-      for ( int j = 0; j < IMAGE_SIZE; j++ ) {
+      for ( int32 j = 0; j < IMAGE_SIZE; j++ ) {
         error += disparity(i,j)[1] + fabs(disparity(i,j)[0] - expected);
         if ( !is_valid(disparity(i,j)) )
           invalid_count++;
@@ -114,7 +115,7 @@ TEST_F( SubPixelCorrelate80Test, Parabola80 ) {
   int32 invalid_count = 0;
   double error = check_error( disparity_map, invalid_count );
   //std::cout << "Err: " << error << " Cnt: " << invalid_count << "\n";
-  EXPECT_LT(error, 0.313);
+  EXPECT_LT(error, 0.46);
   EXPECT_LE(invalid_count, 0);
 }
 
@@ -126,7 +127,7 @@ TEST_F( SubPixelCorrelate70Test, Parabola70 ) {
   int32 invalid_count = 0;
   double error = check_error( disparity_map, invalid_count );
   //std::cout << "Err: " << error << " Cnt: " << invalid_count << "\n";
-  EXPECT_LT(error, 0.429);
+  EXPECT_LT(error, 0.45);
   EXPECT_LE(invalid_count, 0);
 }
 
@@ -176,7 +177,7 @@ TEST_F( SubPixelCorrelate80Test, BayesEM80 ) {
   //std::cout << "Err: " << error << " Cnt: " << invalid_count << "\n";
   //EXPECT_LT(error, 0.125);     // Use for subpixel w/o pyramid
   //EXPECT_LE(invalid_count, 3);
-  EXPECT_LT(error, 0.486);
+  EXPECT_LT(error, 0.52);
   EXPECT_LE(invalid_count, 22);
 }
 
@@ -192,6 +193,6 @@ TEST_F( SubPixelCorrelate70Test, BayesEM70 ) {
   //std::cout << "Err: " << error << " Cnt: " << invalid_count << "\n";
   //EXPECT_LT(error, 0.198);      // Use for subpixel w/o pyramid
   //EXPECT_LE(invalid_count, 7);
-  EXPECT_LT(error, 0.871);
-  EXPECT_LE(invalid_count, 42);
+  EXPECT_LT(error, 0.9);
+  EXPECT_LE(invalid_count, 47);
 }

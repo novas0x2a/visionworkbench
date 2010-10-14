@@ -379,8 +379,8 @@ namespace cartography {
     // we get edge pixels that extend slightly beyond that range (probably due
     // to pixel as area vs point) and cause Proj.4 to fail. We use HALFPI
     // rather than other incantations for pi/2 because that's what proj.4 uses.
-    if(lon_lat[1] > HALFPI)       lon_lat[1] = HALFPI;
-    else if(lon_lat[1] < -HALFPI) lon_lat[1] = -HALFPI;
+    if(unprojected.v > HALFPI)       unprojected.v = HALFPI;
+    else if(unprojected.v < -HALFPI) unprojected.v = -HALFPI;
 
     projected = pj_fwd(unprojected, m_proj_context->proj_ptr());
     CHECK_PROJ_ERROR;
@@ -399,7 +399,7 @@ namespace cartography {
       strings[i] = new char[2048];
       strncpy(strings[i], arg_strings[i].c_str(), 2048);
     }
-    num_strings = arg_strings.size();
+    num_strings = boost::numeric_cast<int>(arg_strings.size());
     return strings;
   }
 
@@ -420,43 +420,4 @@ namespace cartography {
   ProjContext::~ProjContext() {
     pj_free(m_proj_ptr);
   }
-
-  /***************** Functions for output GeoReferences *****************/
-  namespace output {
-    GeoReference kml::get_output_georeference(int xresolution, int yresolution) {
-      GeoReference r;
-      r.set_pixel_interpretation(GeoReference::PixelAsArea);
-
-      // Note: the global KML pixel space extends to +/- 180 degrees
-      // latitude as well as longitude.
-      Matrix3x3 transform;
-      transform(0,0) = 360.0 / xresolution;
-      transform(0,2) = -180;
-      transform(1,1) = -360.0 / yresolution;
-      transform(1,2) = 180;
-      transform(2,2) = 1;
-      r.set_transform(transform);
-
-      return r;
-    }
-
-    GeoReference tms::get_output_georeference(int resolution) {
-      GeoReference r;
-      r.set_pixel_interpretation(GeoReference::PixelAsArea);
-
-      // Note: the global TMS pixel space extends from +270 to -90
-      // latitude, so that the lower-left hand corner is tile-
-      // aligned, since TMS uses an origin in the lower left.
-      Matrix3x3 transform;
-      transform(0,0) = 360.0 / resolution;
-      transform(0,2) = -180;
-      transform(1,1) = -360.0 / resolution;
-      transform(1,2) = 270;
-      transform(2,2) = 1;
-      r.set_transform(transform);
-
-      return r;
-    }
-
-  } // namespace vw::cartography::output
 }} // vw::cartography

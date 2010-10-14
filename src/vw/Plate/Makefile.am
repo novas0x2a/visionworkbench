@@ -17,8 +17,8 @@ if MAKE_MODULE_PLATE
 # dependency for compile-order calculations
 PLATE_LOCAL_LIBS = libvwPlate.la @MODULE_PLATE_LIBS@
 
-protocol_headers = ProtoBuffers.pb.h
-protocol_sources = ProtoBuffers.pb.cc
+protocol_headers = IndexService.pb.h Rpc.pb.h
+protocol_sources = IndexService.pb.cc Rpc.pb.cc
 
 BUILT_SOURCES = $(protocol_sources)
 
@@ -38,6 +38,7 @@ include_HEADERS =           \
   PlateFile.h               \
   PlateManager.h            \
   PlateView.h               \
+  PolarStereoPlateManager.h \
   RemoteIndex.h             \
   RpcServices.h             \
   SnapshotManager.h         \
@@ -62,6 +63,7 @@ libvwPlate_la_SOURCES =      \
   PlateCarreePlateManager.cc \
   PlateFile.cc               \
   PlateManager.cc            \
+  PolarStereoPlateManager.cc \
   RemoteIndex.cc             \
   RpcServices.cc             \
   SnapshotManager.cc         \

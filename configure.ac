@@ -36,6 +36,8 @@ AX_CONFIG_HEADER_PREFIX([src/vw/config.h], [VW_])
 dnl Fix for early autoconf that doesn't export these
 AC_SUBST([abs_top_srcdir])
 AC_SUBST([abs_top_builddir])
+AC_SUBST([abs_srcdir])
+AC_SUBST([abs_builddir])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -362,14 +364,14 @@ old_LDFLAGS="$LDFLAGS"
 CXXFLAGS="$CXXFLAGS $PKG_RABBITMQ_C_CPPFLAGS"
 LDFLAGS="$LDFLAGS $PKG_RABBITMQ_C_LIBS"
 if test x"$HAVE_PKG_RABBITMQ_C" = "xyes"; then
-  AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
     #include <stdlib.h>
     #include <stdint.h>
     #include <amqp.h>
   ]], [[
     amqp_rpc_reply_t x;
     x.library_error;
-  ]]), [], [
+  ]])], [], [
     HAVE_PKG_RABBITMQ_C="no:current version is too old"
     AX_PKG(RABBITMQ_C, [], [-lrabbitmq], [stdlib.h stdint.h amqp.h])])
 fi
@@ -418,9 +420,9 @@ done
 PKG_VW_LIBS="$PKG_VW_LIBS_TEMP"
 
 AX_MODULE(CAMERA,           [src/vw/Camera],           [libvwCamera.la],           yes, [VW],               [],                      [BOOST_IOSTREAMS PROTOBUF])
-AX_MODULE(MOSAIC,           [src/vw/Mosaic],           [libvwMosaic.la],           yes, [VW])
 AX_MODULE(INTERESTPOINT,    [src/vw/InterestPoint],    [libvwInterestPoint.la],    yes, [VW])
 AX_MODULE(CARTOGRAPHY,      [src/vw/Cartography],      [libvwCartography.la],      yes, [VW],        [PROJ4],            [GDAL])
+AX_MODULE(MOSAIC,           [src/vw/Mosaic],           [libvwMosaic.la],           yes, [CARTOGRAPHY VW])
 AX_MODULE(HDR,              [src/vw/HDR],              [libvwHDR.la],              yes, [CAMERA VW], [LAPACK])
 AX_MODULE(STEREO,           [src/vw/Stereo],           [libvwStereo.la],           yes, [CAMERA VW])
 AX_MODULE(GEOMETRY,         [src/vw/Geometry],         [libvwGeometry.la],         yes, [VW])

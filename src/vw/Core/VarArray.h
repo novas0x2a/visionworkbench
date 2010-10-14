@@ -6,20 +6,20 @@
 
 
 /// \file VarArray.h
-/// 
+///
 /// Defines a stripped-down variable-size array class.
 ///
-/// This is essentially a stripped-down version of std::vector.  It 
-/// exists solely to work around the fact that on some systems the 
-/// std::vector::iterator performs bounds-checking when you advance 
-/// the iterator rather than when you dereference it.  This gets in  
-/// the way of clean implementations of certain classes like MatrixCol, 
+/// This is essentially a stripped-down version of std::vector.  It
+/// exists solely to work around the fact that on some systems the
+/// std::vector::iterator performs bounds-checking when you advance
+/// the iterator rather than when you dereference it.  This gets in
+/// the way of clean implementations of certain classes like MatrixCol,
 /// SubMatrix, SelectColView, and so on.
 ///
 /// This class also has supports non-copying resize() semantics.
 ///
-/// At some point we may want to extend this to deal with allocation 
-/// pools and so forth, if we want to start exposing that functionality 
+/// At some point we may want to extend this to deal with allocation
+/// pools and so forth, if we want to start exposing that functionality
 /// in matrices and images.
 ///
 #ifndef __VW_CORE_VARARRAY_H__
@@ -41,7 +41,7 @@ namespace vw {
       std::copy( other.begin(), other.end(), begin() );
     }
 
-    VarArray( int size ) : m_data(new T[size]), m_size(size) {
+    VarArray( size_t size ) : m_data(new T[size]), m_size(size) {
       std::fill(begin(),end(),T());
     }
 
@@ -58,11 +58,11 @@ namespace vw {
       return *this;
     }
 
-    inline T& operator[]( int i ) {
+    inline T& operator[]( size_t i ) {
       return m_data[i];
     }
 
-    inline T const& operator[]( int i ) const {
+    inline T const& operator[]( size_t i ) const {
       return m_data[i];
     }
 
@@ -96,7 +96,7 @@ namespace vw {
       m_data = new_data;
       m_size = new_size;
     }
-    
+
     void swap( VarArray& other ) {
       std::swap( m_data, other.m_data );
       std::swap( m_size, other.m_size );

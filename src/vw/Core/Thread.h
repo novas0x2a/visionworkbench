@@ -47,6 +47,8 @@
 #ifndef __VW_CORE_THREAD_H__
 #define __VW_CORE_THREAD_H__
 
+#include <vw/Core/FundamentalTypes.h>
+
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/xtime.hpp>
@@ -159,7 +161,7 @@ namespace vw {
         xt.sec++;
         milliseconds -= 1000;
       }
-      xt.nsec+=int_fast32_t(1e6*milliseconds);
+      xt.nsec += static_cast<uint32>(1e6) * milliseconds;
       return boost::condition::timed_wait(lock, xt);
     }
 
@@ -171,7 +173,7 @@ namespace vw {
         xt.sec++;
         milliseconds -= 1000;
       }
-      xt.nsec+=int_fast32_t(1e6*milliseconds);
+      xt.nsec += static_cast<uint32>(1e6) * milliseconds;
       return boost::condition::timed_wait(lock, xt, pred);
     }
   };
@@ -236,7 +238,7 @@ namespace vw {
     /// thread is not determined until the thread calls the id()
     /// function for the first time, so there is no guarantee that IDs
     /// will be assigned in the same order that threads are created.
-    static int id();
+    static vw::uint64 id();
 
     /// Cause the current thread to yield the remainder of its
     /// execution time to the kernel's scheduler.
@@ -246,14 +248,14 @@ namespace vw {
     /// time.  The thread will not be scheduled to run at all for the
     /// duration, so machine resources are free for other
     /// threads/processes.
-    static inline void sleep_ms( unsigned long milliseconds ) {
+    static inline void sleep_ms( uint32 milliseconds ) {
       boost::xtime xt;
       boost::xtime_get(&xt, boost::TIME_UTC);
       while (milliseconds >= 1000) {
         xt.sec++;
         milliseconds -= 1000;
       }
-      xt.nsec+=boost::int_fast32_t(1e6*milliseconds);
+      xt.nsec += static_cast<uint32>(1e6) * milliseconds;
       boost::thread::sleep(xt);
     }
   };

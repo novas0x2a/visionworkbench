@@ -17,7 +17,6 @@
 #include <vw/Image/Transform.h>
 #include <vw/FileIO/DiskImageResource.h>
 #include <vw/InterestPoint/InterestData.h>
-#include <vw/InterestPoint/InterestPointExport.h>
 #include <vw/InterestPoint/MatrixIO.h>
 #include <vw/InterestPoint/VectorIO.h>
 #include <vw/InterestPoint/IntegralImage.h>
@@ -90,7 +89,7 @@ namespace ip {
   /// point is simply the pixel values in the support region around
   /// the point. It is normalized to provide some tolerance to changes
   /// in illumination.
-  struct VW_INTERESTPOINT_DECL PatchDescriptorGenerator : public DescriptorGeneratorBase<PatchDescriptorGenerator> {
+  struct PatchDescriptorGenerator : public DescriptorGeneratorBase<PatchDescriptorGenerator> {
 
     template <class ViewT, class IterT>
     void compute_descriptor( ImageViewBase<ViewT> const& support,
@@ -116,7 +115,7 @@ namespace ip {
   };
 
   // An implementation of PCA-SIFT
-  struct VW_INTERESTPOINT_DECL PCASIFTDescriptorGenerator : public DescriptorGeneratorBase<PCASIFTDescriptorGenerator> {
+  struct PCASIFTDescriptorGenerator : public DescriptorGeneratorBase<PCASIFTDescriptorGenerator> {
 
     std::string basis_filename, avg_filename;
     Matrix<float> pca_basis;
@@ -171,7 +170,7 @@ namespace ip {
   // A Simple Scaled Gradient descriptor that reduces the number of elements
   // used in the descriptor and is hopefully more robust against
   // illumination changes.
-  struct VW_INTERESTPOINT_DECL SGradDescriptorGenerator : public DescriptorGeneratorBase<SGradDescriptorGenerator> {
+  struct SGradDescriptorGenerator : public DescriptorGeneratorBase<SGradDescriptorGenerator> {
 
     static const uint32 box_strt[5];
     static const uint32 box_size[5];

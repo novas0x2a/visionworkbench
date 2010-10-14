@@ -152,7 +152,7 @@ TEST(Matrix, Dynamic) {
 }
 
 TEST(Matrix, VectorEQ) {
-  Matrix<float,1,2> m1(1,2), m2(1.1,1.9), m3(1,2);
+  Matrix<float,1,2> m1(1,2), m2(1.1f,1.9f), m3(1,2);
   EXPECT_FALSE( m1==m2 );
   EXPECT_TRUE ( m1==m3 );
   EXPECT_FALSE( equal(m1,m2) );
@@ -240,7 +240,7 @@ TEST(Matrix, Norms) {
   EXPECT_EQ( 6, norm_1(m) );
   EXPECT_EQ( 7, norm_inf(m) );
   EXPECT_EQ( 30, norm_frobenius_sqr(m) );
-  EXPECT_FLOAT_EQ( 5.4772255750, norm_frobenius(m) );
+  EXPECT_FLOAT_EQ( 5.4772255750f, norm_frobenius(m) );
 
   EXPECT_EQ( 10, sum(m) );
   EXPECT_EQ( 24, prod(m) );
@@ -446,13 +446,13 @@ TEST(Matrix, Inverse) {
   m2(2,0)=9; m2(2,1)=6; m2(2,2)=8;
 
   Matrix<float> i2=inverse(m2);
-  EXPECT_FLOAT_EQ(   8.0 / -15.0 , i2(0,0) );
-  EXPECT_FLOAT_EQ( -14.0 / -15.0 , i2(0,1) );
-  EXPECT_FLOAT_EQ( -3.0  / -15.0 , i2(0,2) );
-  EXPECT_FLOAT_EQ( -16.0 / -15.0 , i2(1,0) );
-  EXPECT_FLOAT_EQ(  13.0 / -15.0 , i2(1,1) );
-  EXPECT_FLOAT_EQ(   6.0 / -15.0 , i2(1,2) );
-  EXPECT_FLOAT_EQ(   3.0 / -15.0 , i2(2,0) );
-  EXPECT_FLOAT_EQ(   6.0 / -15.0 , i2(2,1) );
-  EXPECT_FLOAT_EQ(  -3.0 / -15.0 , i2(2,2) );
+  EXPECT_FLOAT_EQ(   8.0f / -15.0f , i2(0,0) );
+  EXPECT_FLOAT_EQ( -14.0f / -15.0f , i2(0,1) );
+  EXPECT_FLOAT_EQ( -3.0f  / -15.0f , i2(0,2) );
+  EXPECT_FLOAT_EQ( -16.0f / -15.0f , i2(1,0) );
+  EXPECT_FLOAT_EQ(  13.0f / -15.0f , i2(1,1) );
+  EXPECT_FLOAT_EQ(   6.0f / -15.0f , i2(1,2) );
+  EXPECT_FLOAT_EQ(   3.0f / -15.0f , i2(2,0) );
+  EXPECT_FLOAT_EQ(   6.0f / -15.0f , i2(2,1) );
+  EXPECT_FLOAT_EQ(  -3.0f / -15.0f , i2(2,2) );
 }

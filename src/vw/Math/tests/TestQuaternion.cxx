@@ -166,7 +166,7 @@ TEST(Quaternion, RotationMatrix) {
 
 
   // test zz
-  double R_data_zz[9] = { 
+  double R_data_zz[9] = {
     -0.771198883306014,  0.0594151990953122, -0.633815522454304,
     -0.636389733970151, -0.097192743605217,   0.765220018744864,
     -0.0161365698014631, 0.993490515660293,   0.11276615807984
@@ -325,8 +325,6 @@ TEST(Quaternion, AxisAngleToFromMatrix) {
 }
 
 TEST(Quaternion, AxisAngleQuaternionMatrixRandom) {
-  std::srand(std::time(0));
-
   for (int i = 0; i < 1000; i++) {
     Vector3 v(std::rand(), std::rand(), std::rand());
     v /= math::norm_2(v); // normalize

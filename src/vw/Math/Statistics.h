@@ -6,16 +6,16 @@
 
 
 /// \file Statistics.h
-/// 
+///
 /// Assorted useful statistical routines and functors.
-///  
+///
 #ifndef __MATH_STATISTICS_H__
 #define __MATH_STATISTICS_H__
 
 #include <cmath>
 #include <vector>
 
-namespace vw { 
+namespace vw {
 namespace math {
 
   /// Finds the mean of a set of points.
@@ -26,7 +26,7 @@ namespace math {
     /// projective space (i.e. homogeneous coordinates), you should
     /// set this flag to to true. The resulting mean will be in
     /// the same coordinates.
-    MeanFunctor(bool homogeneous_points = false) 
+    MeanFunctor(bool homogeneous_points = false)
       : m_homogeneous(homogeneous_points) {}
 
     /// This function can use points in any container that supports
@@ -36,30 +36,30 @@ namespace math {
     template <class ContainerT>
     ContainerT operator() (std::vector<ContainerT> const& points) const {
       ContainerT result = points[0]; // to resize container if necessary
-      unsigned num_points = points.size();
-      unsigned dimensions = points[0].size();
+      size_t num_points = points.size();
+      size_t dimensions = points[0].size();
       if (m_homogeneous)
         dimensions--;
-    
-      for (unsigned int i = 0; i < dimensions; ++i)
+
+      for (size_t i = 0; i < dimensions; ++i)
         result[i] = 0;
       if (m_homogeneous)
         result[dimensions] = 1;
-    
+
       if (m_homogeneous) {
-        for (unsigned i = 0; i < num_points; ++i)
-          for (unsigned int j = 0; j < dimensions; ++j)
+        for (size_t i = 0; i < num_points; ++i)
+          for (size_t j = 0; j < dimensions; ++j)
             result[j] += points[i][j] / points[i][dimensions];
       }
       else {
-        for (unsigned i = 0; i < num_points; ++i)
-          for (unsigned int j = 0; j < dimensions; ++j)
+        for (size_t i = 0; i < num_points; ++i)
+          for (size_t j = 0; j < dimensions; ++j)
             result[j] += points[i][j];
       }
-    
-      for (unsigned int i = 0; i < dimensions; ++i)
+
+      for (size_t i = 0; i < dimensions; ++i)
         result[i] /= num_points;
-    
+
       return result;
     }
   };
@@ -72,7 +72,7 @@ namespace math {
     /// projective space (i.e. homogeneous coordinates), you should
     /// set this flag to to true. The resulting standard deviation
     /// will be in the same coordinates.
-    StandardDeviationFunctor(bool homogeneous_points = false) 
+    StandardDeviationFunctor(bool homogeneous_points = false)
       : m_homogeneous(homogeneous_points) {}
 
     /// This function can use points in any container that supports
@@ -89,12 +89,12 @@ namespace math {
       unsigned dimensions = points[0].size();
       if (m_homogeneous)
         dimensions--;
-    
+
       for (unsigned int i = 0; i < dimensions; ++i)
         result[i] = 0;
       if (m_homogeneous)
         result[dimensions] = 1;
-    
+
       if (m_homogeneous) {
         for (unsigned i = 0; i < num_points; ++i)
           for (unsigned int j = 0; j < dimensions; ++j) {
@@ -109,12 +109,12 @@ namespace math {
             result[j] += temp[j] * temp[j];
           }
       }
-    
+
       for (unsigned int i = 0; i < dimensions; ++i) {
         result[i] /= num_points;
         result[i] = sqrt(result[i]);
       }
-    
+
       return result;
     }
   };

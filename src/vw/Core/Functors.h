@@ -6,9 +6,9 @@
 
 
 /// \file Functors.h
-/// 
+///
 /// General-purpose functors and functor support code.
-/// 
+///
 /// This file provides a few mix-in base classes that you can use when
 /// writing your own polymorphic functors.  They instruct the return
 /// type deduction system about the return type of your functor in
@@ -22,10 +22,11 @@
 #define __VW_CORE_FUNCTORS_H__
 
 #include <vw/Core/TypeDeduction.h>
+#include <boost/numeric/conversion/cast.hpp>
 
 namespace vw {
 
-  /// A mix-in specifying that a functor is an unary functor 
+  /// A mix-in specifying that a functor is an unary functor
   /// whose return type is the same as its argument type.
   struct UnaryReturnSameType {
     /// \cond INTERNAL
@@ -33,12 +34,12 @@ namespace vw {
     template <class ChannelT, class FuncT>
     struct result<FuncT(ChannelT)> {
       typedef ChannelT type;
-    };    
+    };
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is a unary functor 
-  /// whose return type is determined by the given traits 
+  /// A mix-in specifying that a functor is a unary functor
+  /// whose return type is determined by the given traits
   /// template class.
   template <template<class> class ResultT>
   struct UnaryReturnTemplateType {
@@ -51,8 +52,8 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is a binary functor 
-  /// whose return type is determined by the given traits 
+  /// A mix-in specifying that a functor is a binary functor
+  /// whose return type is determined by the given traits
   /// template class.
   template <template<class,class> class ResultT>
   struct BinaryReturnTemplateType {
@@ -65,7 +66,7 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor always returns a 
+  /// A mix-in specifying that a functor always returns a
   /// particular type.
   template <class T>
   struct ReturnFixedType {
@@ -77,7 +78,7 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a binary functor always returns 
+  /// A mix-in specifying that a binary functor always returns
   /// the same type as its first argument.
   struct BinaryReturn1stType {
     /// \cond INTERNAL
@@ -88,7 +89,7 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a binary functor always returns 
+  /// A mix-in specifying that a binary functor always returns
   /// the same type as its second argument.
   struct BinaryReturn2ndType {
     /// \cond INTERNAL
@@ -99,8 +100,8 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is an unary functor 
-  /// whose return type is determined by the given binary 
+  /// A mix-in specifying that a functor is an unary functor
+  /// whose return type is determined by the given binary
   /// type function with the given first argument.
   template <template<class,class> class ResultT, class ValT>
   struct UnaryReturnBinaryTemplateBind1st {
@@ -113,8 +114,8 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is an unary functor 
-  /// whose return type is determined by the given binary 
+  /// A mix-in specifying that a functor is an unary functor
+  /// whose return type is determined by the given binary
   /// type function with the given second argument.
   template <template<class,class> class ResultT, class ValT>
   struct UnaryReturnBinaryTemplateBind2nd {
@@ -127,8 +128,8 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is a binary functor 
-  /// whose return type is determined by the given ternary 
+  /// A mix-in specifying that a functor is a binary functor
+  /// whose return type is determined by the given ternary
   /// type function with the given first argument.
   template <template<class,class,class> class ResultT, class ValT>
   struct BinaryReturnTernaryTemplateBind1st {
@@ -141,8 +142,8 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is an unary functor 
-  /// whose return type is determined by the given ternary 
+  /// A mix-in specifying that a functor is an unary functor
+  /// whose return type is determined by the given ternary
   /// type function with the given first and second arguments.
   template <template<class,class,class> class ResultT, class Val1T, class Val2T>
   struct UnaryReturnTernaryTemplateBind1st2nd {
@@ -155,8 +156,8 @@ namespace vw {
     /// \endcond
   };
 
-  /// A mix-in specifying that a functor is an unary functor 
-  /// whose return type is determined by the given ternary 
+  /// A mix-in specifying that a functor is an unary functor
+  /// whose return type is determined by the given ternary
   /// type function with the given first and third arguments.
   template <template<class,class,class> class ResultT, class Val1T, class Val3T>
   struct UnaryReturnTernaryTemplateBind1st3rd {
@@ -203,7 +204,11 @@ namespace vw {
   // Binary sum of two arguments
   struct ArgArgSumFunctor : BinaryReturnTemplateType<SumType> {
     template <class Arg1T, class Arg2T>
-    inline typename SumType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const { return arg1+arg2; }
+    inline typename SumType<Arg1T,Arg2T>::type
+    operator()( Arg1T const& arg1, Arg2T const& arg2 ) const {
+      typedef typename SumType<Arg1T,Arg2T>::type sum_t;
+      return boost::numeric_cast<sum_t>(arg1) + boost::numeric_cast<sum_t>(arg2);
+    }
   };
 
   // Unary sum of an argument and a value
@@ -215,7 +220,11 @@ namespace vw {
     ArgValSumFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename SumType<ArgT,ValT>::type operator()( ArgT const& arg ) const { return arg+m_val; }
+    inline typename SumType<ArgT,ValT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename SumType<ArgT,ValT>::type sum_t;
+      return boost::numeric_cast<sum_t>(arg) + boost::numeric_cast<sum_t>(m_val);
+    }
   };
 
   // Unary sum of a value and an argument
@@ -227,7 +236,11 @@ namespace vw {
     ValArgSumFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename SumType<ValT,ArgT>::type operator()( ArgT const& arg ) const { return m_val+arg; }
+    inline typename SumType<ValT,ArgT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename SumType<ValT,ArgT>::type sum_t;
+      return boost::numeric_cast<sum_t>(m_val) + boost::numeric_cast<sum_t>(arg);
+    }
   };
 
   // Binary in-place sum of two arguments
@@ -251,7 +264,11 @@ namespace vw {
   // Binary difference of two arguments
   struct ArgArgDifferenceFunctor : BinaryReturnTemplateType<DifferenceType> {
     template <class Arg1T, class Arg2T>
-    inline typename DifferenceType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const { return arg1-arg2; }
+    inline typename DifferenceType<Arg1T,Arg2T>::type
+    operator()( Arg1T const& arg1, Arg2T const& arg2 ) const {
+      typedef typename DifferenceType<Arg1T,Arg2T>::type diff_t;
+      return boost::numeric_cast<diff_t>(arg1) - boost::numeric_cast<diff_t>(arg2);
+    }
   };
 
   // Unary difference of an argument and a value
@@ -263,7 +280,11 @@ namespace vw {
     ArgValDifferenceFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename DifferenceType<ArgT,ValT>::type operator()( ArgT const& arg ) const { return arg-m_val; }
+    inline typename DifferenceType<ArgT,ValT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename DifferenceType<ArgT,ValT>::type diff_t;
+      return boost::numeric_cast<diff_t>(arg) - boost::numeric_cast<diff_t>(m_val);
+    }
   };
 
   // Unary difference of a value and an argument
@@ -275,7 +296,11 @@ namespace vw {
     ValArgDifferenceFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename DifferenceType<ValT,ArgT>::type operator()( ArgT const& arg ) const { return m_val-arg; }
+    inline typename DifferenceType<ValT,ArgT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename DifferenceType<ValT,ArgT>::type diff_t;
+      return boost::numeric_cast<diff_t>(m_val) - boost::numeric_cast<diff_t>(arg);
+    }
   };
 
   // Binary in-place difference of two arguments
@@ -299,7 +324,11 @@ namespace vw {
   // Binary product of two arguments
   struct ArgArgProductFunctor : BinaryReturnTemplateType<ProductType> {
     template <class Arg1T, class Arg2T>
-    inline typename ProductType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const { return arg1*arg2; }
+    inline typename ProductType<Arg1T,Arg2T>::type
+    operator()( Arg1T const& arg1, Arg2T const& arg2 ) const {
+      typedef typename ProductType<Arg1T,Arg2T>::type p_t;
+      return boost::numeric_cast<p_t>(arg1) * boost::numeric_cast<p_t>(arg2);
+    }
   };
 
   // Unary product of an argument and a value
@@ -311,7 +340,11 @@ namespace vw {
     ArgValProductFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename ProductType<ArgT,ValT>::type operator()( ArgT const& arg ) const { return arg*m_val; }
+    inline typename ProductType<ArgT,ValT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename ProductType<ArgT,ValT>::type p_t;
+      return boost::numeric_cast<p_t>(arg) * boost::numeric_cast<p_t>(m_val);
+    }
   };
 
   // Unary product of a value and an argument
@@ -323,7 +356,11 @@ namespace vw {
     ValArgProductFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename ProductType<ValT,ArgT>::type operator()( ArgT const& arg ) const { return m_val*arg; }
+    inline typename ProductType<ValT,ArgT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename ProductType<ValT,ArgT>::type p_t;
+      return boost::numeric_cast<p_t>(m_val) * boost::numeric_cast<p_t>(arg);
+    }
   };
 
   // Binary in-place product of two arguments
@@ -347,7 +384,11 @@ namespace vw {
   // Binary quotient of two arguments
   struct ArgArgQuotientFunctor : BinaryReturnTemplateType<QuotientType> {
     template <class Arg1T, class Arg2T>
-    inline typename QuotientType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const { return arg1/arg2; }
+    inline typename QuotientType<Arg1T,Arg2T>::type
+    operator()( Arg1T const& arg1, Arg2T const& arg2 ) const {
+      typedef typename QuotientType<Arg1T,Arg2T>::type q_t;
+      return boost::numeric_cast<q_t>(arg1) / boost::numeric_cast<q_t>(arg2);
+    }
   };
 
   // Unary quotient of an argument and a value
@@ -359,7 +400,11 @@ namespace vw {
     ArgValQuotientFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename QuotientType<ArgT,ValT>::type operator()( ArgT const& arg ) const { return arg/m_val; }
+    inline typename QuotientType<ArgT,ValT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename QuotientType<ArgT,ValT>::type q_t;
+      return boost::numeric_cast<q_t>(arg) / boost::numeric_cast<q_t>(m_val);
+    }
   };
 
   // Unary quotient of a value and an argument
@@ -371,7 +416,11 @@ namespace vw {
     ValArgQuotientFunctor( ValT const& val ) : m_val(val) {}
 
     template <class ArgT>
-    inline typename QuotientType<ValT,ArgT>::type operator()( ArgT const& arg ) const { return m_val/arg; }
+    inline typename QuotientType<ValT,ArgT>::type
+    operator()( ArgT const& arg ) const {
+      typedef typename QuotientType<ValT,ArgT>::type q_t;
+      return boost::numeric_cast<q_t>(m_val) / boost::numeric_cast<q_t>(arg);
+    }
   };
 
   // Binary in-place quotient of two arguments
@@ -393,7 +442,7 @@ namespace vw {
   };
 
   // **** WARNING ****
-  // The syntax in all three SafeQuotient functors is carefully 
+  // The syntax in all three SafeQuotient functors is carefully
   // crafted to work around an issue with RedHat's gcc 3.2.3-56.
   // If you change this, be sure to test it on an RHEL3 box.
   // **** WARNING ****
@@ -401,7 +450,7 @@ namespace vw {
   // Safe binary quotient of two arguments
   struct ArgArgSafeQuotientFunctor : BinaryReturnTemplateType<QuotientType> {
     template <class Arg1T, class Arg2T>
-    inline typename QuotientType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const { 
+    inline typename QuotientType<Arg1T,Arg2T>::type operator()( Arg1T const& arg1, Arg2T const& arg2 ) const {
       if( arg2==Arg2T() ) return typename QuotientType<Arg1T,Arg2T>::type();
       else return (arg1/arg2);
     }
