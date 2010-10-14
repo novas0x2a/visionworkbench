@@ -36,8 +36,8 @@ namespace platefile {
   // These are specified by the spec. They indicate that the server forcibly
   // closed the connection or channel. The channel or connection must be
   // recreated to recover.
-  VW_DEFINE_EXCEPTION(AMQPConnectionErr, AMQPErr);
-  VW_DEFINE_EXCEPTION(AMQPChannelErr,    AMQPErr);
+  VW_DEFINE_EXCEPTION(AMQPConnectionErr, AMQPErr, VW_PLATE_DECL);
+  VW_DEFINE_EXCEPTION(AMQPChannelErr,    AMQPErr, VW_PLATE_DECL);
 
   // This exception denotes a potentially desynchronizing AMQP error. Only
   // recovery mechanism is to recreate the connection.

@@ -16,7 +16,7 @@ namespace po = boost::program_options;
 
 using namespace vw;
 using namespace vw::platefile;
-VW_DEFINE_EXCEPTION(Usage, Exception);
+VW_DEFINE_EXCEPTION(Usage, Exception, VW_PLATE_DECL);
 
 struct Options {
   float north, south, east, west; // Request area in lat lon degrees

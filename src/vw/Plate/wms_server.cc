@@ -25,7 +25,7 @@ using namespace vw::platefile;
 using namespace vw;
 
 #define EXCHANGE PLATE_EXCHANGE_NAMESPACE ".wms"
-VW_DEFINE_EXCEPTION(Usage, Exception);
+VW_DEFINE_EXCEPTION(Usage, Exception, VW_PLATE_DECL);
 
 // Global variable.  (Makes signal handling a lot easier...)
 boost::shared_ptr<WMSServiceImpl> g_service;

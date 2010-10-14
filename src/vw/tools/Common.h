@@ -21,7 +21,7 @@
 namespace vw {
 namespace tools {
 
-  VW_DEFINE_EXCEPTION(Usage, Exception);
+  VW_DEFINE_EXCEPTION(Usage, Exception, VW_TOOLS_DECL);
 
 namespace detail {
 

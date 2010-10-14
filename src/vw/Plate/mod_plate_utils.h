@@ -25,10 +25,10 @@ namespace platefile {
 
 class Index;
 
-VW_DEFINE_EXCEPTION(PlateException,   Exception);
-VW_DEFINE_EXCEPTION(BadRequest,       PlateException);
-VW_DEFINE_EXCEPTION(ServerError,      PlateException);
-VW_DEFINE_EXCEPTION(UnknownPlatefile, PlateException);
+VW_DEFINE_EXCEPTION(PlateException,   Exception,      VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(BadRequest,       PlateException, VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(ServerError,      PlateException, VW_PLATE_DECL);
+VW_DEFINE_EXCEPTION(UnknownPlatefile, PlateException, VW_PLATE_DECL);
 
 // Returns the const char* as a string, or an empty() string if it's scary in
 // some way.
