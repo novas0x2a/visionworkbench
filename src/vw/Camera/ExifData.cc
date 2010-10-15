@@ -484,7 +484,7 @@ bool vw::camera::ExifData::import_data(std::string const &filename) {
   return ret;
 }
 
-bool vw::camera::ExifData::get_tag_value(const uint16 tag, int &value) const {
+bool vw::camera::ExifData::get_tag_value(const uint16 tag, vw::int32 &value) const {
   std::map<unsigned int, ExifTagData>::const_iterator tag_iter = tags.find(tag);
   if (tag_iter == tags.end()) return false;
   switch ((*tag_iter).second.type) {
