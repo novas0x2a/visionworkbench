@@ -306,7 +306,7 @@ namespace stereo {
           }
           if ( norm_2( Vector2f(d[2],d[5]) ) >
                AFFINE_SUBPIXEL_MAX_TRANSLATION ||
-               std::isnan(d[2]) || std::isnan(d[5]) )
+               (d[2]!=d[2]) || (d[5]!=d[5]) )
               invalidate(disparity_map(x,y));
           else
             remove_mask(disparity_map(x,y)) += Vector2f(d[2],d[5]);

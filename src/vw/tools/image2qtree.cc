@@ -224,7 +224,7 @@ GeoReference make_input_georef(DiskImageResourceGDAL& file, const Options& opt) 
   bool fail_read_georef = false;
   try {
     fail_read_georef = !read_georeference( input_georef, file );
-  } catch ( InputErr const& e ) {
+  } catch ( InputErr const& /*e*/ ) {
     vw_out(ErrorMessage) << "Input " << file.filename() << " has malformed georeferencing information.\n";
     fail_read_georef = true;
   }

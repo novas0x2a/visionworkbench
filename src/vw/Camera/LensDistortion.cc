@@ -15,7 +15,7 @@ using namespace vw;
 
 // Optimization functor for computing the undistorted coordinates
 // using levenberg marquardt.
-struct UndistortOptimizeFunctor : public math::LeastSquaresModelBase<UndistortOptimizeFunctor> {
+struct UndistortOptimizeFunctor : public vw::math::LeastSquaresModelBase<UndistortOptimizeFunctor> {
   typedef Vector2 result_type;
   typedef Vector2 domain_type;
   typedef Matrix<double> jacobian_type;
@@ -29,7 +29,7 @@ struct UndistortOptimizeFunctor : public math::LeastSquaresModelBase<UndistortOp
   }
 };
 
-struct DistortOptimizeFunctor :  public math::LeastSquaresModelBase<DistortOptimizeFunctor> {
+struct DistortOptimizeFunctor :  public vw::math::LeastSquaresModelBase<DistortOptimizeFunctor> {
   typedef Vector2 result_type;
   typedef Vector2 domain_type;
   typedef Matrix<double> jacobian_type;

@@ -120,7 +120,7 @@ namespace ip {
   }
 
   /// Helpful functors
-  void remove_descriptor( InterestPoint & ip );
+  VW_INTERESTPOINT_DECL void remove_descriptor( InterestPoint & ip );
 
   /// ImageInterestData
   ///

@@ -118,7 +118,7 @@ namespace math {
 
     /// \cond INTERNAL
     // Utility Function: Pick N UNIQUE, random integers in the range [0, size]
-    inline void _vw_get_n_unique_integers(size_t size, size_t n, int* samples) const {
+    inline void _vw_get_n_unique_integers(size_t size, size_t n, vw::int32* samples) const {
       VW_ASSERT(size >= n, ArgumentErr() << "Not enough samples (" << n << " / " << size << ")\n");
 
       for (size_t i=0; i<n; ++i) {

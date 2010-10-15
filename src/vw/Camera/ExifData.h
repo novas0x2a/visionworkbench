@@ -76,6 +76,14 @@ namespace camera {
     bool get_tag_value(const uint16 tag, std::string &value) const;
     unsigned int get_exif_location() const;
 
+    /** XXX compatibility member for when int32 != int */
+    inline bool vw::camera::ExifData::get_tag_value(const uint16 tag, vw::int32 &value) const {
+      int v = static_cast<int>(value);
+      bool retVal = get_tag_value(tag, v);
+      value = static_cast<vw::int32>(v);
+      return retVal;
+    }
+    
     void print_debug();
   };
 

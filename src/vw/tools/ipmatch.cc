@@ -175,21 +175,21 @@ int main(int argc, char** argv) {
         // of points.  Points that don't meet this geometric
         // contstraint are rejected as outliers.
         if (ransac_constraint == "similarity") {
-          math::RandomSampleConsensus<math::SimilarityFittingFunctor, math::InterestPointErrorMetric> ransac( math::SimilarityFittingFunctor(),
-                                                                                                              math::InterestPointErrorMetric(),
+          vw::math::RandomSampleConsensus<vw::math::SimilarityFittingFunctor, vw::math::InterestPointErrorMetric> ransac( vw::math::SimilarityFittingFunctor(),
+                                                                                                              vw::math::InterestPointErrorMetric(),
                                                                                                               inlier_threshold ); // inlier_threshold
           Matrix<double> H(ransac(ransac_ip1,ransac_ip2));
           std::cout << "\t--> Similarity: " << H << "\n";
           indices = ransac.inlier_indices(H,ransac_ip1,ransac_ip2);
         } else if (ransac_constraint == "homography") {
-          math::RandomSampleConsensus<math::HomographyFittingFunctor, math::InterestPointErrorMetric> ransac( math::HomographyFittingFunctor(),
-                                                                                                              math::InterestPointErrorMetric(),
+          vw::math::RandomSampleConsensus<vw::math::HomographyFittingFunctor, vw::math::InterestPointErrorMetric> ransac( vw::math::HomographyFittingFunctor(),
+                                                                                                              vw::math::InterestPointErrorMetric(),
                                                                                                               inlier_threshold ); // inlier_threshold
           Matrix<double> H(ransac(ransac_ip1,ransac_ip2));
           std::cout << "\t--> Homography: " << H << "\n";
           indices = ransac.inlier_indices(H,ransac_ip1,ransac_ip2);
         } else if (ransac_constraint == "fundamental") {
-          math::RandomSampleConsensus<camera::FundamentalMatrix8PFittingFunctor, camera::FundamentalMatrixDistanceErrorMetric> ransac( camera::FundamentalMatrix8PFittingFunctor(), camera::FundamentalMatrixDistanceErrorMetric(), inlier_threshold );
+          vw::math::RandomSampleConsensus<camera::FundamentalMatrix8PFittingFunctor, camera::FundamentalMatrixDistanceErrorMetric> ransac( camera::FundamentalMatrix8PFittingFunctor(), camera::FundamentalMatrixDistanceErrorMetric(), inlier_threshold );
           Matrix<double> F(ransac(ransac_ip1,ransac_ip2));
           std::cout << "\t--> Fundamental: " << F << "\n";
           indices = ransac.inlier_indices(F,ransac_ip1,ransac_ip2);

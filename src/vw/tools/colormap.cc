@@ -132,7 +132,7 @@ void do_colorized_dem(Options& opt) {
         opt.lut_map[ ( key - opt.min_val ) / ( opt.max_val - opt.min_val ) ] =
           pair.second;
       }
-    } catch ( boost::bad_lexical_cast const& e ) {
+    } catch ( boost::bad_lexical_cast const& /*e*/ ) {
       continue;
     }
   }
@@ -287,7 +287,7 @@ int main( int argc, char *argv[] ) {
           value[1] = boost::numeric_cast<uint8>(boost::lexical_cast<int>(*iter)); iter++;
           if ( iter == tokens.end()) vw_throw( IOErr() << "Unable to read input LUT" );
           value[2] = boost::numeric_cast<uint8>(boost::lexical_cast<int>(*iter));
-        } catch ( boost::bad_lexical_cast const& e ) {
+        } catch ( boost::bad_lexical_cast const& /*e*/ ) {
           std::getline( lut_file, line );
           continue;
         }

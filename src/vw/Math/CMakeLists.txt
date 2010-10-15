@@ -39,6 +39,10 @@ set( SOURCES
   MinimumSpanningTree.cc
 )
 
+if( VW_HAS_DECLSPEC )
+  set( SOURCES ${SOURCES} RANSACErr.cc )
+endif( VW_HAS_DECLSPEC )
+
 link_libraries( vwCore )
 
 add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}

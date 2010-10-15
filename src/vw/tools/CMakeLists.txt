@@ -7,7 +7,7 @@ set( TOOLS "" )
 set( LIB_HEADERS Common.h )
 set( LIB_SOURCES Common.cc )
 
-add_library( ${LIB_NAME} ${VW_DEFAULT_LIB_TYPE}
+add_library( ${LIB_NAME} STATIC
   ${LIB_HEADERS}
   ${LIB_SOURCES}
 )

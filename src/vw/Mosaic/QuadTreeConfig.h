@@ -8,6 +8,7 @@
 #ifndef __VW_MOSAIC_QUADTREECONFIG_H__
 #define __VW_MOSAIC_QUADTREECONFIG_H__
 
+#include <vw/Mosaic/MosaicExport.h>
 #include <vw/Cartography/GeoReference.h>
 #include <boost/shared_ptr.hpp>
 
@@ -15,7 +16,7 @@ namespace vw {
 namespace mosaic {
   class QuadTreeGenerator;
 
-  class QuadTreeConfig {
+  class VW_MOSAIC_DECL QuadTreeConfig {
   public:
     virtual ~QuadTreeConfig() {}
     virtual void configure( QuadTreeGenerator& qtree ) const = 0;

@@ -9,6 +9,7 @@
 #define __VW_STEREO_STEREOMODEL_H__
 
 #include <vw/Stereo/DisparityMap.h>
+#include <vw/Stereo/StereoExport.h>
 
 namespace vw {
 
@@ -19,7 +20,7 @@ namespace camera {
 
 namespace stereo {
 
-  class StereoModel {
+  class VW_STEREO_DECL StereoModel {
 
   public:
 

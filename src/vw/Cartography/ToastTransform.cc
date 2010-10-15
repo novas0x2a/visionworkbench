@@ -283,7 +283,7 @@ vw::BBox2i vw::cartography::ToastTransform::forward_bbox( vw::BBox2i const& bbox
   Vector2 south_pole_pixel;
   try {
     south_pole_pixel = m_georef.lonlat_to_pixel(Vector2i(0,-90));
-  } catch (const ProjectionErr& e) {
+  } catch (const ProjectionErr& /*e*/) {
     // We asked for a point not defined in the projection, most likely.  Assume
     // the point represents a notch discontinuity, and ask for a cross through it.
     // The center of that cross will hopefully be the correct point.

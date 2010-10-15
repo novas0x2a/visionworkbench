@@ -192,11 +192,11 @@ void align_images( Options & opt ) {
 
     std::vector<int> indices;
     if ( opt.homography ) {
-      math::RandomSampleConsensus<math::HomographyFittingFunctor, math::InterestPointErrorMetric> ransac(math::HomographyFittingFunctor(), math::InterestPointErrorMetric(), opt.inlier_threshold);
+      vw::math::RandomSampleConsensus<vw::math::HomographyFittingFunctor, vw::math::InterestPointErrorMetric> ransac(vw::math::HomographyFittingFunctor(), vw::math::InterestPointErrorMetric(), opt.inlier_threshold);
       align_matrix = ransac(ransac_ip2,ransac_ip1);
       indices = ransac.inlier_indices(align_matrix,ransac_ip2,ransac_ip1);
     } else {
-      math::RandomSampleConsensus<math::AffineFittingFunctor, math::InterestPointErrorMetric> ransac(math::AffineFittingFunctor(), math::InterestPointErrorMetric(), opt.inlier_threshold);
+      vw::math::RandomSampleConsensus<vw::math::AffineFittingFunctor, vw::math::InterestPointErrorMetric> ransac(vw::math::AffineFittingFunctor(), vw::math::InterestPointErrorMetric(), opt.inlier_threshold);
       align_matrix = ransac(ransac_ip2,ransac_ip1);
       indices = ransac.inlier_indices(align_matrix,ransac_ip2,ransac_ip1);
     }
@@ -302,7 +302,7 @@ int main(int argc, char* argv[]) {
   } catch ( const Exception& e ) {
     std::cerr << "\n\nVW Error: " << e.what() << "\n";
     return 1;
-  } catch ( const std::bad_alloc& e ) {
+  } catch ( const std::bad_alloc& /*e*/ ) {
     std::cerr << "\n\nError: Ran out of Memory!\n";
     return 1;
   } catch ( const std::exception& e ) {
