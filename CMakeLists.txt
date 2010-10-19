@@ -60,7 +60,8 @@ if( NOT VW_INSTALL_PREFIX )
 endif( NOT VW_INSTALL_PREFIX )
 set( CMAKE_INSTALL_PREFIX ${VW_INSTALL_PREFIX} CACHE INTERNAL "" )
 
-## Call RPATH macro after CMAKE_INSTALL_PREFIX has been set
+## Call RPATH macro after CMAKE_INSTALL_PREFIX has 
+## been set. This sets up install_name on OSX, too
 ##################################################
 setup_rpath()
 
@@ -135,15 +136,17 @@ if( NOT Boost_USE_STATIC_LIBS )
   add_definitions( -DBOOST_ALL_DYN_LINK )
 endif( NOT Boost_USE_STATIC_LIBS )
 
-
 ## Add some other project defaults
 ##################################################
 set( VW_DEFAULT_LIB_TYPE SHARED )
+set( DO_USE_DECLSPEC FALSE )
+
 if( WIN32 )
   #set( VW_DEFAULT_LIB_TYPE STATIC )
 
   set( VW_DEFAULT_LIB_TYPE SHARED )
   add_definitions( -DVW_ALL_DYN_LINK ) # add this if building shared libs
+  set( DO_USE_DECLSPEC TRUE )
 
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif( WIN32 )

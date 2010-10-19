@@ -63,6 +63,10 @@
 #cmakedefine VW_HAVE_UNISTD_H 1
 //cmakedefine VW_STDC_HEADERS 1
 
+//-- Data Types
+//------------------------------------------------
+#cmakedefine VW_HAVE_SSIZE_T 1
+
 //-- Available functions
 //------------------------------------------------
 #cmakedefine VW_HAVE_EXP2 1
@@ -119,7 +123,7 @@
 // headers that the software was built with.
 #include <boost/version.hpp>
 #if BOOST_VERSION != VW_BOOST_VERSION
-#  error You are using a different version of Boost than you used to build VW_!
+#  error You are using a different version of Boost than you used to build VW!
 #endif
 
 

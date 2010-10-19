@@ -101,7 +101,12 @@ check_include_files( sys/stat.h  VW_HAVE_SYS_STAT_H  )
 check_include_files( sys/types.h VW_HAVE_SYS_TYPES_H )
 check_include_files( unistd.h    VW_HAVE_UNISTD_H    )
 
-## check for some functions
+## type checks
+##################################################
+include(CheckDataTypes) 
+set( VW_HAVE_SSIZE_T ${HAVE_SSIZE_T} )
+
+## check for functions
 ##################################################
 include(CheckFunctionExists)
 check_function_exists( exp2           VW_HAVE_EXP2           )
@@ -113,11 +118,10 @@ check_function_exists( llabs          VW_HAVE_LLABS          )
 check_function_exists( log2           VW_HAVE_LOG2           )
 check_function_exists( tgamma         VW_HAVE_TGAMMA         )
 
-
 ## VW Configuration defines for config.h creation
 ##################################################
 set( VW_BOOST_VERSION       ${Boost_VERSION} )
-set( VW_HAS_DECLSPEC        ${WIN32} CACHE BOOL "Enable dllexport/dllimport macros")
+set( VW_HAS_DECLSPEC        ${DO_USE_DECLSPEC} CACHE BOOL "Enable dllexport/dllimport macros")
 set( VW_ENABLE_EXCEPTIONS   1 CACHE STRING "Enable exceptions" )
 set( VW_ENABLE_BOUNDS_CHECK 0 CACHE STRING "Enable image bounds checking (SLOW!)" )
 set( VW_ENABLE_CONFIG_FILE  1 CACHE STRING "Enable ~/.vwrc support" )
