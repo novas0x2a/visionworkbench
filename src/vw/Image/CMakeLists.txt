@@ -44,12 +44,12 @@ set( SOURCES
   PixelTypeInfo.cc
 )
 
-if (OPENCV_FOUND)
+if (OpenCV_FOUND)
   set( HEADERS ${HEADERS} ImageResourceOpenCV.h )
   set( SOURCES ${SOURCES} ImageResourceOpenCV.cc )
-  include_directories( ${OPENCV_INCLUDE_DIR} )
-  link_libraries( ${OPENCV_LIBRARIES} )
-endif (OPENCV_FOUND)
+  include_directories( ${OpenCV_INCLUDE_DIR} )
+  link_libraries( ${OpenCV_LIBRARIES} )
+endif (OpenCV_FOUND)
 
 link_libraries(
   ${Boost_SYSTEM_LIBRARY}
