@@ -44,12 +44,12 @@ if( CMAKE_COMPILER_IS_GNUCXX )
   set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing -Wextra" )
 endif( CMAKE_COMPILER_IS_GNUCXX )
 
-include( UserOptions )
 include( SetArchitecture )
 include( SetupBuildSwitch )
 include( SetupInstall )
 include( SetupRPATH )
 include( SetupUtilities )
+include( UserOptions )
 include( SetupWarnLevel )
 
 ## we have to play some tricks to get install

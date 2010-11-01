@@ -33,6 +33,12 @@ if( MSVC90 ) # Visual Studio 2008 (vc90)
   set( OSG3RDPARTY_ROOT_DIR ${VW_DEPS_ROOT}/3rdParty-vc90 ) 
 endif( MSVC90 )
 
+if( MSVC100 ) # Visual Studio 2010 (vc100)
+  set( BOOST_ROOT           ${VW_DEPS_ROOT}/boost-1.41-vc100 )
+  set( PROJ4_ROOT_DIR       ${VW_DEPS_ROOT}/proj4-vc100 )
+  set( LAPACK_ROOT_DIR      ${VW_DEPS_ROOT}/clapack-3.2.1-vc100)
+endif( MSVC100 )
+
 # Boost setup
 ########################
 set( Boost_USE_STATIC_LIBS FALSE )
