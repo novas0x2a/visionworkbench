@@ -1,9 +1,5 @@
 project(vw)
-cmake_minimum_required(VERSION 2.6)
-#cmake_minimum_required(VERSION 2.6.3)
-# relax version enforcement until cmake on RHWS5 machines is updated
-# (currently at 2.6.0, version 2.8.0 update is pending)
-# cmake < 2.6.3 is broken on OSX
+cmake_minimum_required(VERSION 2.6.3)
 
 ## Many of these are set in configure.ac in AC_INIT
 ## We duplicate them here because it's easier
@@ -100,6 +96,7 @@ find_package( LAPACK )
 find_package( GDAL )
 find_package( Proj4 )
 find_package( Protobuf )
+find_package( OpenCV )
 find_package( OpenGL )
 find_package( Qt4 )
 
@@ -142,8 +139,6 @@ set( VW_DEFAULT_LIB_TYPE SHARED )
 set( DO_USE_DECLSPEC FALSE )
 
 if( WIN32 )
-  #set( VW_DEFAULT_LIB_TYPE STATIC )
-
   set( VW_DEFAULT_LIB_TYPE SHARED )
   add_definitions( -DVW_ALL_DYN_LINK ) # add this if building shared libs
   set( DO_USE_DECLSPEC TRUE )

@@ -28,6 +28,7 @@
 #cmakedefine VW_HAVE_PKG_LAPACK 1
 #cmakedefine VW_HAVE_PKG_M 1
 #cmakedefine VW_HAVE_PKG_MPFR 1
+#cmakedefine VW_HAVE_PKG_OPENCV 1
 #cmakedefine VW_HAVE_PKG_OPENEXR 1
 #cmakedefine VW_HAVE_PKG_PNG 1
 #cmakedefine VW_HAVE_PKG_PPL 1

@@ -75,6 +75,7 @@ set( VW_HAVE_PKG_BOOST_SYSTEM           ${Boost_SYSTEM_LIBRARY} )
 set( VW_HAVE_PKG_BOOST_THREAD           ${Boost_THREAD_LIBRARY} )
 set( VW_HAVE_PKG_GDAL                   ${GDAL_FOUND}    )
 
+set( VW_HAVE_PKG_OPENCV                 ${OpenCV_FOUND}  )
 set( VW_HAVE_PKG_GL                     ${OPENGL_FOUND}  )
 set( VW_HAVE_PKG_JPEG                   ${JPEG_FOUND}    )
 set( VW_HAVE_PKG_OPENEXR                ${OPENEXR_FOUND} )
