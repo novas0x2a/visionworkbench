@@ -35,11 +35,34 @@ endif( EXISTS ${PROJECT_SOURCE_DIR}/../cmake/Modules )
 ##################################################
 set( CMAKE_MODULE_PATH ${ROOTDIR}/cmake/Modules ${CMAKE_MODULE_PATH} )
 
-## disable strict aliasing
+## 
+##################################################
+set( VW_DEFAULT_LIB_TYPE SHARED )
+
+if( VW_DEFAULT_LIB_TYPE MATCHES SHARED )
+  ## shall we do symbol hiding?
+  set( DO_USE_DECLSPEC FALSE )
+  if( WIN32 )
+    set( DO_USE_DECLSPEC TRUE )
+  endif( WIN32 )
+else( VW_DEFAULT_LIB_TYPE MATCHES SHARED )
+  set( DO_USE_DECLSPEC FALSE )
+endif( VW_DEFAULT_LIB_TYPE MATCHES SHARED )
+
+## set compiler flags before including SetupWarnLevel
+##############################
 if( CMAKE_COMPILER_IS_GNUCXX )
-  set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing -Wextra" )
+  if( DO_USE_DECLSPEC )
+    set( GCC_DECLSPEC_FLAGS "-fvisibility=hidden -fvisibility-inlines-hidden" )
+  else( DO_USE_DECLSPEC )
+    set( GCC_DECLSPEC_FLAGS "" )
+  endif( DO_USE_DECLSPEC )
+  ## disable strict aliasing
+  set( WARN_FLAG_ADDITIONS "-fno-strict-aliasing -Wextra ${GCC_DECLSPEC_FLAGS}" )
 endif( CMAKE_COMPILER_IS_GNUCXX )
 
+## include utility macros
+##############################
 include( SetArchitecture )
 include( SetupBuildSwitch )
 include( SetupInstall )
@@ -135,16 +158,16 @@ endif( NOT Boost_USE_STATIC_LIBS )
 
 ## Add some other project defaults
 ##################################################
-set( VW_DEFAULT_LIB_TYPE SHARED )
-set( DO_USE_DECLSPEC FALSE )
-
 if( WIN32 )
-  set( VW_DEFAULT_LIB_TYPE SHARED )
-  add_definitions( -DVW_ALL_DYN_LINK ) # add this if building shared libs
-  set( DO_USE_DECLSPEC TRUE )
-
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif( WIN32 )
+
+if( DO_USE_DECLSPEC )
+  add_definitions( -DVW_ALL_DYN_LINK ) # add this if building shared libs
+  message( STATUS "VW will use symbol hiding (use declspec is true)" )
+else( DO_USE_DECLSPEC )
+  message( STATUS "VW will not use symbol hiding (use declspec is false)" )
+endif( DO_USE_DECLSPEC )
 
 ## Directories
 ##################################################

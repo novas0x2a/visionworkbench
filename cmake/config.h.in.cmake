@@ -49,7 +49,7 @@
 
 #cmakedefine VW_HAS_BIGTIFF 1
 
-//-- External headers. Are these defines used at all?
+//-- External headers
 //------------------------------------------------
 #cmakedefine VW_HAVE_FENV_H 1
 #cmakedefine VW_HAVE_INTTYPES_H 1
@@ -127,15 +127,18 @@
 #  error You are using a different version of Boost than you used to build VW!
 #endif
 
-
+//-- Additional includes
+//------------------------------------------------
 #ifdef _WIN32
 // include a helper header on win32
 #  include "win32_workarounds.h"
+#endif
+
+#ifndef VW_HAVE_STDINT_H
 // stdint.h not available, use boost
 #  include <boost/cstdint.hpp>
    using namespace boost;
-#endif //_WIN32
-
+#endif
 
 //------------------------------------------------
 #endif // __VW__CONFIG_H__
