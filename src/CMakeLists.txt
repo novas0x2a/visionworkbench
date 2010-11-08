@@ -85,6 +85,7 @@ set( VW_HAVE_PKG_PROJ4                  ${PROJ4_FOUND}   )
 set( VW_HAVE_PKG_TIFF                   ${TIFF_FOUND}    )
 set( VW_HAVE_PKG_Z                      ${ZLIB_FOUND}    )
 set( VW_HAVE_PKG_LAPACK                 ${LAPACK_FOUND}  )
+set( VW_HAVE_PKG_PROTOBUF               ${PROTOBUF_FOUND})
 
 ## check for some headers. Don't think this is necessary
 ## but do it anyway just for kicks and wiggles

@@ -15,6 +15,7 @@
 #include <vw/Math/Quaternion.h>
 #include <vw/Camera/CameraModel.h>
 #include <vw/Camera/LensDistortion.h>
+#include <vw/Camera/CameraExport.h>
 
 #include <iostream>
 #include <fstream>
@@ -72,7 +73,7 @@ namespace camera {
   ///  The Tsai distortion model describes radial and tangential lens distortion. See below.
   ///
 
-  class PinholeModel : public CameraModel {
+  class VW_CAMERA_DECL PinholeModel : public CameraModel {
     typedef boost::shared_ptr<const LensDistortion> DistortPtr;
 
     DistortPtr m_distortion;
@@ -341,11 +342,11 @@ namespace camera {
   //                 PinholeModel<NoLensDistortion> &dst_camera0,
   //                 PinholeModel<NoLensDistortion> &dst_camera1);
 
-  PinholeModel scale_camera(PinholeModel const& camera_model,
+  VW_CAMERA_DECL PinholeModel scale_camera(PinholeModel const& camera_model,
                             float const& scale);
-  PinholeModel linearize_camera(PinholeModel const& camera_model);
+  VW_CAMERA_DECL PinholeModel linearize_camera(PinholeModel const& camera_model);
 
-  std::ostream& operator<<(std::ostream& str, PinholeModel const& model);
+  VW_CAMERA_DECL std::ostream& operator<<(std::ostream& str, PinholeModel const& model);
 
 }}      // namespace vw::camera
 

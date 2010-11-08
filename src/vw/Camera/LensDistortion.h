@@ -35,6 +35,7 @@
 #define __VW_CAMERA_LENSDISTORTION_H__
 
 #include <vw/Math/Vector.h>
+#include <vw/Camera/CameraExport.h>
 #include <boost/shared_ptr.hpp>
 #include <string>
 
@@ -44,7 +45,7 @@ namespace camera {
   // forward decl
   class PinholeModel;
 
-  class LensDistortion {
+  class VW_CAMERA_DECL LensDistortion {
     public:
       LensDistortion() {};
 
@@ -99,7 +100,7 @@ namespace camera {
   /// References: Roger Tsai, A Versatile Camera Calibration Technique for a High-Accuracy 3D
   /// Machine Vision Metrology Using Off-the-shelf TV Cameras and Lenses
 
-  class TsaiLensDistortion : public LensDistortion {
+  class VW_CAMERA_DECL TsaiLensDistortion : public LensDistortion {
     Vector4 m_distortion;
   public:
     TsaiLensDistortion(Vector4 params) : m_distortion(params) {}
@@ -134,7 +135,7 @@ namespace camera {
   ///   Photometric Engineering, pages 444-462, Vol. 32, No. 3, 1966
   /// Close-Range Camera Calibration - D.C. Brown,
   ///   Photogrammetric Engineering, pages 855-866, Vol. 37, No. 8, 1971
-  class BrownConradyDistortion : public LensDistortion {
+  class VW_CAMERA_DECL BrownConradyDistortion : public LensDistortion {
     Vector2 m_principal_point;
     Vector3 m_radial_distortion;
     Vector2 m_centering_distortion;
@@ -192,7 +193,7 @@ namespace camera {
   ///
   /// References:
   /// http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
-  class AdjustableTsaiLensDistortion : public LensDistortion {
+  class VW_CAMERA_DECL AdjustableTsaiLensDistortion : public LensDistortion {
     Vector<double> m_distortion;
   public:
   AdjustableTsaiLensDistortion(Vector<double> params) : m_distortion(params) {

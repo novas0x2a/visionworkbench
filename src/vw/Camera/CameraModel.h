@@ -42,7 +42,7 @@ namespace camera {
   /// projected.  However stereo vision techniques can be used to
   /// determine the location of the original point by intersecting two
   /// rays from two distinct cameras.
-  class CameraModel {
+  class VW_CAMERA_DECL CameraModel {
 
   public:
 

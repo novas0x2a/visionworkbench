@@ -24,7 +24,7 @@
 namespace vw {
 namespace camera {
 
-  class CAHVORModel : public CameraModel {
+  class VW_CAMERA_DECL CAHVORModel : public CameraModel {
   public:
     typedef CAHVModel linearized_type;
 

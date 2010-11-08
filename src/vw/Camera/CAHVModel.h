@@ -39,7 +39,7 @@ namespace camera {
   /// Cameras". Computer Graphics and Image Processing 7,
   /// pp. 195-210. (1978)
   ///
-  class CAHVModel : public CameraModel {
+  class VW_CAMERA_DECL CAHVModel : public CameraModel {
   public:
     //------------------------------------------------------------------
     // Constructors / Destructors

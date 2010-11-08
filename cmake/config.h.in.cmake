@@ -33,6 +33,7 @@
 #cmakedefine VW_HAVE_PKG_PNG 1
 #cmakedefine VW_HAVE_PKG_PPL 1
 #cmakedefine VW_HAVE_PKG_PROJ4 1
+#cmakedefine VW_HAVE_PKG_PROTOBUF 1
 #cmakedefine VW_HAVE_PKG_PTHREADS 1
 #cmakedefine VW_HAVE_PKG_QHULL 1
 #cmakedefine VW_HAVE_PKG_SLAPACK 1
