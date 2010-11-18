@@ -277,7 +277,7 @@ namespace math {
     }
 
     /// Constructs a matrix whose first element is as given.
-    Matrix( ElemT e1 ) {
+    explicit Matrix( ElemT e1 ) {
       BOOST_STATIC_ASSERT( RowsN*ColsN >= 1 );
       iterator i=begin();
       *(i++)=e1;
