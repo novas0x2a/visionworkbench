@@ -321,7 +321,7 @@ namespace math {
     /// Constructs a matrix from given densely-packed row-mjor data.
     /// This constructor copies the data.  If you wish to make a
     /// shallow proxy object instead, see vw::MatrixProxy.
-    Matrix( const ElemT data[RowsN*ColsN] ) {
+    explicit Matrix( const ElemT data[RowsN*ColsN] ) {
       std::copy( data, data+RowsN*ColsN, core_.begin() );
     }
 

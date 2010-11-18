@@ -43,7 +43,7 @@ namespace vw
       /**
        * Initializing constructor.
        */
-      Frame(std::string const& name, Transform const& trans = identity_matrix<4>()) :
+        Frame(std::string const& name, Transform const& trans = Transform(identity_matrix<4>())) :
           m_name(name),
           m_trans(trans),
           m_extras(NULL)

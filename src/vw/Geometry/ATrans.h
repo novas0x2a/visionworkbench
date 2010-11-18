@@ -11,6 +11,7 @@
 
 #include <vw/Math/Vector.h>
 #include <vw/Math/Matrix.h>
+#include <vw/Math/EulerAngles.h>
 
 namespace vw
 {
@@ -57,11 +58,13 @@ namespace vw
       /** Default constructor */
       ATrans() {}
       /** Initializing constructor */
-      ATrans(VectorT const& p, MatrixT const& r) : m_p(p), m_r(r) {}
+      explicit ATrans(VectorT const& p, MatrixT const& r) : m_p(p), m_r(r) {}   
+      /** Initializing constructor from angles */
+      ATrans(VectorT const& p, ElemT const a[]);
       /** Initialize from transformation matrix */
-      ATrans(vw::math::Matrix<ElemT, SizeN + 1, SizeN + 1> const& m);
+      explicit ATrans(vw::math::Matrix<ElemT, SizeN + 1, SizeN + 1> const& m);
       /** Initialize from transformation matrix */
-      ATrans(vw::math::Matrix<ElemT, 0, 0> const& m);
+      explicit ATrans(vw::math::Matrix<ElemT, 0, 0> const& m);
 
 
       /** Const accessor of the translation vector. */
@@ -107,13 +110,36 @@ namespace vw
       return ATrans<ElemT, SizeN>(-(mI * atrans.translation()), mI);
     }
 
+    
+    template<class ElemT>
+    std::ostream& operator<< (std::ostream& ostr, ATrans<ElemT, 2> const& rhs)
+    {
+      ostr << "xATrans2((" << rhs.translation() << "), " << (acos(rhs.rotation()(0, 0))/M_PI*180.) << ")";
+      return ostr;
+    }
+    
+
     template<class ElemT, int SizeN>
     std::ostream& operator<< (std::ostream& ostr, ATrans<ElemT, SizeN> const& rhs)
     {
-      ostr << "xATrans(" << rhs.translation() << "), (" << rhs.rotation() << ")";
+      ostr << "xATrans(" << rhs.translation() << ", " << rhs.rotation() << ")";
       return ostr;
     }
 
+
+    template<>
+    inline
+      ATrans<double, 3>::ATrans(vw::math::Vector<double, 3> const& p, double const a[]) :
+      m_p(p),
+      m_r(vw::math::euler_to_rotation_matrix(a[0], a[1], a[2], "XYZ"))
+      {}
+
+      template<>
+    inline
+    ATrans<double, 2>::ATrans(vw::math::Vector<double, 2> const& p, double const a[]) :
+      m_p(p),
+      m_r(cos(a[0]), -sin(a[0]), sin(a[0]), cos(a[0]))
+    {}
 
     template<class ElemT, int SizeN>
     inline
@@ -175,6 +201,8 @@ namespace vw
 
   typedef geometry::ATrans<double, 3> ATrans3;
   typedef geometry::ATrans<float, 3> ATrans3f;
+  typedef geometry::ATrans<double, 2> ATrans2;
+  typedef geometry::ATrans<float, 2> ATrans2f;
 }
 
 #endif // vw_geometry_ATrans_h

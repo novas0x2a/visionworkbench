@@ -19,7 +19,7 @@ namespace geometry
     Frame::Transform
     get_transform(FrameTreeNode const * target, FrameTreeNode const * source)
     {
-      Frame::Transform loc = vw::identity_matrix(4);
+      Frame::Transform loc = Frame::Transform(vw::identity_matrix(4));
 
     if (source != NULL) {
 
