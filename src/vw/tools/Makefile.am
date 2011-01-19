@@ -158,12 +158,15 @@ doc_generate_SOURCES = doc-generate.cc
 doc_generate_LDADD   = @PKG_VW_LIBS@ @PKG_MOSAIC_LIBS@
 endif
 
+vwrotate_SOURCES = vwrotate.cc
+vwrotate_LDADD = @PKG_VW_LIBS@
+
 bin_PROGRAMS = $(camera_progs) $(cartography_progs) $(hdr_progs) \
                $(interestpoint_progs) $(mosaic_progs)            \
                $(cart_mos_progs) $(stereo_progs) $(gpu_progs)    \
                $(contourgen_progs)
 
-noinst_PROGRAMS      = $(doc_generate_progs) $(batest_progs)
+noinst_PROGRAMS      = $(doc_generate_progs) $(batest_progs) vwrotate
 dist_noinst_SCRIPTS  = ba_unit_test run_ba_tests
 
 endif
