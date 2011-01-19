@@ -236,6 +236,18 @@ namespace vw {
     }
   };
 
+
+  /// Rotate image transform functor
+  class RotateTransform : public LinearTransform {
+  public:
+    RotateTransform( double theta ) {
+      double c=cos(theta), s=sin(theta);
+      m_matrix = Matrix2x2( c, -s, s, c );
+      m_matrix_inverse = Matrix2x2( c, s, -s, c );
+    }
+  };
+
+
   /// Affine function (i.e. linear plus translation) image transform functor
   class AffineTransform : public TransformHelper<AffineTransform,ConvexFunction,ConvexFunction> {
   protected:
@@ -266,23 +278,6 @@ namespace vw {
       double py = p[1]-y;
       return Vector2(ai*px+bi*py,
                      ci*px+di*py);
-    }
-  };
-
-  /// Rotate image transform functor
-  class RotateTransform : public AffineTransform {
-  public:
-    RotateTransform( double theta, Vector2 const& translate ) {
-      double c=cos(theta), s=sin(theta);
-      Matrix2x2 rotate( c, -s, s, c );
-      Vector2 rhs = rotate*translate - translate;
-      a = rotate(0,0); b = rotate(0,1);
-      c = rotate(1,0); d = rotate(1,1);
-      x = rhs(0);
-      y = rhs(1);
-      rotate = inverse(rotate);
-      ai = rotate(0,0); bi = rotate(0,1);
-      ci = rotate(1,0); di = rotate(1,1);
     }
   };
 
@@ -1109,10 +1104,10 @@ namespace vw {
   template <class ImageT, class EdgeT, class InterpT>
   TransformView<InterpolationView<EdgeExtensionView<ImageT, EdgeT>, InterpT>, RotateTransform>
   inline rotate( ImageViewBase<ImageT> const& v,
-                 double theta, Vector2 translate,
+                 double theta,
                  EdgeT const& edge_func,
                  InterpT const& interp_func ) {
-    return transform(v, RotateTransform(theta, translate), /* dims */
+    return transform(v, RotateTransform(theta), /* dims */
                      edge_func, interp_func);
   }
 
@@ -1120,9 +1115,9 @@ namespace vw {
   template <class ImageT, class EdgeT>
   TransformView<InterpolationView<EdgeExtensionView<ImageT, EdgeT>, BilinearInterpolation>, RotateTransform>
   inline rotate( ImageViewBase<ImageT> const& v,
-                 double theta, Vector2 translate,
+                 double theta,
                  EdgeT const& edge_func ) {
-    return transform(v, RotateTransform(theta, translate),
+    return transform(v, RotateTransform(theta),
                      edge_func, BilinearInterpolation());
   }
 
@@ -1130,8 +1125,8 @@ namespace vw {
   template <class ImageT>
   TransformView<InterpolationView<EdgeExtensionView<ImageT, ZeroEdgeExtension>, BilinearInterpolation>, RotateTransform>
   inline rotate( ImageViewBase<ImageT> const& v,
-                 double theta, Vector2 translate ) {
-    return transform(v, RotateTransform(theta, translate), /* dims */
+                 double theta ) {
+    return transform(v, RotateTransform(theta), /* dims */
                      ZeroEdgeExtension(), BilinearInterpolation());
   }
 
