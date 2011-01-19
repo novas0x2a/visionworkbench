@@ -1098,36 +1098,37 @@ namespace vw {
   // -------------------------------------------------------------------------------
   // Rotate
   // -------------------------------------------------------------------------------
-  /// TODO: Dimensions of destination image.
-
   /// Rotate the image.  The user specifies the angle.
   template <class ImageT, class EdgeT, class InterpT>
-  TransformView<InterpolationView<EdgeExtensionView<ImageT, EdgeT>, InterpT>, RotateTransform>
+  CropView<TransformView<InterpolationView<EdgeExtensionView<ImageT, EdgeT>, InterpT>, RotateTransform> >
   inline rotate( ImageViewBase<ImageT> const& v,
                  double theta,
                  EdgeT const& edge_func,
                  InterpT const& interp_func ) {
-    return transform(v, RotateTransform(theta), /* dims */
-                     edge_func, interp_func);
+    RotateTransform t(theta);
+    BBox2f bbox = compute_transformed_bbox_fast(v, t);
+    return transform(v, t, bbox, edge_func, interp_func);
   }
 
   /// Rotate the image.  The user specifies the angle.
   template <class ImageT, class EdgeT>
-  TransformView<InterpolationView<EdgeExtensionView<ImageT, EdgeT>, BilinearInterpolation>, RotateTransform>
+  CropView<TransformView<InterpolationView<EdgeExtensionView<ImageT, EdgeT>, BilinearInterpolation>, RotateTransform> >
   inline rotate( ImageViewBase<ImageT> const& v,
                  double theta,
                  EdgeT const& edge_func ) {
-    return transform(v, RotateTransform(theta),
-                     edge_func, BilinearInterpolation());
+    RotateTransform t(theta);
+    BBox2f bbox = compute_transformed_bbox_fast(v, t);
+    return transform(v, t, bbox, edge_func, BilinearInterpolation());
   }
 
   /// Rotate the image.  The user specifies the angle.
   template <class ImageT>
-  TransformView<InterpolationView<EdgeExtensionView<ImageT, ZeroEdgeExtension>, BilinearInterpolation>, RotateTransform>
+  CropView<TransformView<InterpolationView<EdgeExtensionView<ImageT, ZeroEdgeExtension>, BilinearInterpolation>, RotateTransform> >
   inline rotate( ImageViewBase<ImageT> const& v,
                  double theta ) {
-    return transform(v, RotateTransform(theta), /* dims */
-                     ZeroEdgeExtension(), BilinearInterpolation());
+    RotateTransform t(theta);
+    BBox2 bbox = compute_transformed_bbox_fast(v, t);
+    return transform(v, t, bbox, ZeroEdgeExtension(), BilinearInterpolation());
   }
 
 } // namespace vw

@@ -10,6 +10,7 @@
 
 #include <vw/Image/ImageView.h>
 #include <vw/Image/Transform.h>
+#include <vw/Image/Algorithms.h>
 
 using namespace vw;
 
@@ -92,18 +93,31 @@ TEST( Transform, Rotate ) {
   typedef PixelRGB<uint8> Px;
   Px gray(0x7f,0x7f,0x7f), r(0xff,0,0), g(0,0xff,0), b(0,0,0xff);
 
-  ImageView<Px> src(2,2);
-  src(0,0) = gray;
-  src(1,0) = r;
-  src(0,1) = g;
-  src(1,1) = b;
+  const int32 WIDH = 128, HEIT = 64;
+  ImageView<Px> src1(WIDH,HEIT), src2(WIDH,HEIT);
+  fill(crop(src1,      0,      0, WIDH/2, HEIT/2), gray);
+  fill(crop(src1, WIDH/2,      0, WIDH/2, HEIT/2), r);
+  fill(crop(src1,      0, HEIT/2, WIDH/2, HEIT/2), g);
+  fill(crop(src1, WIDH/2, HEIT/2, WIDH/2, HEIT/2), b);
 
-  ImageView<Px> dst =
+  fill(crop(src1,      0,      0, WIDH/2, HEIT/2), b);
+  fill(crop(src1, WIDH/2,      0, WIDH/2, HEIT/2), g);
+  fill(crop(src1,      0, HEIT/2, WIDH/2, HEIT/2), r);
+  fill(crop(src1, WIDH/2, HEIT/2, WIDH/2, HEIT/2), gray);
+
+  // Rotate is vulnerable to terrible trig precision
+  ImageView<Px> dst1 = crop(rotate(src1, 2*M_PI), 0, 0, WIDH, HEIT),
+                dst2 = crop(rotate(src2, M_PI), -WIDH/2, -HEIT/2, WIDH, HEIT);
+
+  EXPECT_MATRIX_EQ(src1, dst1);
+  EXPECT_MATRIX_EQ(src2, dst2);
+
+  ImageView<Px> dst3 =
     vw::crop(
-      vw::rotate(
-        vw::translate(src, -src.cols()/2, -src.rows()/2),
-        2*M_PI),
-      -src.cols()/2, -src.rows()/2, src.cols(), src.rows());
+        vw::rotate(
+          vw::translate(src1, -src1.cols()/2, -src1.rows()/2),
+          M_PI),
+        -src1.cols()/2, -src1.rows()/2, src1.cols(), src1.rows());
 
-  EXPECT_MATRIX_EQ(src, dst);
+  EXPECT_MATRIX_EQ(src2, dst3);
 }
