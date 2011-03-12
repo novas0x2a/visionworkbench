@@ -39,6 +39,7 @@ namespace po = boost::program_options;
 #include <vw/Cartography/GeoReference.h>
 #include <vw/Cartography/GeoTransform.h>
 #include <vw/Mosaic.h>
+#include <vw/Mosaic/ImageCompositeSimple.h>
 using namespace vw;
 using namespace vw::math;
 using namespace vw::cartography;
@@ -129,6 +130,14 @@ struct Options {
       utm_zone(0, true) {}
   } proj;
 
+  struct composite_ {
+    bool on;
+    uint32 width;
+    uint32 height;
+    uint32 tile_size;
+    composite_() : on(false), width(0), height(0), tile_size(0) {}
+  } composite;
+
   struct datum_ {
     DatumOverride type;
     Tristate<float> sphere_radius;
@@ -146,14 +155,22 @@ struct Options {
       output_file_name = fs::path(input_files[0]).replace_extension().string();
 
     if (global || north.set() || south.set() || east.set() || west.set()) {
-      VW_ASSERT(input_files.size() == 1,
-          Usage() << "Cannot override georeference information on multiple images");
       VW_ASSERT(global || (north.set() && south.set() && east.set() && west.set()),
           Usage() << "If you provide one, you must provide all of: --north --south --east --west");
       if (global) {
         north = 90; south = -90; east = 180; west = -180;
       }
       manual = true;
+    }
+
+    if (manual && !composite.on)
+      VW_ASSERT(input_files.size() == 1, Usage() << "Cannot override georeference information on multiple images");
+
+    if (composite.on) {
+      VW_ASSERT(manual, Usage() << "composite mode requires --north --south --east --west (or --global)");
+      VW_ASSERT(composite.width > 0 && composite.height > 0, Usage() << "composite mode requires --composite-width and --composite-height to be non-zero");
+      VW_ASSERT(composite.width * composite.height == input_files.size(), Usage() << "composite mode requires --composite-width * --composite-height == image count");
+      VW_ASSERT(composite.tile_size > 0, Usage() << "composite mode requires --composite-tile-size to be non-zero");
     }
 
     switch (mode) {
@@ -227,17 +244,7 @@ void do_normal_mosaic(const Options& opt, const ProgressCallback *progress) {
     quadtree.generate( *progress );
 }
 
-GeoReference make_input_georef(boost::shared_ptr<DiskImageResource> file,
-                               const Options& opt) {
-  GeoReference input_georef;
-  bool fail_read_georef = false;
-  try {
-    fail_read_georef = !read_georeference( input_georef, *file );
-  } catch ( InputErr const& e ) {
-    vw_out(ErrorMessage) << "Input " << file->filename() << " has malformed georeferencing information.\n";
-    fail_read_georef = true;
-  }
-
+void override_georef(GeoReference& input_georef, uint32 width, uint32 height, const Options& opt) {
   switch(opt.datum.type) {
     case DatumOverride::WGS84: input_georef.set_well_known_geogcs("WGS84");  break;
     case DatumOverride::LUNAR: input_georef.set_well_known_geogcs("D_MOON"); break;
@@ -253,15 +260,12 @@ GeoReference make_input_georef(boost::shared_ptr<DiskImageResource> file,
 
   if( opt.manual ) {
     Matrix3x3 m;
-    m(0,0) = double(opt.east - opt.west) / file->cols();
+    m(0,0) = double(opt.east - opt.west) / width;
     m(0,2) = opt.west;
-    m(1,1) = double(opt.south - opt.north) / file->rows();
+    m(1,1) = double(opt.south - opt.north) / height;
     m(1,2) = opt.north;
     m(2,2) = 1;
     input_georef.set_transform( m );
-  } else if ( fail_read_georef ) {
-    vw_out(ErrorMessage) << "Missing input georeference. Please provide --north --south --east and --west.\n";
-    exit(1);
   }
 
   switch (opt.proj.type) {
@@ -283,14 +287,79 @@ GeoReference make_input_georef(boost::shared_ptr<DiskImageResource> file,
     m(1,2) += opt.nudge_y;
     input_georef.set_transform( m );
   }
+}
+
+GeoReference make_input_georef(boost::shared_ptr<DiskImageResource> file, const Options& opt) {
+  GeoReference input_georef;
+  bool fail_read_georef = false;
+  try {
+    fail_read_georef = !read_georeference( input_georef, *file );
+  } catch ( InputErr const& e ) {
+    vw_out(ErrorMessage) << "Input " << file->filename() << " has malformed georeferencing information.\n";
+    fail_read_georef = true;
+  }
+
+  if (!opt.manual && fail_read_georef)
+    vw_throw(Usage() << "Missing input georeference. Please provide --north --south --east and --west.\n");
+
+  override_georef(input_georef, file->cols(), file->rows(), opt);
 
   return input_georef;
 }
 
+template <typename PixelT>
+void add_to_composite(ImageComposite<PixelT>& composite, ImageViewRef<PixelT> source, const GeoReference& input_ref, const GeoReference& output_ref, const Options& opt) {
+  typedef typename PixelChannelType<PixelT>::type ChannelT;
+  GeoTransform geotx( input_ref, output_ref );
+
+  if ( opt.nodata.set() ) {
+    vw_out(VerboseDebugMessage, "tool") << "Using nodata value: " << opt.nodata.value() << "\n";
+    source = mask_to_alpha(create_mask(pixel_cast<typename PixelWithoutAlpha<PixelT>::type >(source),ChannelT(opt.nodata.value())));
+  }
+
+  bool global = boost::trim_copy(input_ref.proj4_str())=="+proj=longlat" &&
+    fabs(input_ref.lonlat_to_pixel(Vector2(-180,0)).x()) < 1 &&
+    fabs(input_ref.lonlat_to_pixel(Vector2(180,0)).x() - source.cols()) < 1 &&
+    fabs(input_ref.lonlat_to_pixel(Vector2(0,90)).y()) < 1 &&
+    fabs(input_ref.lonlat_to_pixel(Vector2(0,-90)).y() - source.rows()) < 1;
+
+  // Do various modifications to the input image here.
+  if( opt.pixel_scale.set() || opt.pixel_offset.set() ) {
+    vw_out(VerboseDebugMessage, "tool") << "Apply input scaling: " << opt.pixel_scale.value() << " offset: " << opt.pixel_offset.value() << "\n";
+    source = channel_cast_rescale<ChannelT>( source * opt.pixel_scale.value() + opt.pixel_offset.value() );
+  }
+
+  if( opt.normalize ) {
+    vw_out(VerboseDebugMessage, "tool") << "Apply normalizing: [" << lo_value << ", " << hi_value << "]\n";
+    typedef ChannelRange<ChannelT> range_type;
+    source = normalize_retain_alpha(source, lo_value, hi_value, range_type::min(), range_type::max());
+  }
+
+  BBox2i bbox = geotx.forward_bbox( BBox2i(0,0,source.cols(),source.rows()) );
+  if (global) {
+    vw_out() << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
+    source = crop( transform( source, geotx, source.cols(), source.rows(), CylindricalEdgeExtension() ), bbox );
+  }
+  else
+    source = crop( transform( source, geotx ), bbox );
+
+  // Images that wrap the date line must be added to the composite
+  // on both sides.
+  if( bbox.max().x() > int32(opt.global_resolution) ) {
+    composite.insert( source, bbox.min().x()-opt.global_resolution, bbox.min().y() );
+  }
+  // Images that are in the 180-360 range *only* go on the other side.
+  if( bbox.min().x() < int32(opt.global_resolution / opt.aspect_ratio) ) {
+    composite.insert( source, bbox.min().x(), bbox.min().y() );
+  }
+}
+
 template <class PixelT>
-void do_mosaic(const Options& opt, const ProgressCallback *progress)
+void do_mosaic(const Options& orig_opt, const ProgressCallback *progress)
 {
   typedef typename PixelChannelType<PixelT>::type ChannelT;
+  // Sigh, this is terrible
+  Options opt(orig_opt);
 
   // If we're not outputting any special sort of mosaic (just a regular old
   // quadtree, no georeferencing, no metadata), we use a different
@@ -301,7 +370,7 @@ void do_mosaic(const Options& opt, const ProgressCallback *progress)
   }
 
   // Read in georeference info and compute total resolution.
-  int total_resolution = 1024;
+  uint32 total_resolution = 1024;
   std::vector<GeoReference> georeferences;
 
   BOOST_FOREACH(const string filename, opt.input_files) {
@@ -330,7 +399,7 @@ void do_mosaic(const Options& opt, const ProgressCallback *progress)
     res_pixel[2] = Vector2( cols/2 - cols/4, rows/2 );
     res_pixel[3] = Vector2( cols/2, rows/2 + rows/4 );
     res_pixel[4] = Vector2 (cols/2, rows/2 - rows/4 );
-    int resolution;
+    uint32 resolution;
     for(int i=0; i < 5; i++) {
       resolution = compute_resolution(opt.mode, geotx, res_pixel[i]);
       if( resolution > total_resolution ) total_resolution = resolution;
@@ -341,6 +410,8 @@ void do_mosaic(const Options& opt, const ProgressCallback *progress)
     vw_out(VerboseDebugMessage) << "Overriding calculated resolution " << total_resolution << " with " << opt.global_resolution.value() << endl;
     total_resolution = opt.global_resolution;
   }
+
+  opt.global_resolution = total_resolution;
 
   boost::shared_ptr<QuadTreeConfig> config = QuadTreeConfig::make(opt.mode.string());
 
@@ -353,64 +424,30 @@ void do_mosaic(const Options& opt, const ProgressCallback *progress)
   // Configure the composite.
   ImageComposite<PixelT> composite;
 
-  // Add the transformed image files to the composite.
-  for(unsigned i=0; i < opt.input_files.size(); i++) {
-    const std::string& filename = opt.input_files[i];
-    const GeoReference& input_ref = georeferences[i];
-
-    boost::shared_ptr<DiskImageResource> file( DiskImageResource::open(filename) );
-    GeoTransform geotx( input_ref, output_georef );
-    ImageViewRef<PixelT> source = DiskImageView<PixelT>( file );
-
-    if ( opt.nodata.set() ) {
-      vw_out(VerboseDebugMessage, "tool") << "Using nodata value: "
-                                          << opt.nodata.value() << "\n";
-      source = mask_to_alpha(create_mask(pixel_cast<typename PixelWithoutAlpha<PixelT>::type >(source),ChannelT(opt.nodata.value())));
-    } else if ( file->has_nodata_read() ) {
-      vw_out(VerboseDebugMessage, "tool") << "Using nodata value: "
-                                          << file->nodata_read() << "\n";
-      source = mask_to_alpha(create_mask(pixel_cast<typename PixelWithoutAlpha<PixelT>::type >(source),ChannelT(file->nodata_read())));
+  if (opt.composite.on) {
+    mosaic::CompositeView<PixelT> c2;
+    for(unsigned i=0; i < opt.input_files.size(); i++) {
+      uint32 tile_x = i % opt.composite.width, tile_y = i / opt.composite.width;
+      ImageViewRef<PixelT> ref(DiskImageView<PixelT>(opt.input_files[i]));
+      VW_ASSERT(size_t(ref.cols()) == size_t(ref.rows()),      Usage() << "All composite tiles must match --composite-tile-size");
+      VW_ASSERT(size_t(ref.cols()) == opt.composite.tile_size, Usage() << "All composite tiles must match --composite-tile-size");
+      c2.insert(ref, tile_x * opt.composite.tile_size, tile_y * opt.composite.tile_size);
     }
+    uint32 total_width  = opt.composite.width * opt.composite.tile_size,
+           total_height = opt.composite.height * opt.composite.tile_size;
+    GeoReference input_georef;
+    override_georef(input_georef, total_width, total_height, opt);
+    add_to_composite(composite, ImageViewRef<PixelT>(c2), input_georef, output_georef, opt);
+  } else {
+    // Add the transformed image files to the composite.
+    for(unsigned i=0; i < opt.input_files.size(); i++) {
+      boost::shared_ptr<DiskImageResource> file( DiskImageResource::open(opt.input_files[i]) );
+      ImageViewRef<PixelT> source = DiskImageView<PixelT>(file);
 
-    bool global = boost::trim_copy(input_ref.proj4_str())=="+proj=longlat" &&
-      fabs(input_ref.lonlat_to_pixel(Vector2(-180,0)).x()) < 1 &&
-      fabs(input_ref.lonlat_to_pixel(Vector2(180,0)).x() - source.cols()) < 1 &&
-      fabs(input_ref.lonlat_to_pixel(Vector2(0,90)).y()) < 1 &&
-      fabs(input_ref.lonlat_to_pixel(Vector2(0,-90)).y() - source.rows()) < 1;
-
-    // Do various modifications to the input image here.
-    if( opt.pixel_scale.set() || opt.pixel_offset.set() ) {
-      vw_out(VerboseDebugMessage, "tool") << "Apply input scaling: "
-                           << opt.pixel_scale.value() << " offset: "
-                           << opt.pixel_offset.value() << "\n";
-      source = channel_cast_rescale<ChannelT>( source * opt.pixel_scale.value() + opt.pixel_offset.value() );
-    }
-
-    if( opt.normalize ) {
-      vw_out(VerboseDebugMessage, "tool") << "Apply normalizing: ["
-                                          << lo_value << ", "
-                                          << hi_value << "]\n";
-      typedef ChannelRange<ChannelT> range_type;
-      source = normalize_retain_alpha(source, lo_value, hi_value,
-                                      range_type::min(), range_type::max());
-    }
-
-    BBox2i bbox = geotx.forward_bbox( BBox2i(0,0,source.cols(),source.rows()) );
-    if (global) {
-      vw_out() << "\t--> Detected global overlay.  Using cylindrical edge extension to hide the seam.\n";
-      source = crop( transform( source, geotx, source.cols(), source.rows(), CylindricalEdgeExtension() ), bbox );
-    }
-    else
-      source = crop( transform( source, geotx ), bbox );
-
-    // Images that wrap the date line must be added to the composite
-    // on both sides.
-    if( bbox.max().x() > total_resolution ) {
-      composite.insert( source, bbox.min().x()-total_resolution, bbox.min().y() );
-    }
-    // Images that are in the 180-360 range *only* go on the other side.
-    if( bbox.min().x() < xresolution ) {
-      composite.insert( source, bbox.min().x(), bbox.min().y() );
+      Options opt2(opt);
+      if ( !opt2.nodata.set() && file->has_nodata_read())
+        opt2.nodata = file->nodata_read();
+      add_to_composite(composite, source, georeferences[i], output_georef, opt2);
     }
   }
 
@@ -426,7 +463,7 @@ void do_mosaic(const Options& opt, const ProgressCallback *progress)
   if(opt.mode == Mode::KML) {
     BBox2i bbox = total_bbox;
     // Compute a tighter Google Earth coordinate system aligned bounding box.
-    int dim = 2 << (int)(log( (double)(std::max)(bbox.width(),bbox.height()) )/log(2.));
+    uint32 dim = 2 << (uint32)(log( (double)(std::max)(bbox.width(),bbox.height()) )/log(2.));
     if( dim > total_resolution ) dim = total_resolution;
     total_bbox = BBox2i( (bbox.min().x()/dim)*dim, (bbox.min().y()/dim)*dim, dim, dim );
     if( ! total_bbox.contains( bbox ) ) {
@@ -513,7 +550,11 @@ int handle_options(int argc, char *argv[], Options& opt) {
     ("pixel-scale" , po::value(&opt.pixel_scale)->default_value(1.0)  , "Scale factor to apply to pixels")
     ("pixel-offset", po::value(&opt.pixel_offset)->default_value(0.0) , "Offset to apply to pixels")
     ("normalize"   , po::bool_switch(&opt.normalize)                  , "Normalize input images so that their full dynamic range falls in between [0,255].")
-    ("nodata"      , po::value(&opt.nodata)                           , "Set the input's nodata value so that it will be transparent in output");
+    ("nodata"      , po::value(&opt.nodata)                           , "Set the input's nodata value so that it will be transparent in output")
+    ("composite"           , po::bool_switch(&opt.composite.on)       , "Enable composite mode, for sticking many input images together")
+    ("composite-width"     , po::value(&opt.composite.width)          , "Width of the composite, in units of tiles")
+    ("composite-height"    , po::value(&opt.composite.height)         , "Height of the composite, in units of tiles")
+    ("composite-tile-size" , po::value(&opt.composite.tile_size)      , "Size of each tile, in units of pixels");
 
   po::options_description output_options("Output Options");
   output_options.add_options()

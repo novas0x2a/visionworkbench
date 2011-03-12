@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+#include <test/Helpers.h>
 #include <vw/Mosaic/ImageComposite.h>
+#include <vw/Mosaic/ImageCompositeSimple.h>
 
 using namespace std;
 using namespace vw;
@@ -31,4 +33,28 @@ TEST(TestImageComposite, Basic) {
     for (int32 col = 8; col < 11; ++col)
       EXPECT_EQ(2, c(col, row)) << "at (" << col << "," << row << ")";
   }
+}
+
+TEST(TestImageComposite, BasicSimple) {
+  CompositeView<uint32> c;
+
+  c.insert(make(2), 3, 0);
+  EXPECT_EQ(8, c.rows());
+  EXPECT_EQ(8, c.cols());
+  EXPECT_EQ(1, c.planes());
+
+  c.insert(make(3), 0, 0);
+  EXPECT_EQ(8, c.rows());
+  EXPECT_EQ(11, c.cols());
+  EXPECT_EQ(1, c.planes());
+
+  for (int32 row = 0; row < 8; ++row) {
+    for (int32 col = 0; col < 8; ++col)
+      EXPECT_EQ(3, c(col, row)) << "at (" << col << "," << row << ")";
+    for (int32 col = 8; col < 11; ++col)
+      EXPECT_EQ(2, c(col, row)) << "at (" << col << "," << row << ")";
+  }
+
+  ImageView<uint32> res = c;
+  EXPECT_MATRIX_EQ(c, res);
 }
