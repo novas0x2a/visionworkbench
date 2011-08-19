@@ -96,7 +96,12 @@ if HAVE_PKG_ZEROMQ
   noinst_HEADERS += detail/ZeroMQChannel.h
   libvwPlate_la_SOURCES  += detail/ZeroMQChannel.cc
   libvwPlate_la_LIBADD   += @PKG_ZEROMQ_LIBS@
+endif
 
+if HAVE_PKG_CURL
+  noinst_HEADERS += detail/Googlestore.h
+  libvwPlate_la_SOURCES  += detail/Googlestore.cc
+  libvwPlate_la_LIBADD   += @PKG_CURL_LIBS@
 endif
 
 endif

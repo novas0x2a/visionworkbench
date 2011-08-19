@@ -364,6 +364,7 @@ AX_PKG(PROTOBUF, [PTHREADS], [-lprotobuf], [google/protobuf/stubs/common.h])
 AX_PKG(LIBKML,   [BOOST_THREAD BOOST Z], [-lkmlengine -lkmldom -lkmlbase -lminizip], [kml/engine/kmz_file.h])
 AX_PKG(OPENCV,     [], [-lcxcore],   [opencv/cxcore.h])
 AX_PKG(FLANN,      [], [-lflann_cpp],[flann/flann.hpp])
+AX_PKG(CURL,       [], [-lcurl],     [curl/curl.h])
 
 old_CXXFLAGS="$CXXFLAGS"
 old_LDFLAGS="$LDFLAGS"
@@ -400,6 +401,7 @@ AM_CONDITIONAL(HAVE_PKG_PROTOBUF, [test "$HAVE_PKG_PROTOBUF" = "yes"])
 AM_CONDITIONAL(HAVE_PKG_LIBKML, [test "$HAVE_PKG_LIBKML" = "yes"])
 AM_CONDITIONAL(HAVE_PKG_OPENCV, [test "$HAVE_PKG_OPENCV" = "yes"])
 AM_CONDITIONAL(HAVE_PKG_FLANN, [test "$HAVE_PKG_FLANN" = "yes"])
+AM_CONDITIONAL(HAVE_PKG_CURL, [test "$HAVE_PKG_CURL" = "yes"])
 AM_CONDITIONAL(HAVE_PYTHON, [test "$HAVE_PYTHON" = "yes"])
 
 
@@ -437,7 +439,7 @@ AX_MODULE(STEREO,           [src/vw/Stereo],           [libvwStereo.la],        
 AX_MODULE(GEOMETRY,         [src/vw/Geometry],         [libvwGeometry.la],         yes, [VW])
 AX_MODULE(PHOTOMETRY,       [src/vw/Photometry],       [libvwPhotometry.la],        no, [CARTOGRAPHY VW], [BOOST_FILESYSTEM BOOST_PROGRAM_OPTIONS])
 AX_MODULE(BUNDLEADJUSTMENT, [src/vw/BundleAdjustment], [libvwBundleAdjustment.la], yes, [CAMERA CARTOGRAPHY INTERESTPOINT STEREO VW])
-AX_MODULE(PLATE,            [src/vw/Plate],            [libvwPlate.la],             no, [CARTOGRAPHY VW], [PROTOBUF BOOST_FILESYSTEM BOOST_REGEX BOOST_IOSTREAMS BOOST_PROGRAM_OPTIONS THREADS], [RABBITMQ_C ZEROMQ LIBKML])
+AX_MODULE(PLATE,            [src/vw/Plate],            [libvwPlate.la],             no, [CARTOGRAPHY VW], [PROTOBUF BOOST_FILESYSTEM BOOST_REGEX BOOST_IOSTREAMS BOOST_PROGRAM_OPTIONS THREADS], [RABBITMQ_C ZEROMQ LIBKML CURL])
 AS_IF([test x"$MAKE_MODULE_PLATE" = "xyes"],
   [AS_IF([test x"$HAVE_PKG_RABBITMQ_C" != "xyes"],
       [AS_IF([test x"$HAVE_PKG_ZEROMQ" != "xyes"],
